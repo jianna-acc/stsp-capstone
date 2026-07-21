@@ -1,0 +1,51 @@
+/* File: /frontend/app/globals.css */
+/* Purpose: Defines the basic global styles for the Next.js application. */
+
+:root {
+  --app-background: #f7f7fa;
+  --app-card: #ffffff;
+  --app-text: #18181b;
+  --app-text-secondary: #71717a;
+  --app-border: #e8e8ee;
+  --app-primary: #7c3aed;
+  --app-primary-dark: #5b21b6;
+  --app-primary-soft: #f2ecff;
+  --app-success: #22a06b;
+  --app-warning: #f59e0b;
+  --app-danger: #dc2626;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  min-height: 100%;
+}
+
+html {
+  background: var(--app-background);
+}
+
+body {
+  margin: 0;
+  color: var(--app-text);
+  background: var(--app-background);
+  font-family:
+    Inter,
+    Arial,
+    Helvetica,
+    sans-serif;
+}
+
+button,
+input,
+textarea,
+select {
+  font: inherit;
+}
+
+a {
+  color: inherit;
+}

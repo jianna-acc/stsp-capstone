@@ -239,3 +239,62 @@ Update this document when:
 5. A module begins reading from Supabase Storage.
 6. Ownership of a module changes.
 7. A major connection is removed.
+
+## Phase 1C Frontend Foundation
+
+```mermaid
+flowchart TD
+    BROWSER[Web Browser]
+    NEXT_DEV[Next.js Development Server]
+    ROOT_LAYOUT[app/layout.tsx]
+    GLOBAL_CSS[app/globals.css]
+    HOME_PAGE[app/page.tsx]
+    PAGE_CSS[app/page.module.css]
+    NEXT_CONFIG[next.config.ts]
+    PACKAGE_JSON[package.json]
+    TYPESCRIPT[tsconfig.json]
+    ESLINT[eslint.config.mjs]
+
+    PACKAGE_JSON --> NEXT_DEV
+    NEXT_CONFIG --> NEXT_DEV
+    TYPESCRIPT --> NEXT_DEV
+    ESLINT --> LINT_CHECK[npm run lint]
+
+    BROWSER --> NEXT_DEV
+    NEXT_DEV --> ROOT_LAYOUT
+    ROOT_LAYOUT --> GLOBAL_CSS
+    ROOT_LAYOUT --> HOME_PAGE
+    HOME_PAGE --> PAGE_CSS
+    HOME_PAGE --> BROWSER
+```
+
+## Frontend Development Commands
+
+```mermaid
+flowchart LR
+    DEVELOPER[Developer]
+    INSTALL[npm install]
+    DEV[npm run dev]
+    LINT[npm run lint]
+    BUILD[npm run build]
+    PACKAGE[package.json]
+    LOCK[package-lock.json]
+    NODE_MODULES[node_modules]
+    NEXT_OUTPUT[.next]
+
+    DEVELOPER --> INSTALL
+    INSTALL --> PACKAGE
+    INSTALL --> LOCK
+    INSTALL --> NODE_MODULES
+
+    DEVELOPER --> DEV
+    DEV --> PACKAGE
+    DEV --> NEXT_OUTPUT
+
+    DEVELOPER --> LINT
+    LINT --> PACKAGE
+
+    DEVELOPER --> BUILD
+    BUILD --> PACKAGE
+    BUILD --> NEXT_OUTPUT
+```

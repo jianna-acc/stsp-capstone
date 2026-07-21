@@ -78,19 +78,25 @@ Every team member must update this document when:
 | `/supabase/policies/` | Planned | Member 4 | Stores row-level security documentation or scripts | Supabase database tables |
 | `/supabase/seed.sql` | Planned | Member 4 | Adds safe sample data for development | Development database |
 
-## Planned Frontend Files
+## Next.js Frontend Foundation Files
 
 | Path | Status | Owner | Purpose | Connected To |
 |---|---|---|---|---|
-| `/frontend/app/layout.tsx` | Planned | Member 1 | Defines the root Next.js layout and application providers | Mantine provider and global styles |
-| `/frontend/app/page.tsx` | Planned | Member 1 | Displays the temporary project foundation page | Foundation check component |
-| `/frontend/app/providers.tsx` | Planned | Member 2 | Provides Mantine, notifications, and modals | Root layout |
-| `/frontend/app/globals.css` | Planned | Member 2 | Contains global CSS variables and base styles | Entire frontend |
-| `/frontend/theme/theme.ts` | Planned | Member 2 | Defines the Mantine theme | MantineProvider |
-| `/frontend/lib/config.ts` | Planned | Member 1 | Stores the temporary application name and project metadata | Root layout and interface components |
-| `/frontend/services/api.ts` | Planned | Member 3 | Provides functions for calling FastAPI endpoints | Frontend components and FastAPI |
-| `/frontend/lib/supabase/client.ts` | Planned | Member 1 | Creates the browser Supabase client | Authentication and database access |
-| `/frontend/components/foundation/FoundationCheck.tsx` | Planned | Member 2 | Tests Mantine and frontend-backend connectivity | API service and home page |
+| `/frontend/` | Created | Member 1 | Contains the Next.js frontend application | Browser, future FastAPI API, and Supabase |
+| `/frontend/package.json` | Created | Member 1 | Defines frontend scripts and dependencies | npm and Next.js |
+| `/frontend/package-lock.json` | Created | Member 1 | Locks the exact frontend dependency versions | `package.json` and npm |
+| `/frontend/tsconfig.json` | Created | Member 1 | Configures TypeScript and the `@/*` import alias | All TypeScript and TSX files |
+| `/frontend/eslint.config.mjs` | Created | Member 1 | Configures ESLint for Next.js and TypeScript | `npm run lint` |
+| `/frontend/next-env.d.ts` | Generated | Next.js | Provides Next.js TypeScript declarations | TypeScript compiler |
+| `/frontend/next.config.ts` | Integrated | Member 1 | Configures Next.js and the Turbopack project root | Next.js development server and production build |
+| `/frontend/app/layout.tsx` | Integrated | Member 1 | Defines the root HTML layout and metadata | `globals.css` and all application pages |
+| `/frontend/app/globals.css` | Integrated | Member 2 | Defines global colors and base browser styles | Root layout and all frontend pages |
+| `/frontend/app/page.tsx` | Integrated | Member 1 | Displays the temporary frontend foundation page | `page.module.css` |
+| `/frontend/app/page.module.css` | Integrated | Member 2 | Styles the temporary frontend foundation page | `page.tsx` |
+| `/frontend/app/favicon.ico` | Generated | Next.js | Provides the browser-tab icon | Root application metadata |
+| `/frontend/public/` | Created | Member 2 | Stores public static assets | Frontend pages and components |
+| `/frontend/README.md` | Generated | Next.js | Contains the original Next.js setup reference | Frontend developers |
+| `/frontend/.gitignore` | Generated | Next.js | Ignores frontend-specific generated files | Frontend repository files |
 
 ## New File Entry Template
 
