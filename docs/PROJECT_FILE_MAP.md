@@ -49,13 +49,13 @@ Every team member must update this document when:
 
 | Path | Status | Owner | Purpose | Connected To |
 |---|---|---|---|---|
-| `/docs/PROJECT_FILE_MAP.md` | Created | Member 1 | Master list of project files, owners, purposes, and connections | Every project module |
-| `/docs/ARCHITECTURE.md` | Created | Member 1 | Contains Mermaid diagrams showing system connections | Frontend, backend, Supabase, Gemini |
-| `/docs/setup-guide.md` | Planned | Member 5 | Explains how to install and run the project | Frontend and backend setup |
-| `/docs/database.md` | Planned | Member 4 | Documents database tables, columns, relationships, and policies | Supabase and backend |
-| `/docs/api-contracts.md` | Planned | Member 3 | Documents backend endpoints and frontend request formats | Frontend services and FastAPI routes |
-| `/docs/git-workflow.md` | Planned | Member 1 | Explains branches, commits, pull requests, and code reviews | GitHub repository |
-| `/docs/testing-checklist.md` | Planned | Member 5 | Records required manual and automated tests | All application features |
+| `/docs/PROJECT_FILE_MAP.md` | Created | Member 1 | Master list of project files, owners, purposes, and connections | Entire repository |
+| `/docs/ARCHITECTURE.md` | Created | Member 1 | Contains Mermaid diagrams showing system connections | Frontend, backend, Supabase, and Gemini |
+| `/docs/setup-guide.md` | Created | Member 5 | Explains how to install and run the project | Frontend and backend setup |
+| `/docs/api-contracts.md` | Created | Member 3 | Documents frontend and backend request and response formats | Frontend services and FastAPI routes |
+| `/docs/database.md` | Created | Member 4 | Documents database tables, relationships, storage, and security | Supabase and FastAPI |
+| `/docs/git-workflow.md` | Created | Member 1 | Explains branches, commits, pull requests, and code reviews | GitHub repository |
+| `/docs/testing-checklist.md` | Created | Member 5 | Records required manual and automated tests | Entire application |
 
 ## Backend Files
 
