@@ -1,0 +1,85 @@
+# File: /.gitignore
+# Purpose: Prevents generated files, private keys, local environments,
+# build outputs, and editor-specific files from being committed to Git.
+
+# ============================================================
+# Environment variables and secrets
+# ============================================================
+
+.env
+.env.*
+.env.local
+!.env.example
+
+# ============================================================
+# Node.js and Next.js
+# ============================================================
+
+node_modules/
+.next/
+out/
+dist/
+coverage/
+.npm/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# ============================================================
+# Python and FastAPI
+# ============================================================
+
+.venv/
+venv/
+env/
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# ============================================================
+# Supabase local development
+# ============================================================
+
+supabase/.branches/
+supabase/.temp/
+
+# ============================================================
+# IDE and editor files
+# ============================================================
+
+.idea/
+
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+
+# ============================================================
+# Operating system files
+# ============================================================
+
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ============================================================
+# Logs and temporary files
+# ============================================================
+
+*.log
+*.tmp
+*.temp
+*.swp
+*.swo
+
+# ============================================================
+# Local application data
+# ============================================================
+
+uploads/
+local-storage/
