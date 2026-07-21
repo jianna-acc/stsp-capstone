@@ -267,6 +267,77 @@ flowchart TD
     HOME_PAGE --> PAGE_CSS
     HOME_PAGE --> BROWSER
 ```
+## Phase 1D Mantine Theme Foundation
+
+```mermaid
+flowchart TD
+    COLORS[theme/colors.ts]
+    COMPONENTS[theme/components.ts]
+    THEME[theme/theme.ts]
+    PROVIDER[app/providers.tsx - next phase]
+    LAYOUT[app/layout.tsx]
+    PAGES[Frontend pages and components]
+    POSTCSS[postcss.config.cjs]
+    CSS_MODULES[CSS Modules]
+
+    COLORS --> THEME
+    COMPONENTS --> THEME
+    THEME --> PROVIDER
+    PROVIDER --> LAYOUT
+    LAYOUT --> PAGES
+
+    POSTCSS --> CSS_MODULES
+    CSS_MODULES --> PAGES
+```
+
+## Phase 1D Interactive Mantine Foundation
+
+```mermaid
+flowchart TD
+    LAYOUT[app/layout.tsx]
+    PROVIDERS[app/providers.tsx]
+    THEME[theme/theme.ts]
+    COLORS[theme/colors.ts]
+    OVERRIDES[theme/components.ts]
+    HOME[app/page.tsx]
+    CHECK[MantineFoundationCheck.tsx]
+    CSS[MantineFoundationCheck.module.css]
+    NOTIFICATIONS[Mantine Notifications]
+    MODALS[Mantine Modals]
+    ICONS[Tabler Icons]
+    USER[Student or Developer]
+
+    COLORS --> THEME
+    OVERRIDES --> THEME
+    THEME --> PROVIDERS
+
+    LAYOUT --> PROVIDERS
+    PROVIDERS --> HOME
+    HOME --> CHECK
+    CSS --> CHECK
+    ICONS --> CHECK
+
+    USER --> CHECK
+    CHECK --> NOTIFICATIONS
+    CHECK --> MODALS
+    MODALS --> NOTIFICATIONS
+```
+
+## Mantine Provider Hierarchy
+
+```mermaid
+flowchart TD
+    ROOT[RootLayout]
+    MANTINE[MantineProvider]
+    MODAL_PROVIDER[ModalsProvider]
+    NOTIFICATION_COMPONENT[Notifications]
+    APPLICATION[Application Pages]
+
+    ROOT --> MANTINE
+    MANTINE --> MODAL_PROVIDER
+    MODAL_PROVIDER --> NOTIFICATION_COMPONENT
+    MODAL_PROVIDER --> APPLICATION
+```
 
 ## Frontend Development Commands
 

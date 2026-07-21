@@ -1,0 +1,50 @@
+/* File: /frontend/components/foundation/MantineFoundationCheck.module.css */
+/* Purpose: Styles the interactive Mantine foundation-check page. */
+
+.page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  padding: 48px 20px;
+  background:
+    radial-gradient(
+      circle at top left,
+      rgba(124, 58, 237, 0.1),
+      transparent 38%
+    ),
+    var(--app-background);
+}
+
+.card {
+  background: var(--app-card);
+  border-color: var(--app-border);
+  box-shadow: 0 8px 30px rgba(24, 24, 27, 0.06);
+}
+
+.statusCard {
+  height: 100%;
+  padding: 18px;
+  background: var(--app-background);
+  border: 1px solid var(--app-border);
+  border-radius: 16px;
+}
+
+.actions {
+  margin-top: 4px;
+}
+
+@media (max-width: 48em) {
+  .page {
+    align-items: flex-start;
+    padding: 24px 12px;
+  }
+
+  .actions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .actions button {
+    width: 100%;
+  }
+}

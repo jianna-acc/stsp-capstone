@@ -40,16 +40,24 @@ A completed feature must also handle:
 
 ## Frontend Foundation Tests
 
-- [ ] Node.js version is supported
-- [ ] Next.js project installs successfully
-- [ ] `npm run dev` starts
-- [ ] Home page opens
-- [ ] Mantine styles load
-- [ ] Notifications work
-- [ ] CSS Modules work
-- [ ] Browser console has no errors
-- [ ] `npm run lint` passes
-- [ ] `npm run build` passes
+- [x] Node.js version is supported
+- [x] Next.js project installs successfully
+- [x] `npm run dev` starts
+- [x] Home page opens
+- [x] CSS Modules work
+- [x] Tailwind is not installed
+- [x] Mantine styles load
+- [x] Custom purple theme is applied
+- [x] Tabler icons display
+- [x] Mantine notification appears
+- [x] Confirmation modal opens
+- [x] Cancel closes the modal
+- [x] Confirming the modal triggers a success notification
+- [x] Responsive card layout works
+- [x] Buttons stack on narrow screens
+- [x] Browser console has no red errors
+- [x] `npm run lint` passes
+- [x] `npm run build` passes
 
 ## Backend Foundation Tests
 

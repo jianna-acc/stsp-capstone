@@ -89,14 +89,23 @@ Every team member must update this document when:
 | `/frontend/eslint.config.mjs` | Created | Member 1 | Configures ESLint for Next.js and TypeScript | `npm run lint` |
 | `/frontend/next-env.d.ts` | Generated | Next.js | Provides Next.js TypeScript declarations | TypeScript compiler |
 | `/frontend/next.config.ts` | Integrated | Member 1 | Configures Next.js and the Turbopack project root | Next.js development server and production build |
-| `/frontend/app/layout.tsx` | Integrated | Member 1 | Defines the root HTML layout and metadata | `globals.css` and all application pages |
-| `/frontend/app/globals.css` | Integrated | Member 2 | Defines global colors and base browser styles | Root layout and all frontend pages |
-| `/frontend/app/page.tsx` | Integrated | Member 1 | Displays the temporary frontend foundation page | `page.module.css` |
-| `/frontend/app/page.module.css` | Integrated | Member 2 | Styles the temporary frontend foundation page | `page.tsx` |
+| `/frontend/app/providers.tsx` | Integrated | Member 2 | Provides the Mantine theme, notifications, and modal manager to the application | Root layout, Mantine theme, all frontend pages |
+| `/frontend/app/layout.tsx` | Integrated | Member 1 | Loads Mantine styles, Inter font, color-scheme script, and application providers | `providers.tsx`, `globals.css`, all routes |
+| `/frontend/app/globals.css` | Integrated | Member 2 | Defines global application colors, background, typography, and browser defaults | Root layout and all frontend pages |
+| `/frontend/app/page.tsx` | Integrated | Member 2 | Displays the interactive Mantine system-check page | `MantineFoundationCheck.tsx` |
 | `/frontend/app/favicon.ico` | Generated | Next.js | Provides the browser-tab icon | Root application metadata |
 | `/frontend/public/` | Created | Member 2 | Stores public static assets | Frontend pages and components |
 | `/frontend/README.md` | Generated | Next.js | Contains the original Next.js setup reference | Frontend developers |
 | `/frontend/.gitignore` | Generated | Next.js | Ignores frontend-specific generated files | Frontend repository files |
+
+## Mantine Theme Foundation Files
+
+| Path | Status | Owner | Purpose | Connected To |
+|---|---|---|---|---|
+| `/frontend/postcss.config.cjs` | Created | Member 2 | Enables Mantine PostCSS features and shared breakpoints | Frontend CSS and CSS Modules |
+| `/frontend/theme/colors.ts` | Created | Member 2 | Stores the purple palette and application color tokens | `theme.ts`, custom components, and charts |
+| `/frontend/theme/components.ts` | Created | Member 2 | Defines shared defaults for Mantine components | `theme.ts` |
+| `/frontend/theme/theme.ts` | Created | Member 2 | Combines colors, typography, radius, shadows, and component defaults | Future `MantineProvider` in `/frontend/app/providers.tsx` |
 
 ## New File Entry Template
 
