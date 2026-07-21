@@ -33,6 +33,7 @@ body {
   color: var(--app-text);
   background: var(--app-background);
   font-family:
+    var(--font-inter),
     Inter,
     Arial,
     Helvetica,
