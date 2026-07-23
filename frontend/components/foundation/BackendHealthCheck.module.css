@@ -1,0 +1,42 @@
+/* File: /frontend/components/foundation/BackendHealthCheck.module.css */
+/* Purpose: Styles the frontend-to-backend health-check interface. */
+
+.root {
+  padding: 20px;
+  background: var(--app-background);
+  border: 1px solid var(--app-border);
+  border-radius: 16px;
+}
+
+.heading {
+  min-width: 0;
+}
+
+.result {
+  min-height: 72px;
+}
+
+.detailItem {
+  padding: 14px;
+  background: var(--app-card);
+  border: 1px solid var(--app-border);
+  border-radius: 12px;
+}
+
+.action {
+  align-self: flex-start;
+}
+
+@media (max-width: 48em) {
+  .root {
+    padding: 16px;
+  }
+
+  .header {
+    flex-direction: column;
+  }
+
+  .action {
+    width: 100%;
+  }
+}

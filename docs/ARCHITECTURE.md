@@ -189,6 +189,29 @@ flowchart LR
     BUILD --> NEXT_OUTPUT
 ```
 
+# Frontend-to-Backend Health Interface
+
+```mermaid
+flowchart LR
+    PAGE["MantineFoundationCheck.tsx"]
+    HEALTH_COMPONENT["BackendHealthCheck.tsx"]
+    HEALTH_CSS["BackendHealthCheck.module.css"]
+    API_SERVICE["frontend/services/api.ts"]
+    API_TYPES["frontend/types/api.ts"]
+    ENV_LOCAL["frontend/.env.local"]
+    ENV_EXAMPLE["frontend/.env.example"]
+    FASTAPI["FastAPI GET /api/health"]
+
+    ENV_EXAMPLE -. copied locally .-> ENV_LOCAL
+    ENV_LOCAL --> API_SERVICE
+    API_TYPES --> API_SERVICE
+
+    PAGE --> HEALTH_COMPONENT
+    HEALTH_CSS --> HEALTH_COMPONENT
+    HEALTH_COMPONENT --> API_SERVICE
+    API_SERVICE --> FASTAPI
+```
+
 # FastAPI Application Structure
 
 ```mermaid
@@ -226,27 +249,56 @@ flowchart TD
     SERVICES -. future .-> DATABASE
 ```
 
-# Planned Phase 1 Frontend-to-Backend Health Check
-
-This sequence is planned for the next backend and integration phases. The API service and health endpoint are not yet implemented.
+# Implemented Frontend-to-Backend Health Check
 
 ```mermaid
 sequenceDiagram
-    actor Student
+    actor Developer
     participant Frontend as Next.js Frontend
+    participant Component as BackendHealthCheck.tsx
     participant APIService as frontend/services/api.ts
-    participant FastAPI as FastAPI Backend
+    participant CORS as FastAPI CORSMiddleware
     participant HealthRoute as GET /api/health
 
-    Student->>Frontend: Opens the system-check page
-    Student->>Frontend: Selects Check Backend
-    Frontend->>APIService: Calls getApiHealth()
-    APIService->>FastAPI: Sends GET /api/health
-    FastAPI->>HealthRoute: Runs health check
-    HealthRoute-->>FastAPI: Returns healthy response
-    FastAPI-->>APIService: Returns JSON response
-    APIService-->>Frontend: Returns health result
-    Frontend-->>Student: Shows Backend Connected
+    Developer->>Frontend: Opens http://localhost:3000
+    Frontend->>Component: Displays idle state
+
+    Developer->>Component: Selects Check backend
+    Component->>Component: Displays loading state
+    Component->>APIService: Calls getApiHealth()
+    APIService->>APIService: Reads NEXT_PUBLIC_API_BASE_URL
+    APIService->>CORS: Sends GET /api/health
+    CORS->>HealthRoute: Allows configured frontend origin
+    HealthRoute-->>CORS: Returns typed health response
+    CORS-->>APIService: Returns 200 JSON response
+    APIService->>APIService: Validates response structure
+    APIService-->>Component: Returns ApiHealthResponse
+    Component->>Component: Displays connected state
+    Component-->>Developer: Shows service details
+```
+
+## Implemented Error and Retry Flow
+
+```mermaid
+sequenceDiagram
+    actor Developer
+    participant Component as BackendHealthCheck.tsx
+    participant APIService as frontend/services/api.ts
+    participant Backend as FastAPI Backend
+
+    Developer->>Component: Selects Check again
+    Component->>APIService: Calls getApiHealth()
+    APIService-xBackend: Connection fails
+    APIService-->>Component: Throws ApiRequestError
+    Component-->>Developer: Displays Unavailable and Retry connection
+
+    Developer->>Backend: Restarts FastAPI
+    Developer->>Component: Selects Retry connection
+    Component->>APIService: Calls getApiHealth()
+    APIService->>Backend: Sends GET /api/health
+    Backend-->>APIService: Returns 200 health response
+    APIService-->>Component: Returns validated health data
+    Component-->>Developer: Displays Connected
 ```
 
 # Planned Data Relationships

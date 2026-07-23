@@ -1,6 +1,6 @@
 // File: /frontend/components/foundation/MantineFoundationCheck.tsx
-// Purpose: Verifies that Mantine components, theme colors,
-// notifications, modals, icons, and responsive layouts work correctly.
+// Purpose: Verifies the Mantine design system and displays the
+// frontend-to-backend connection test.
 
 "use client";
 
@@ -27,6 +27,7 @@ import {
   IconSparkles,
 } from "@tabler/icons-react";
 
+import { BackendHealthCheck } from "./BackendHealthCheck";
 import classes from "./MantineFoundationCheck.module.css";
 
 const systemChecks = [
@@ -101,17 +102,17 @@ export function MantineFoundationCheck() {
           <Stack gap="xl">
             <div>
               <Badge color="brand" variant="light">
-                Phase 1D
+                Phase 1F
               </Badge>
 
               <Title order={1} mt="md">
-                Mantine foundation is ready
+                Application foundation is ready
               </Title>
 
               <Text c="dimmed" mt="sm" maw={660}>
-                The global theme and interface providers are now
-                connected. Use the controls below to test the
-                interactive systems.
+                The frontend design system is connected.
+                The next check verifies communication with
+                the FastAPI backend.
               </Text>
             </div>
 
@@ -155,12 +156,16 @@ export function MantineFoundationCheck() {
 
               <Button
                 variant="default"
-                leftSection={<IconShieldCheck size={18} />}
+                leftSection={
+                  <IconShieldCheck size={18} />
+                }
                 onClick={showConfirmationModal}
               >
                 Test confirmation modal
               </Button>
             </Group>
+
+            <BackendHealthCheck />
 
             <Text size="sm" c="dimmed">
               Temporary application name: STS Capstone Project
