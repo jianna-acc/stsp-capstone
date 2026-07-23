@@ -1,0 +1,12 @@
+# File: /backend/requirements.in
+# Purpose: Lists the direct Python packages selected for the FastAPI backend.
+
+fastapi[standard-no-fastapi-cloud-cli]
+pydantic-settings
+python-dotenv
+httpx
+httpx2
+python-multipart
+supabase
+google-genai
+pytest
