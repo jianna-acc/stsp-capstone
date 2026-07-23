@@ -4,27 +4,29 @@
 
 This document is the central reference for the files and folders used in the STS Capstone Project.
 
-Every team member must update this document when:
+Update this document whenever:
 
 1. A new important file is created.
-2. A file is renamed or moved.
+2. A file is renamed, moved, or removed.
 3. A file begins using another service or module.
 4. File ownership changes.
-5. A file becomes obsolete or is removed.
-6. An API, database table, or shared type changes.
+5. An API, database table, shared type, or environment variable changes.
+6. A planned file becomes implemented.
 
-## File Status
+# File Status
 
 | Status | Meaning |
 |---|---|
-| Planned | The file or folder is expected but has not been created |
-| Created | The file exists but may not be complete |
-| In Progress | The owner is currently working on it |
-| Ready | The file works independently |
-| Integrated | The file works with the rest of the application |
-| Deprecated | The file should no longer be used |
+| Planned | Expected in a future phase but not created |
+| Created | Exists but may not be independently tested |
+| In Progress | Currently being developed |
+| Ready | Works independently and has passed its direct checks |
+| Integrated | Works with the rest of the application |
+| Generated | Automatically created by a framework or tool |
+| Local Only | Exists on each developer's computer and must not be committed |
+| Deprecated | Removed or no longer used |
 
-## Team Ownership
+# Team Ownership
 
 | Member | Main Responsibility |
 |---|---|
@@ -34,92 +36,204 @@ Every team member must update this document when:
 | Member 4 | Supabase, database, reviewers, and quizzes |
 | Member 5 | Testing, tasks, prioritization, study plans, and calendar |
 
-## Root Files
+# Root Files and Folders
 
 | Path | Status | Owner | Purpose | Connected To |
 |---|---|---|---|---|
-| `/.gitignore` | Created | Member 1 | Prevents secrets, dependencies, build outputs, and temporary files from being committed | Entire repository |
-| `/README.md` | Planned | Member 1 | Gives the project overview, setup summary, and documentation links | `/docs/`, `/frontend/`, `/backend/`, `/supabase/` |
-| `/frontend/` | Planned | Member 1 | Contains the Next.js frontend application | FastAPI API, Supabase Auth, Supabase Storage |
-| `/backend/` | Created | Member 3 | Contains the FastAPI backend application | Frontend, Supabase, Gemini API |
-| `/supabase/` | Created | Member 4 | Contains database migrations, policies, and Supabase setup files | FastAPI backend and Next.js frontend |
-| `/docs/` | Created | Member 1 | Contains shared technical and project documentation | Entire repository |
+| `/.gitignore` | Integrated | Member 1 | Excludes secrets, dependencies, build output, caches, and local files | Entire repository |
+| `/README.md` | Integrated | Member 1 | Provides the project overview and links to technical documentation | `/docs/`, `/frontend/`, `/backend/`, `/supabase/` |
+| `/frontend/` | Integrated | Member 1 and Member 2 | Contains the Next.js and Mantine frontend | Browser and future backend/Supabase connections |
+| `/backend/` | In Progress | Member 3 | Contains the FastAPI backend foundation | Future frontend, Supabase, and Gemini connections |
+| `/supabase/` | Created | Member 4 | Contains Supabase documentation and future migrations | Future frontend and backend integration |
+| `/docs/` | Integrated | Member 1 and Member 5 | Contains shared technical documentation | Entire repository |
 
-## Documentation Files
-
-| Path | Status | Owner | Purpose | Connected To |
-|---|---|---|---|---|
-| `/docs/PROJECT_FILE_MAP.md` | Created | Member 1 | Master list of project files, owners, purposes, and connections | Entire repository |
-| `/docs/ARCHITECTURE.md` | Created | Member 1 | Contains Mermaid diagrams showing system connections | Frontend, backend, Supabase, and Gemini |
-| `/docs/setup-guide.md` | Created | Member 5 | Explains how to install and run the project | Frontend and backend setup |
-| `/docs/api-contracts.md` | Created | Member 3 | Documents frontend and backend request and response formats | Frontend services and FastAPI routes |
-| `/docs/database.md` | Created | Member 4 | Documents database tables, relationships, storage, and security | Supabase and FastAPI |
-| `/docs/git-workflow.md` | Created | Member 1 | Explains branches, commits, pull requests, and code reviews | GitHub repository |
-| `/docs/testing-checklist.md` | Created | Member 5 | Records required manual and automated tests | Entire application |
-
-## Backend Files
+# Documentation Files
 
 | Path | Status | Owner | Purpose | Connected To |
 |---|---|---|---|---|
-| `/backend/README.md` | Created | Member 3 | Placeholder documentation for the FastAPI backend | `/backend/app/` |
-| `/backend/app/main.py` | Planned | Member 3 | Creates and configures the FastAPI application | API router, CORS, configuration |
-| `/backend/app/api/router.py` | Planned | Member 3 | Combines the backend API routes | Health, authentication, files, AI, quizzes, tasks |
-| `/backend/app/api/health.py` | Planned | Member 3 | Provides a health-check endpoint | Frontend connection test |
-| `/backend/app/core/config.py` | Planned | Member 3 | Loads backend settings and environment variables | FastAPI, Supabase, Gemini |
-| `/backend/requirements.txt` | Planned | Member 3 | Lists the backend Python dependencies | Python virtual environment |
-| `/backend/.env.example` | Planned | Member 3 | Shows the backend environment variables without real secrets | Backend configuration |
+| `/docs/PROJECT_FILE_MAP.md` | Integrated | Member 1 | Master list of files, owners, purposes, statuses, and connections | Entire repository |
+| `/docs/ARCHITECTURE.md` | Integrated | Member 1 | Shows current and planned system connections using Mermaid | Frontend, backend, Supabase, and Gemini |
+| `/docs/setup-guide.md` | Integrated | Member 5 | Explains installation, configuration, testing, and startup steps | Frontend and backend |
+| `/docs/api-contracts.md` | Created | Member 3 | Documents planned and implemented API request/response formats | Frontend services and FastAPI routes |
+| `/docs/database.md` | Created | Member 4 | Documents planned database relationships, storage, and security | Supabase and FastAPI |
+| `/docs/git-workflow.md` | Created | Member 1 | Explains branches, commits, pull requests, and reviews | GitHub repository |
+| `/docs/testing-checklist.md` | Integrated | Member 5 | Tracks completed and pending tests | Entire application |
 
-## Supabase Files
-
-| Path | Status | Owner | Purpose | Connected To |
-|---|---|---|---|---|
-| `/supabase/README.md` | Created | Member 4 | Placeholder documentation for database and storage setup | Supabase migrations and policies |
-| `/supabase/migrations/` | Planned | Member 4 | Stores versioned database changes | Supabase PostgreSQL database |
-| `/supabase/policies/` | Planned | Member 4 | Stores row-level security documentation or scripts | Supabase database tables |
-| `/supabase/seed.sql` | Planned | Member 4 | Adds safe sample data for development | Development database |
-
-## Next.js Frontend Foundation Files
+# Frontend Foundation Files
 
 | Path | Status | Owner | Purpose | Connected To |
 |---|---|---|---|---|
-| `/frontend/` | Created | Member 1 | Contains the Next.js frontend application | Browser, future FastAPI API, and Supabase |
-| `/frontend/package.json` | Created | Member 1 | Defines frontend scripts and dependencies | npm and Next.js |
-| `/frontend/package-lock.json` | Created | Member 1 | Locks the exact frontend dependency versions | `package.json` and npm |
-| `/frontend/tsconfig.json` | Created | Member 1 | Configures TypeScript and the `@/*` import alias | All TypeScript and TSX files |
-| `/frontend/eslint.config.mjs` | Created | Member 1 | Configures ESLint for Next.js and TypeScript | `npm run lint` |
+| `/frontend/package.json` | Integrated | Member 1 | Defines frontend scripts and direct dependencies | npm and Next.js |
+| `/frontend/package-lock.json` | Integrated | Member 1 | Locks exact frontend dependency versions | `package.json` and npm |
+| `/frontend/tsconfig.json` | Integrated | Member 1 | Configures TypeScript and the `@/*` alias | All TypeScript and TSX files |
+| `/frontend/eslint.config.mjs` | Integrated | Member 1 | Configures ESLint for Next.js and TypeScript | `npm run lint` |
 | `/frontend/next-env.d.ts` | Generated | Next.js | Provides Next.js TypeScript declarations | TypeScript compiler |
-| `/frontend/next.config.ts` | Integrated | Member 1 | Configures Next.js and the Turbopack project root | Next.js development server and production build |
-| `/frontend/app/providers.tsx` | Integrated | Member 2 | Provides the Mantine theme, notifications, and modal manager to the application | Root layout, Mantine theme, all frontend pages |
-| `/frontend/app/layout.tsx` | Integrated | Member 1 | Loads Mantine styles, Inter font, color-scheme script, and application providers | `providers.tsx`, `globals.css`, all routes |
-| `/frontend/app/globals.css` | Integrated | Member 2 | Defines global application colors, background, typography, and browser defaults | Root layout and all frontend pages |
-| `/frontend/app/page.tsx` | Integrated | Member 2 | Displays the interactive Mantine system-check page | `MantineFoundationCheck.tsx` |
+| `/frontend/next.config.ts` | Integrated | Member 1 | Configures Next.js and the Turbopack project root | Development server and production build |
+| `/frontend/postcss.config.cjs` | Integrated | Member 2 | Enables Mantine-compatible PostCSS processing | CSS and CSS Modules |
 | `/frontend/app/favicon.ico` | Generated | Next.js | Provides the browser-tab icon | Root application metadata |
 | `/frontend/public/` | Created | Member 2 | Stores public static assets | Frontend pages and components |
-| `/frontend/README.md` | Generated | Next.js | Contains the original Next.js setup reference | Frontend developers |
-| `/frontend/.gitignore` | Generated | Next.js | Ignores frontend-specific generated files | Frontend repository files |
+| `/frontend/README.md` | Generated | Next.js | Contains the original Next.js reference | Frontend developers |
+| `/frontend/.gitignore` | Generated | Next.js | Adds frontend-specific ignore rules | Frontend generated files |
+| `/frontend/node_modules/` | Local Only | Each member | Stores locally installed npm packages | Recreated using `npm install` |
+| `/frontend/.next/` | Local Only | Next.js | Stores generated development and build output | Recreated by `npm run dev` and `npm run build` |
 
-## Mantine Theme Foundation Files
+# Frontend Application and Mantine Files
 
 | Path | Status | Owner | Purpose | Connected To |
 |---|---|---|---|---|
-| `/frontend/postcss.config.cjs` | Created | Member 2 | Enables Mantine PostCSS features and shared breakpoints | Frontend CSS and CSS Modules |
-| `/frontend/theme/colors.ts` | Created | Member 2 | Stores the purple palette and application color tokens | `theme.ts`, custom components, and charts |
-| `/frontend/theme/components.ts` | Created | Member 2 | Defines shared defaults for Mantine components | `theme.ts` |
-| `/frontend/theme/theme.ts` | Created | Member 2 | Combines colors, typography, radius, shadows, and component defaults | Future `MantineProvider` in `/frontend/app/providers.tsx` |
+| `/frontend/app/layout.tsx` | Integrated | Member 1 | Loads metadata, Inter, Mantine styles, color-scheme support, and providers | `providers.tsx`, `globals.css`, and all routes |
+| `/frontend/app/providers.tsx` | Integrated | Member 2 | Provides Mantine theme, modal management, and notifications | Root layout and all frontend pages |
+| `/frontend/app/globals.css` | Integrated | Member 2 | Defines global variables, background, typography, and browser defaults | Root layout and all pages |
+| `/frontend/app/page.tsx` | Integrated | Member 2 | Displays the interactive Mantine foundation check | `MantineFoundationCheck.tsx` |
+| `/frontend/app/page.module.css` | Deprecated | Member 2 | Old temporary page stylesheet removed after the Mantine component was created | Replaced by `MantineFoundationCheck.module.css` |
+| `/frontend/components/foundation/MantineFoundationCheck.tsx` | Integrated | Member 2 | Tests Mantine theme, icons, notifications, modals, and responsive behavior | Providers, theme, Tabler Icons, and CSS Module |
+| `/frontend/components/foundation/MantineFoundationCheck.module.css` | Integrated | Member 2 | Styles the Mantine system-check component | `MantineFoundationCheck.tsx` |
+| `/frontend/theme/colors.ts` | Integrated | Member 2 | Stores the purple palette and application color tokens | `theme.ts`, components, and charts |
+| `/frontend/theme/components.ts` | Integrated | Member 2 | Defines shared Mantine component defaults | `theme.ts` |
+| `/frontend/theme/theme.ts` | Integrated | Member 2 | Combines colors, typography, radius, shadows, and defaults | `providers.tsx` |
 
-## New File Entry Template
+# Backend Dependency and Environment Files
 
-Copy this row when adding a new file:
+| Path | Status | Owner | Purpose | Connected To |
+|---|---|---|---|---|
+| `/backend/README.md` | Created | Member 3 | Documents the backend folder's planned responsibilities | `/backend/app/` |
+| `/backend/requirements.in` | Ready | Member 3 | Lists direct Python packages intentionally selected for the backend | pip, FastAPI, Supabase, Gemini, and tests |
+| `/backend/requirements.txt` | Ready | Member 3 | Locks the complete tested Python environment to exact versions | `.venv` and team setup |
+| `/backend/.venv/` | Local Only | Each member | Contains the isolated Python environment | Recreated using `requirements.txt` |
+| `/backend/.env.example` | Ready | Member 3 | Documents backend environment variables without real secrets | `config.py` and team setup |
+| `/backend/.env` | Local Only | Each member | Stores private local backend settings and credentials | `config.py` |
+| `/backend/app/core/config.py` | Ready | Member 3 | Loads typed settings from environment variables and `.env` | Future FastAPI app, CORS, Supabase, and Gemini |
+
+# Backend Package Structure
+
+| Path | Status | Owner | Purpose | Connected To |
+|---|---|---|---|---|
+| `/backend/app/` | In Progress | Member 3 | Contains the FastAPI source code | FastAPI runtime and feature modules |
+| `/backend/app/__init__.py` | Created | Member 3 | Marks the main application folder as a Python package | All backend imports |
+| `/backend/app/api/` | Created | Member 3 | Contains API routers and endpoint registration | Future `main.py` and feature routes |
+| `/backend/app/api/__init__.py` | Created | Member 3 | Marks the API folder as a Python package | API imports |
+| `/backend/app/core/` | Created | Member 3 | Contains settings, exceptions, and logging | Entire backend |
+| `/backend/app/core/__init__.py` | Created | Member 3 | Marks the core folder as a Python package | Core imports |
+| `/backend/app/database/` | Created | Member 4 | Contains future Supabase and database utilities | Supabase database and storage |
+| `/backend/app/database/__init__.py` | Created | Member 4 | Marks the database folder as a Python package | Database imports |
+| `/backend/app/modules/` | Created | Member 3 | Contains future feature-specific modules | Routes, schemas, and services |
+| `/backend/app/modules/__init__.py` | Created | Member 3 | Marks the modules folder as a Python package | Module imports |
+| `/backend/app/schemas/` | Created | Member 3 | Contains future Pydantic request and response models | Routes and services |
+| `/backend/app/schemas/__init__.py` | Created | Member 3 | Marks the schemas folder as a Python package | Schema imports |
+| `/backend/app/services/` | Created | Member 3 | Contains future shared services such as Gemini and file processing | Modules and external APIs |
+| `/backend/app/services/__init__.py` | Created | Member 3 | Marks the services folder as a Python package | Service imports |
+| `/backend/tests/` | Created | Member 5 | Contains backend automated tests | FastAPI application and services |
+| `/backend/tests/__init__.py` | Created | Member 5 | Marks the test folder as a Python package | pytest |
+
+# Backend Application and Planned API Files
+
+| Path | Status | Owner | Purpose | Connected To |
+|---|---|---|---|---|
+| `/backend/app/main.py` | Integrated | Member 3 | Creates FastAPI, configures CORS, and registers the main API router | `config.py`, `router.py`, and `CORSMiddleware` |
+| `/backend/app/api/router.py` | Integrated | Member 3 | Combines all backend feature routers | `main.py` and `health.py` |
+| `/backend/app/api/health.py` | Integrated | Member 3 | Provides `GET /api/health` | Health schema, settings, router, and frontend connection test |
+| `/backend/app/schemas/health.py` | Integrated | Member 3 | Defines the typed health response | Health route and Swagger documentation |
+| `/backend/tests/test_health.py` | Ready | Member 5 | Tests the health response and frontend CORS origin | FastAPI application and health route |
+| `/backend/app/database/supabase_client.py` | Planned | Member 4 | Creates the trusted server-side Supabase client | Supabase database and storage |
+| `/backend/app/services/gemini.py` | Planned | Member 3 | Creates the Gemini service wrapper | Google Gen AI SDK and feature modules |
+
+# Supabase Files
+
+| Path | Status | Owner | Purpose | Connected To |
+|---|---|---|---|---|
+| `/supabase/README.md` | Created | Member 4 | Documents planned database and storage responsibilities | Future migrations and policies |
+| `/supabase/migrations/` | Planned | Member 4 | Stores versioned database changes | Supabase PostgreSQL |
+| `/supabase/policies/` | Planned | Member 4 | Stores row-level security documentation or scripts | Supabase tables and storage |
+| `/supabase/seed.sql` | Planned | Member 4 | Adds safe development data | Development database |
+
+# New File Entry Template
 
 | Path | Status | Owner | Purpose | Connected To |
 |---|---|---|---|---|
 | `/path/to/file` | Created | Member # | Explain what the file does | List modules, services, or files it uses |
 
-## File Header Rules
+# File Header Rules
 
-Whenever supported, every manually created source file must begin with its filepath.
+Every manually created source file must begin with its filepath when the file format supports comments.
 
-### TypeScript and TSX
+## TypeScript and TSX
 
 ```typescript
 // File: /frontend/path/to/file.ts
+```
+
+## JavaScript
+
+```javascript
+// File: /frontend/path/to/file.js
+```
+
+## Python
+
+```python
+# File: /backend/path/to/file.py
+```
+
+## CSS
+
+```css
+/* File: /frontend/path/to/file.css */
+```
+
+## Markdown
+
+```markdown
+<!-- File: /docs/path/to/file.md -->
+```
+
+## SQL
+
+```sql
+-- File: /supabase/path/to/file.sql
+```
+
+## Environment Examples
+
+```env
+# File: /backend/.env.example
+```
+
+## JSON Exception
+
+Strict JSON files do not support comments. Do not add filepath comments to:
+
+- `package.json`
+- `package-lock.json`
+- `tsconfig.json`
+
+Document those files in this masterfile instead.
+
+# Connection Documentation Rules
+
+For each important file, record:
+
+- What imports or uses it
+- What it imports or calls
+- Which API endpoint it provides or consumes
+- Which database table or storage bucket it accesses
+- Which environment variables it requires
+- Which team member owns it
+- Whether it is implemented or planned
+
+# Shared File Change Rules
+
+Coordinate with the team before making major changes to:
+
+- `/.gitignore`
+- `/frontend/package.json`
+- `/frontend/package-lock.json`
+- `/frontend/app/layout.tsx`
+- `/frontend/app/providers.tsx`
+- `/frontend/theme/theme.ts`
+- `/backend/app/main.py`
+- `/backend/app/core/config.py`
+- `/backend/requirements.in`
+- `/backend/requirements.txt`
+- `/supabase/migrations/`
+- `/docs/PROJECT_FILE_MAP.md`
+- `/docs/ARCHITECTURE.md`

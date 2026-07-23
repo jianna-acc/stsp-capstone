@@ -61,14 +61,21 @@ A completed feature must also handle:
 
 ## Backend Foundation Tests
 
-- [ ] Python virtual environment is created
-- [ ] Virtual environment activates
-- [ ] Backend dependencies install
-- [ ] FastAPI starts
-- [ ] `/api/health` returns a successful response
-- [ ] `/docs` opens
-- [ ] CORS permits the frontend
-- [ ] `pytest` passes
+- [x] Python virtual environment is created
+- [x] Virtual environment activates
+- [x] Backend dependencies install
+- [x] `pip check` reports no broken requirements
+- [x] Typed environment settings load
+- [x] Private `.env` is ignored by Git
+- [x] FastAPI application imports successfully
+- [x] FastAPI starts on port 8000
+- [x] `/docs` opens
+- [x] `/openapi.json` opens
+- [x] CORS permits `http://localhost:3000`
+- [x] `/api/health` returns `200`
+- [x] Health response matches its schema
+- [x] Swagger displays the health endpoint
+- [x] `pytest` passes
 
 ## Frontend and Backend Integration
 

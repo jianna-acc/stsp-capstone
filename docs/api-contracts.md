@@ -70,15 +70,6 @@ GET /api/health
 
 Not required.
 
-### Successful Response
-
-```json
-{
-  "status": "healthy",
-  "service": "sts-capstone-api",
-  "version": "0.1.0"
-}
-```
 
 ### Used By
 
@@ -111,15 +102,15 @@ Copy this section whenever a new endpoint is added.
 
 Briefly explain what the endpoint does.
 
-#### Request
+### Request
 
 ```http
-METHOD /api/example
+GET /api/health
 ```
 
-#### Authentication
+### Authentication
 
-State whether a valid student session or access token is required.
+Not required.
 
 #### Request Body
 
@@ -129,11 +120,22 @@ State whether a valid student session or access token is required.
 }
 ```
 
-#### Successful Response
+### Successful Response
+
+Status:
+
+```text
+200 OK
+```
+
+Body:
 
 ```json
 {
-  "example_result": "example value"
+  "status": "healthy",
+  "service": "STS Capstone API",
+  "version": "0.1.0",
+  "environment": "development"
 }
 ```
 
@@ -147,10 +149,20 @@ State whether a valid student session or access token is required.
 | `404` | Resource was not found |
 | `500` | Unexpected server error |
 
-#### Frontend Consumer
+### Frontend Consumer
 
-List the frontend files that call this endpoint.
+Planned:
 
-#### Backend Provider
+```text
+/frontend/services/api.ts
+/frontend/components/foundation/BackendHealthCheck.tsx
+```
 
-List the route and service files that implement it.
+### Backend Provider
+
+```text
+/backend/app/api/health.py
+/backend/app/schemas/health.py
+/backend/app/api/router.py
+/backend/app/main.py
+```
