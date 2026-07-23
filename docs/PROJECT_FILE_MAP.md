@@ -86,11 +86,23 @@ Update this document whenever:
 | `/frontend/app/globals.css` | Integrated | Member 2 | Defines global variables, background, typography, and browser defaults | Root layout and all pages |
 | `/frontend/app/page.tsx` | Integrated | Member 2 | Displays the interactive Mantine foundation check | `MantineFoundationCheck.tsx` |
 | `/frontend/app/page.module.css` | Deprecated | Member 2 | Old temporary page stylesheet removed after the Mantine component was created | Replaced by `MantineFoundationCheck.module.css` |
-| `/frontend/components/foundation/MantineFoundationCheck.tsx` | Integrated | Member 2 | Tests Mantine theme, icons, notifications, modals, and responsive behavior | Providers, theme, Tabler Icons, and CSS Module |
+| `/frontend/components/foundation/MantineFoundationCheck.tsx` | Integrated | Member 2 | Displays design-system checks and hosts the frontend-to-backend health-check interface | Mantine providers, `BackendHealthCheck.tsx`, Tabler Icons, and CSS Modules |
 | `/frontend/components/foundation/MantineFoundationCheck.module.css` | Integrated | Member 2 | Styles the Mantine system-check component | `MantineFoundationCheck.tsx` |
 | `/frontend/theme/colors.ts` | Integrated | Member 2 | Stores the purple palette and application color tokens | `theme.ts`, components, and charts |
 | `/frontend/theme/components.ts` | Integrated | Member 2 | Defines shared Mantine component defaults | `theme.ts` |
 | `/frontend/theme/theme.ts` | Integrated | Member 2 | Combines colors, typography, radius, shadows, and defaults | `providers.tsx` |
+
+# Frontend API Integration Files
+
+| Path | Status | Owner | Purpose | Connected To |
+|---|---|---|---|---|
+| `/frontend/.gitignore` | Integrated | Member 1 | Ignores local frontend environment files while allowing `.env.example` | Frontend environment configuration |
+| `/frontend/.env.example` | Ready | Member 1 | Documents the public backend base URL needed by the frontend | `.env.local` and `services/api.ts` |
+| `/frontend/.env.local` | Local Only | Each member | Stores the developer's local backend URL | `services/api.ts`; excluded by `.gitignore` |
+| `/frontend/types/api.ts` | Integrated | Member 1 | Defines the typed FastAPI health-response structure | `services/api.ts` and `BackendHealthCheck.tsx` |
+| `/frontend/services/api.ts` | Integrated | Member 1 | Builds API URLs, validates configuration and responses, applies a timeout, and handles backend request errors | `.env.local`, `types/api.ts`, and `GET /api/health` |
+| `/frontend/components/foundation/BackendHealthCheck.tsx` | Integrated | Member 1 | Displays idle, loading, success, error, check-again, and retry states for the FastAPI health endpoint | `services/api.ts`, `types/api.ts`, and `MantineFoundationCheck.tsx` |
+| `/frontend/components/foundation/BackendHealthCheck.module.css` | Integrated | Member 2 | Styles the responsive frontend-to-backend health interface | `BackendHealthCheck.tsx` |
 
 # Backend Dependency and Environment Files
 

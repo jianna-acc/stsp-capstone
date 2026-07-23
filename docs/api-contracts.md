@@ -56,10 +56,166 @@ Student-facing:
 We could not read this file. Try uploading a clearer or supported version.
 ```
 
-## Health Check
+### Request
 
-Checks whether the FastAPI backend is running.
+```http
+GET /api/health
+```
 
+### Authentication
+
+Not required.
+
+### Request Body
+
+None.
+
+### Successful Response
+
+Status:
+
+```text
+200 OK
+```
+
+Body:
+
+```json
+{
+  "status": "healthy",
+  "service": "STS Capstone API",
+  "version": "0.1.0",
+  "environment": "development"
+}
+```
+
+### Response Fields
+
+| Field | Type | Description |
+|---|---|---|
+| `status` | `"healthy"` | Confirms that the application is operating normally |
+| `service` | String | Name of the FastAPI service |
+| `version` | String | Current backend application version |
+| `environment` | `"development"`, `"testing"`, or `"production"` | Environment in which the backend is running |
+
+### Frontend Consumer
+
+```text
+/frontend/services/api.ts
+/frontend/types/api.ts
+/frontend/components/foundation/BackendHealthCheck.tsx
+```
+
+### Backend Provider
+
+```text
+/backend/app/main.py
+/backend/app/api/router.py
+/backend/app/api/health.py
+/backend/app/schemas/health.py
+/backend/app/core/config.py
+```
+
+### Environment Configuration
+
+Frontend:
+
+```env
+NEXT_PUBLIC_API_BASE_URL=http://127.0.0.1:8000
+```
+
+Backend:
+
+```env
+FRONTEND_URL=http://localhost:3000
+API_PREFIX=/api
+```
+
+The frontend API service combines:
+
+```text
+NEXT_PUBLIC_API_BASE_URL
+        +
+/api/health
+        =
+http://127.0.0.1:8000/api/health
+```
+
+### Frontend Behavior
+
+The health-check interface supports the following states:
+
+| State | Meaning |
+|---|---|
+| `idle` | No connection test has been performed |
+| `loading` | The frontend is waiting for the backend |
+| `success` | A valid health response was received |
+| `error` | The backend could not be reached or returned invalid data |
+
+A successful request displays:
+
+- Service name
+- Health status
+- Backend version
+- Current environment
+
+A failed connection displays a friendly error and a retry button.
+
+### Frontend Error Messages
+
+| Condition | Message |
+|---|---|
+| API base URL missing | `The frontend API address is not configured.` |
+| Connection unavailable | `The frontend could not connect to the backend.` |
+| Request timeout | `The backend took too long to respond.` |
+| Unexpected response | `The backend returned an unexpected health response.` |
+| HTTP error | Uses the backend detail or HTTP status message |
+
+### CORS Requirement
+
+The FastAPI backend allows requests from:
+
+```text
+http://localhost:3000
+```
+
+This value is loaded from:
+
+```text
+backend/.env
+```
+
+through:
+
+```text
+backend/app/core/config.py
+```
+
+### Automated Backend Test
+
+```text
+/backend/tests/test_health.py
+```
+
+The test verifies:
+
+- `200 OK`
+- Correct health response data
+- Allowed frontend CORS origin
+
+### Manual Integration Test
+
+1. Start FastAPI on port `8000`.
+2. Start Next.js on port `3000`.
+3. Open `http://localhost:3000`.
+4. Select **Check backend**.
+5. Confirm the status changes from **Checking** to **Connected**.
+6. Stop FastAPI.
+7. Select **Check again**.
+8. Confirm the status changes to **Unavailable**.
+9. Restart FastAPI.
+10. Select **Retry connection**.
+11. Confirm the status returns to **Connected**.
 ### Request
 
 ```http

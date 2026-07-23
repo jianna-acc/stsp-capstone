@@ -77,6 +77,39 @@ A completed feature must also handle:
 - [x] Swagger displays the health endpoint
 - [x] `pytest` passes
 
+## Frontend-to-Backend Integration Tests
+
+- [x] Frontend `.env.example` documents the backend base URL
+- [x] Frontend `.env.local` is ignored by Git
+- [x] `NEXT_PUBLIC_API_BASE_URL` loads correctly
+- [x] Frontend API response types compile
+- [x] API service validates the backend health response
+- [x] API service handles missing configuration
+- [x] API service handles connection failures
+- [x] API service includes an eight-second timeout
+- [x] Health-check component displays the idle state
+- [x] Health-check component displays the loading state
+- [x] Health-check component displays the connected state
+- [x] Health-check component displays all response fields
+- [x] Health-check component displays the unavailable state
+- [x] Retry reconnects after FastAPI restarts
+- [x] Check again sends another successful request
+- [x] Backend receives `GET /api/health`
+- [x] Browser receives `200 OK`
+- [x] CORS allows the Next.js frontend origin
+- [x] Component remains usable after a failed request
+- [x] Notification and modal systems continue working
+- [x] Connected interface is responsive
+- [x] Error interface is responsive
+- [x] Browser console has no unexpected errors
+- [x] Frontend terminal has no compilation errors
+- [x] Backend terminal has no traceback
+- [x] `npm run lint` passes
+- [x] `npm run build` passes
+- [x] `npx tsc --noEmit` passes
+- [x] `python -m pip check` passes
+- [x] `python -m pytest -v` passes
+
 ## Frontend and Backend Integration
 
 - [ ] Frontend calls the health endpoint

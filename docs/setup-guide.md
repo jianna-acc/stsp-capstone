@@ -372,6 +372,200 @@ http://localhost:3000
 
 This value comes from `FRONTEND_URL` inside the private backend `.env` file.
 
+# Frontend-to-Backend Development Setup
+
+The frontend communicates with FastAPI through a public backend base URL.
+
+## Frontend Environment File
+
+Create the local frontend environment file from the safe template:
+
+```powershell
+cd frontend
+Copy-Item .env.example .env.local
+```
+
+The safe template may be committed:
+
+```text
+frontend/.env.example
+```
+
+The local configuration must not be committed:
+
+```text
+frontend/.env.local
+```
+
+Current development value:
+
+```env
+NEXT_PUBLIC_API_BASE_URL=http://127.0.0.1:8000
+```
+
+Variables beginning with `NEXT_PUBLIC_` are available to browser code. Never store private credentials in these variables.
+
+## Run the Frontend and Backend Together
+
+Use two separate terminals.
+
+### Terminal 1: FastAPI Backend
+
+From the project root:
+
+```powershell
+cd backend
+.\.venv\Scripts\Activate.ps1
+python -m uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
+```
+
+Confirm the health endpoint:
+
+```text
+http://127.0.0.1:8000/api/health
+```
+
+Expected response:
+
+```json
+{
+  "status": "healthy",
+  "service": "STS Capstone API",
+  "version": "0.1.0",
+  "environment": "development"
+}
+```
+
+### Terminal 2: Next.js Frontend
+
+From the project root:
+
+```powershell
+cd frontend
+npm run dev
+```
+
+Open:
+
+```text
+http://localhost:3000
+```
+
+Use `localhost:3000` during local integration testing because the backend CORS configuration currently allows that exact origin.
+
+## Test the Frontend-to-Backend Connection
+
+On the frontend system-check page:
+
+1. Select **Check backend**.
+2. Confirm the interface briefly displays **Checking**.
+3. Confirm the status changes to **Connected**.
+4. Confirm the service, status, version, and environment are displayed.
+5. Select **Check again** to repeat the request.
+
+## Test Error and Retry Behavior
+
+1. Keep Next.js running.
+2. Stop FastAPI using `Ctrl + C`.
+3. Select **Check again**.
+4. Confirm the status changes to **Unavailable**.
+5. Confirm a friendly error message appears.
+6. Restart FastAPI.
+7. Select **Retry connection**.
+8. Confirm the status returns to **Connected**.
+
+A failed request may appear in red in the browser Network panel while FastAPI is intentionally stopped. This is expected during the error-state test.
+
+## Frontend Validation Commands
+
+From the `frontend` folder:
+
+```powershell
+npm run lint
+npm run build
+npx tsc --noEmit
+```
+
+Expected:
+
+- ESLint passes.
+- The production build succeeds.
+- TypeScript reports no errors.
+
+## Backend Validation Commands
+
+From the `backend` folder with `.venv` active:
+
+```powershell
+python -m pip check
+python -m pytest -v
+```
+
+Expected:
+
+```text
+No broken requirements found.
+```
+
+and:
+
+```text
+2 passed
+```
+
+## Local Integration Troubleshooting
+
+### Frontend cannot reach FastAPI
+
+Confirm FastAPI is running:
+
+```text
+http://127.0.0.1:8000/api/health
+```
+
+Confirm the frontend environment value:
+
+```powershell
+cd frontend
+node --env-file=.env.local -e "console.log(process.env.NEXT_PUBLIC_API_BASE_URL)"
+```
+
+Expected:
+
+```text
+http://127.0.0.1:8000
+```
+
+### CORS error
+
+Confirm the frontend is opened through:
+
+```text
+http://localhost:3000
+```
+
+Confirm the backend setting is:
+
+```env
+FRONTEND_URL=http://localhost:3000
+```
+
+Restart FastAPI after changing backend environment values.
+
+### Next.js does not detect an environment change
+
+Stop and restart the frontend server:
+
+```text
+Ctrl + C
+```
+
+```powershell
+npm run dev
+```
+
+Next.js reads `.env.local` when the development server starts.
+
 ## Current Backend Status
 
 The following backend foundation is already available:
