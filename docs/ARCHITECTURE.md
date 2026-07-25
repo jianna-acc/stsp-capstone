@@ -423,6 +423,33 @@ flowchart TD
     DOCS_FOLDER --> MEMBER5["Member 5: Testing and Documentation"]
 ```
 
+# Repository Tooling and Hosted Supabase Workflow
+
+```mermaid
+flowchart LR
+    PACKAGE["Root package.json"]
+    LOCK["Root package-lock.json"]
+    CLI["Project-scoped Supabase CLI"]
+    CONFIG["supabase/config.toml"]
+    README["supabase/README.md"]
+    MIGRATIONS["supabase/migrations - next database phase"]
+    HOSTED["Hosted Supabase development project - next phase"]
+    TEMP["supabase/.temp - local only after linking"]
+
+    PACKAGE --> CLI
+    LOCK --> CLI
+
+    CLI --> CONFIG
+    README --> CONFIG
+
+    CONFIG -. link next phase .-> HOSTED
+    CONFIG -. future .-> MIGRATIONS
+    MIGRATIONS -. db push .-> HOSTED
+    HOSTED -. local link metadata .-> TEMP
+```
+
+The repository uses a hosted Supabase development project. Docker-based local Supabase services are not part of the current workflow.
+
 # Diagram Update Rules
 
 Update this document when:
@@ -435,3 +462,87 @@ Update this document when:
 6. A module begins reading from Supabase Storage.
 7. Ownership of a module changes.
 8. A major connection is removed.
+
+# Implemented Supabase Client Foundation
+
+```mermaid
+flowchart LR
+    HOSTED["Hosted Supabase Development Project"]
+
+    subgraph FRONTEND["Next.js Frontend"]
+        FRONT_ENV["frontend/.env.local"]
+        FRONT_CONFIG["lib/supabase/config.ts"]
+        BROWSER["lib/supabase/client.ts"]
+        SERVER["lib/supabase/server.ts"]
+        COOKIES["Next.js cookies"]
+    end
+
+    subgraph BACKEND["FastAPI Backend"]
+        BACK_ENV["backend/.env"]
+        SETTINGS["app/core/config.py"]
+        TRUSTED["app/database/supabase_client.py"]
+    end
+
+    FRONT_ENV --> FRONT_CONFIG
+    FRONT_CONFIG --> BROWSER
+    FRONT_CONFIG --> SERVER
+    COOKIES --> SERVER
+
+    BROWSER -. publishable key and RLS .-> HOSTED
+    SERVER -. publishable key and user session .-> HOSTED
+
+    BACK_ENV --> SETTINGS
+    SETTINGS --> TRUSTED
+    TRUSTED -. secret key and trusted access .-> HOSTED
+```
+
+The frontend browser and server clients use the publishable key. The FastAPI client uses the secret key and is restricted to trusted backend code.
+
+# Profiles Database Foundation
+
+```mermaid
+flowchart TD
+    AUTH["Supabase Auth: auth.users"]
+    SIGNUP["Future registration flow"]
+    TRIGGER["on_auth_user_created trigger"]
+    PROFILE["public.profiles"]
+    RLS["Profile Row Level Security"]
+    BROWSER["Authenticated browser client"]
+    SERVER["Trusted FastAPI client"]
+
+    SIGNUP --> AUTH
+    AUTH --> TRIGGER
+    TRIGGER --> PROFILE
+
+    BROWSER --> RLS
+    RLS --> PROFILE
+
+    SERVER --> PROFILE
+```
+
+The browser client may access only the signed-in student's profile through Row Level Security. The trusted FastAPI client may perform approved server-side operations using the backend secret key.
+
+# Generated Supabase Database Types
+
+```mermaid
+flowchart LR
+    MIGRATION["profiles migration"]
+    HOSTED["Hosted Supabase public schema"]
+    CLI["Supabase CLI gen types"]
+    TYPES["frontend/types/database.ts"]
+    BROWSER["Typed browser client"]
+    SERVER["Typed Next.js server client"]
+    FEATURES["Future profile and authentication features"]
+
+    MIGRATION --> HOSTED
+    HOSTED --> CLI
+    CLI --> TYPES
+
+    TYPES --> BROWSER
+    TYPES --> SERVER
+
+    BROWSER --> FEATURES
+    SERVER --> FEATURES
+```
+
+Database migrations remain the source of schema changes. After a migration is applied to the hosted development project, the generated frontend database types must be refreshed and committed with the related code.

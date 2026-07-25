@@ -291,6 +291,230 @@ Regenerate requirements.txt
 Run backend tests
 ```
 
+# Repository-Level Tooling
+
+The repository root contains a separate npm package for development and infrastructure tools.
+
+It is separate from:
+
+```text
+frontend/package.json
+```
+
+The frontend package manages the Next.js application, while the root package manages shared repository tools such as the Supabase CLI.
+
+# Supabase Repository Initialization
+
+The repository stores Supabase configuration under:
+
+```text
+/supabase/
+```
+
+Initialize the configuration from the project root:
+
+```powershell
+npx supabase init
+```
+
+This creates:
+
+```text
+supabase/config.toml
+```
+
+The generated configuration file is committed because it defines shared project settings.
+
+Do not use:
+
+```powershell
+npx supabase init --force
+```
+
+unless the team intentionally wants to replace the current configuration.
+
+The project currently uses a hosted Supabase development project rather than the Docker-based local stack.
+
+Do not run:
+
+```text
+npx supabase start
+npx supabase stop
+npx supabase db reset
+```
+
+The next hosted-project steps are:
+
+```text
+Supabase account
+      ↓
+Hosted development project
+      ↓
+Supabase CLI login
+      ↓
+Repository link
+      ↓
+Version-controlled migrations
+```
+
+## Supabase Client Foundation
+
+The frontend installs:
+
+```text
+@supabase/supabase-js
+@supabase/ssr
+```
+
+Install frontend dependencies using:
+
+```powershell
+cd frontend
+npm install
+```
+
+Frontend client files:
+
+```text
+frontend/lib/supabase/config.ts
+frontend/lib/supabase/client.ts
+frontend/lib/supabase/server.ts
+```
+
+Use the browser client for Client Components:
+
+```typescript
+import { createClient } from "@/lib/supabase/client";
+
+const supabase = createClient();
+```
+
+Use the server client for Server Components, Server Actions, and Route Handlers:
+
+```typescript
+import { createClient } from "@/lib/supabase/server";
+
+const supabase = await createClient();
+```
+
+The backend trusted client is located at:
+
+```text
+backend/app/database/supabase_client.py
+```
+
+Use it inside trusted backend services:
+
+```python
+from app.database.supabase_client import get_supabase_client
+
+supabase = get_supabase_client()
+```
+
+Do not import the backend trusted client into frontend code.
+
+The authentication proxy and cookie-refresh flow will be added during the authentication phase.
+
+## Generate Supabase Database Types
+
+The frontend uses generated TypeScript definitions for the hosted Supabase `public` schema.
+
+Generate or refresh the definitions from the project root:
+
+```powershell
+$generatedTypes = npx supabase gen types --lang typescript --linked --schema public; if ($LASTEXITCODE -ne 0) { throw "Supabase type generation failed." }; (@("// File: /frontend/types/database.ts","// Purpose: Contains TypeScript types generated from the linked hosted Supabase public schema.","") + $generatedTypes) | Set-Content -Path frontend\types\database.ts -Encoding utf8
+```
+
+Generated file:
+
+```text
+frontend/types/database.ts
+```
+
+Regenerate this file whenever an approved database migration changes:
+
+- Tables
+- Columns
+- Database functions
+- Enums
+- Foreign-key relationships
+- Views exposed through the API
+
+Validate the frontend afterward:
+
+```powershell
+cd frontend
+npm run lint
+npm run build
+npx tsc --noEmit
+```
+
+Do not manually edit the generated schema definitions.
+
+## Install Repository Tools
+
+From the project root:
+
+```powershell
+npm install
+```
+
+This reads:
+
+```text
+/package.json
+/package-lock.json
+```
+
+and creates:
+
+```text
+/node_modules/
+```
+
+The generated `node_modules` folder must not be committed.
+
+## Verify the Supabase CLI
+
+Run:
+
+```powershell
+npx supabase --version
+```
+
+or:
+
+```powershell
+npm run supabase:version
+```
+
+Display the available commands:
+
+```powershell
+npx supabase --help
+```
+
+or:
+
+```powershell
+npm run supabase:help
+```
+
+The project uses a locally installed Supabase CLI. Do not install it globally through npm.
+
+## Hosted Supabase Workflow
+
+Docker and the local Supabase stack are not currently used.
+
+Do not run:
+
+```text
+npx supabase start
+npx supabase db start
+```
+
+The project will instead connect the CLI to a hosted Supabase development project for migrations, type generation, and remote configuration.
+
 ## Backend Environment Configuration
 
 Create the private environment file from the safe example:

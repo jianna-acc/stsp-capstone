@@ -13,6 +13,22 @@ Supabase also provides:
 - Database triggers
 - Application data relationships
 
+# Profiles Database Foundation
+
+The first application-owned table is:
+
+```text
+public.profiles
+```
+
+# Generated Database Types
+
+The frontend database definitions are generated from the linked hosted Supabase schema.
+
+```text
+frontend/types/database.ts
+
+
 ## Database Ownership
 
 | Area | Owner |
@@ -184,6 +200,8 @@ The first folder should contain the authenticated user's ID. Storage policies wi
 | `chat_messages` | Stores user and AI messages |
 
 These tables are planned and must not be treated as implemented until their migration files exist.
+
+
 
 ## Database Change Rules
 

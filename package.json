@@ -1,0 +1,14 @@
+{
+  "name": "sts-capstone-project",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Repository-level development tooling for the STS Capstone Project.",
+  "scripts": {
+    "supabase": "supabase",
+    "supabase:version": "supabase --version",
+    "supabase:help": "supabase --help"
+  },
+  "devDependencies": {
+    "supabase": "2.109.1"
+  }
+}

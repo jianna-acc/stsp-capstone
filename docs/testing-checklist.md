@@ -143,6 +143,28 @@ A completed feature must also handle:
 - [ ] Student can log out
 - [ ] Logged-out student returns to login
 
+## Supabase Profiles Foundation Tests
+
+- [x] Hosted Supabase project is linked to the repository
+- [x] Profiles migration passed its dry-run preview
+- [x] Profiles migration was applied successfully
+- [x] Local and remote migration timestamps match
+- [x] A second dry run reports that the remote database is up to date
+- [x] `public.profiles` is reachable through the trusted backend client
+- [x] Row Level Security is enabled
+- [x] Three own-profile policies are present
+- [x] Profile timestamp trigger is present
+- [x] New-user profile trigger is present
+- [x] TypeScript database definitions were generated from the hosted schema
+- [x] Generated definitions contain `public.profiles`
+- [x] Browser Supabase client uses the generated `Database` type
+- [x] Next.js server Supabase client uses the generated `Database` type
+- [x] Frontend lint passes with the generated definitions
+- [x] Frontend production build passes
+- [x] TypeScript validation passes
+- [x] Backend dependency check passes
+- [x] Backend tests pass
+
 ## Bug Report Template
 
 Use this format:
