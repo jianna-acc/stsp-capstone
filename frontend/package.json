@@ -18,6 +18,8 @@
     "@mantine/modals": "^9.4.2",
     "@mantine/notifications": "^9.4.2",
     "@mantine/spotlight": "^9.4.2",
+    "@supabase/ssr": "0.12.3",
+    "@supabase/supabase-js": "2.110.8",
     "@tabler/icons-react": "^3.45.0",
     "dayjs": "^1.11.21",
     "motion": "^12.42.2",
