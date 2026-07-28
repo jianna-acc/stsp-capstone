@@ -1,10 +1,8 @@
 // File: /frontend/app/(auth)/login/page.tsx
-// Purpose: Provides a temporary login destination and confirms
-// successful email verification until the login form is added.
+// Purpose: Displays the password-login interface, confirmation
+// feedback, and safe post-login redirect handling.
 
-import type {
-  Metadata,
-} from "next";
+import type { Metadata } from "next";
 
 import {
   Alert,
@@ -15,39 +13,62 @@ import {
 } from "@mantine/core";
 import {
   IconCircleCheck,
-  IconTool,
 } from "@tabler/icons-react";
+
+import { LoginForm } from "@/features/auth/components/LoginForm";
+import {
+  DEFAULT_AFTER_LOGIN_PATH,
+  getSafeInternalPath,
+} from "@/features/auth/redirects";
 
 export const metadata: Metadata = {
   title:
     "Sign in | STS Capstone Project",
+  description:
+    "Sign in to the STS Capstone Project student platform.",
 };
 
-interface LoginPlaceholderPageProps {
+interface LoginPageProps {
   searchParams: Promise<{
     confirmed?: string | string[];
+    loggedOut?: string | string[];
+    next?: string | string[];
   }>;
 }
 
-function isConfirmationSuccessful(
+function getFirstParameter(
   value: string | string[] | undefined,
-): boolean {
-  if (Array.isArray(value)) {
-    return value.includes("1");
-  }
-
-  return value === "1";
+): string | undefined {
+  return Array.isArray(value)
+    ? value[0]
+    : value;
 }
 
-export default async function LoginPlaceholderPage({
+function hasEnabledFlag(
+  value: string | string[] | undefined,
+): boolean {
+  return Array.isArray(value)
+    ? value.includes("1")
+    : value === "1";
+}
+
+export default async function LoginPage({
   searchParams,
-}: Readonly<LoginPlaceholderPageProps>) {
+}: Readonly<LoginPageProps>) {
   const parameters = await searchParams;
 
-  const confirmed =
-    isConfirmationSuccessful(
-      parameters.confirmed,
-    );
+  const confirmed = hasEnabledFlag(
+    parameters.confirmed,
+  );
+
+  const loggedOut = hasEnabledFlag(
+    parameters.loggedOut,
+  );
+
+  const nextPath = getSafeInternalPath(
+    getFirstParameter(parameters.next),
+    DEFAULT_AFTER_LOGIN_PATH,
+  );
 
   return (
     <Stack gap="xl">
@@ -65,9 +86,8 @@ export default async function LoginPlaceholderPage({
         </Title>
 
         <Text c="dimmed">
-          The password-login form will be
-          connected in the next
-          authentication checkpoint.
+          Enter your student account
+          credentials to continue.
         </Text>
       </Stack>
 
@@ -80,21 +100,25 @@ export default async function LoginPlaceholderPage({
           title="Email confirmed"
         >
           Your email was verified
-          successfully. Your account is
-          ready for sign-in.
+          successfully. You may now sign
+          in.
         </Alert>
       )}
 
-      <Alert
-        color="violet"
-        icon={<IconTool size={18} />}
-        title="Login foundation in progress"
-      >
-        The route and authentication
-        layout are ready. The complete
-        password-login form will be added
-        next.
-      </Alert>
+      {loggedOut && (
+        <Alert
+          color="green"
+          icon={
+            <IconCircleCheck size={18} />
+          }
+          title="Signed out"
+        >
+          Your session was ended
+          successfully.
+        </Alert>
+      )}
+
+      <LoginForm nextPath={nextPath} />
 
       <Text
         c="dimmed"
