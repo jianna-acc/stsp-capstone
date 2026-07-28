@@ -1,0 +1,139 @@
+/* File: /frontend/app/(auth)/auth-layout.module.css */
+/* Purpose: Styles the shared public authentication workspace. */
+
+.page {
+  min-height: 100vh;
+  display: grid;
+  grid-template-columns:
+    minmax(320px, 0.85fr)
+    minmax(0, 1.15fr);
+  background: var(--app-background);
+}
+
+.brandPanel {
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  padding: clamp(40px, 7vw, 96px);
+  color: #ffffff;
+  background:
+    radial-gradient(
+      circle at 15% 15%,
+      rgba(255, 255, 255, 0.18),
+      transparent 34%
+    ),
+    linear-gradient(
+      145deg,
+      #5b21b6 0%,
+      #7c3aed 52%,
+      #8b5cf6 100%
+    );
+}
+
+.brandPanel::after {
+  position: absolute;
+  right: -120px;
+  bottom: -160px;
+  width: 360px;
+  height: 360px;
+  border: 1px solid
+    rgba(255, 255, 255, 0.18);
+  border-radius: 50%;
+  content: "";
+}
+
+.brandContent {
+  position: relative;
+  z-index: 1;
+  width: min(100%, 520px);
+}
+
+.brandLabel {
+  width: fit-content;
+  padding: 7px 12px;
+  border: 1px solid
+    rgba(255, 255, 255, 0.28);
+  border-radius: 999px;
+  color: rgba(255, 255, 255, 0.9);
+  background:
+    rgba(255, 255, 255, 0.1);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.brandTitle {
+  max-width: 520px;
+  color: #ffffff;
+  font-size: clamp(38px, 5vw, 64px);
+  line-height: 1.05;
+}
+
+.brandDescription {
+  max-width: 500px;
+  color: rgba(255, 255, 255, 0.78);
+  font-size: 17px;
+  line-height: 1.7;
+}
+
+.featureIcon {
+  flex: 0 0 auto;
+  background:
+    rgba(255, 255, 255, 0.14);
+}
+
+.featureTitle {
+  color: #ffffff;
+  font-weight: 700;
+}
+
+.featureText {
+  color: rgba(255, 255, 255, 0.72);
+  line-height: 1.55;
+}
+
+.formPanel {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: clamp(24px, 6vw, 72px);
+}
+
+.formCard {
+  width: min(100%, 540px);
+  padding: clamp(24px, 4vw, 44px);
+  border: 1px solid var(--app-border);
+  border-radius: 24px;
+  background: var(--app-card);
+  box-shadow:
+    0 18px 60px rgba(24, 24, 27, 0.08);
+}
+
+@media (max-width: 900px) {
+  .page {
+    grid-template-columns: 1fr;
+  }
+
+  .brandPanel {
+    padding: 36px 24px;
+  }
+
+  .brandTitle {
+    font-size: 38px;
+  }
+
+  .brandDescription {
+    font-size: 16px;
+  }
+
+  .formPanel {
+    align-items: flex-start;
+    padding: 24px 16px 48px;
+  }
+
+  .formCard {
+    border-radius: 20px;
+  }
+}

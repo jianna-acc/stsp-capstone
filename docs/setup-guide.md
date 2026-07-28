@@ -827,3 +827,45 @@ The following safe example files may be committed:
 frontend/.env.example
 backend/.env.example
 ```
+
+## Registration Foundation
+
+Registration files:
+
+```text
+frontend/features/auth/types.ts
+frontend/features/auth/validation.ts
+frontend/features/auth/actions/register.ts
+frontend/features/auth/components/RegisterForm.tsx
+frontend/app/(auth)/register/page.tsx
+frontend/app/(auth)/register/check-email/page.tsx
+```
+
+The registration action uses:
+
+```text
+NEXT_PUBLIC_SITE_URL
+```
+
+Local value:
+
+```env
+NEXT_PUBLIC_SITE_URL=http://localhost:3000
+```
+
+The action builds the confirmation destination:
+
+```text
+http://localhost:3000/auth/confirm
+```
+
+This URL must also exist in the Supabase Auth redirect allow list.
+
+Test registration validation:
+
+1. Start the frontend.
+2. Open `/register`.
+3. Submit an empty form.
+4. Confirm all expected field errors appear.
+5. Test invalid email and password combinations.
+6. Do not submit a valid registration until `/auth/confirm` exists.

@@ -1,0 +1,20 @@
+/* File: /frontend/features/auth/components/RegisterForm.module.css */
+/* Purpose: Styles registration-specific guidance and validation feedback. */
+
+.form {
+  width: 100%;
+}
+
+.passwordHint {
+  margin-top: -4px;
+  color: var(--app-text-secondary);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.termsError {
+  margin-top: -8px;
+  color: var(--mantine-color-red-7);
+  font-size: 13px;
+  line-height: 1.5;
+}

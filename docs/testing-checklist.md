@@ -165,6 +165,54 @@ A completed feature must also handle:
 - [x] Backend dependency check passes
 - [x] Backend tests pass
 
+## Authentication Proxy Foundation Tests
+
+- [x] Supabase Site URL is configured for `http://localhost:3000`
+- [x] Email-confirmation redirect URL is configured
+- [x] Email provider is enabled
+- [x] Email confirmation is enabled
+- [x] Authentication architecture is documented
+- [x] Next.js root `proxy.ts` exists
+- [x] Supabase session utility exists
+- [x] Proxy uses the publishable Supabase configuration
+- [x] Proxy uses the generated `Database` type
+- [x] Proxy validates sessions using `auth.getClaims()`
+- [x] Proxy does not use the backend secret key
+- [x] Request cookies are synchronized
+- [x] Response cookies are synchronized
+- [x] Static assets are excluded by the matcher
+- [x] Frontend lint passes
+- [x] TypeScript validation passes
+- [x] Frontend production build passes
+- [x] Development page loads without a Proxy error
+- [x] Repeated refreshes do not create a redirect loop
+- [x] Browser console has no unexpected errors
+
+## Registration Foundation Tests
+
+- [x] Public authentication layout is responsive
+- [x] Registration route loads
+- [x] Check-email route loads
+- [x] Login placeholder route loads
+- [x] Registration form uses a Server Action
+- [x] Registration form uses `useActionState`
+- [x] Full name is validated
+- [x] Email format is validated
+- [x] Password minimum length is validated
+- [x] Password letter requirement is validated
+- [x] Password number requirement is validated
+- [x] Password confirmation is validated
+- [x] Platform-rules acceptance is validated
+- [x] Passwords are excluded from action state
+- [x] Registration metadata uses `full_name`
+- [x] Email redirect points to `/auth/confirm`
+- [x] Invalid registration does not create a Supabase user
+- [x] Frontend lint passes
+- [x] TypeScript validation passes
+- [x] Frontend production build passes
+- [x] Browser console has no unexpected errors
+- [x] VS Code reports 0 problems
+
 ## Bug Report Template
 
 Use this format:

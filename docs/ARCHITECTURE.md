@@ -546,3 +546,58 @@ flowchart LR
 ```
 
 Database migrations remain the source of schema changes. After a migration is applied to the hosted development project, the generated frontend database types must be refreshed and committed with the related code.
+
+# Authentication Session Proxy Foundation
+
+```mermaid
+sequenceDiagram
+    actor Browser
+    participant Proxy as frontend/proxy.ts
+    participant Session as lib/supabase/proxy.ts
+    participant Auth as Supabase Auth
+    participant Server as Next.js Server Components
+
+    Browser->>Proxy: Sends application request with cookies
+    Proxy->>Session: Calls updateSession(request)
+    Session->>Auth: Calls auth.getClaims()
+    Auth-->>Session: Returns validated claims or signed-out state
+    Session->>Session: Updates request cookies when refreshed
+    Session-->>Browser: Writes refreshed response cookies
+    Session-->>Server: Passes synchronized request cookies
+```
+
+The session Proxy currently refreshes and synchronizes Supabase authentication cookies. Protected-route redirects will be added after the login and registration actions exist.
+
+# Registration Foundation
+
+```mermaid
+sequenceDiagram
+    actor Student
+    participant Form as RegisterForm.tsx
+    participant Action as registerAction
+    participant Validation as validation.ts
+    participant ServerClient as Supabase server client
+    participant Auth as Supabase Auth
+    participant Trigger as on_auth_user_created
+    participant Profile as public.profiles
+    participant CheckEmail as /register/check-email
+
+    Student->>Form: Submits registration details
+    Form->>Action: Sends FormData
+    Action->>Validation: Validates fields
+
+    alt Invalid input
+        Validation-->>Action: Returns field errors
+        Action-->>Form: Displays expected errors
+    else Valid input
+        Validation-->>Action: Returns normalized input
+        Action->>ServerClient: Creates cookie-aware client
+        ServerClient->>Auth: Calls signUp()
+        Auth->>Trigger: Inserts auth.users row
+        Trigger->>Profile: Creates student profile
+        Action-->>CheckEmail: Redirects after successful signup
+    end
+```
+
+The registration Server Action never returns password values through browser-visible action state. A valid registration will be tested only after the email-confirmation callback route is implemented.
+
