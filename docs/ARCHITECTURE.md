@@ -601,3 +601,113 @@ sequenceDiagram
 
 The registration Server Action never returns password values through browser-visible action state. A valid registration will be tested only after the email-confirmation callback route is implemented.
 
+## Implemented Phase 2 Authentication and Learning-Profile Flow
+
+```mermaid
+flowchart TD
+    USER["Student"]
+
+    AUTH["Supabase Authentication"]
+    PROXY["Next.js Proxy and Session Refresh"]
+    LOGIN["Registration and Login"]
+    ONBOARDING["Six-Step Onboarding"]
+    PROFILE["Student Profile"]
+    PREFERENCES["Learning Preferences"]
+    SUBJECTS["Subjects and Confidence"]
+    AVAILABILITY["Study Availability"]
+    COMPLETE["Controlled Completion RPC"]
+    DASHBOARD["Protected Dashboard"]
+    PROFILE_PAGE["Protected Profile Page"]
+
+    DB_PROFILES[("public.profiles")]
+    DB_LEARNING[("public.learning_profiles")]
+    DB_SUBJECTS[("public.learning_profile_subjects")]
+    DB_AVAILABILITY[("public.study_availability")]
+
+    USER --> LOGIN
+    LOGIN --> AUTH
+    AUTH --> PROXY
+
+    PROXY --> ONBOARDING
+    ONBOARDING --> PROFILE
+    ONBOARDING --> PREFERENCES
+    ONBOARDING --> SUBJECTS
+    ONBOARDING --> AVAILABILITY
+
+    PROFILE --> DB_PROFILES
+    PREFERENCES --> DB_LEARNING
+    SUBJECTS --> DB_SUBJECTS
+    AVAILABILITY --> DB_AVAILABILITY
+
+    ONBOARDING --> COMPLETE
+    COMPLETE --> DB_PROFILES
+
+    COMPLETE -->|Complete| DASHBOARD
+    COMPLETE -->|Incomplete| ONBOARDING
+
+    DASHBOARD --> PROFILE_PAGE
+    PROFILE_PAGE --> ONBOARDING
+
+    
+Also mark all Phase 2 database connections as **Implemented**, not `Planned`.
+
+---
+
+# Step 11 — Update `docs/database.md`
+
+Add:
+
+```markdown
+## Learning-Profile Tables
+
+### `public.learning_profiles`
+
+Stores one general learning-profile row for each student.
+
+Important fields:
+
+- `preferred_study_duration_minutes`
+- `preferred_study_times`
+- `common_study_challenges`
+- `estimated_task_completion_minutes`
+- `preferred_learning_methods`
+
+### `public.learning_profile_subjects`
+
+Stores:
+
+- Strong subjects
+- Weak subjects
+- Confidence values from 1 to 5
+
+Each student may store multiple subject records.
+
+### `public.study_availability`
+
+Stores recurring weekly study periods:
+
+- ISO weekday from 1 to 7
+- Start time
+- End time
+
+Overlapping periods on the same weekday are rejected.
+
+## Onboarding Completion
+
+`public.complete_learning_profile_onboarding()` verifies that the student has:
+
+- A complete student profile
+- General study preferences
+- Common study challenges
+- At least one strong subject
+- At least one weak subject
+- At least one available study period
+
+Only after validation does it set:
+
+- `onboarding_completed = true`
+- `onboarding_completed_at`
+- `onboarding_current_step = 6`
+
+Database triggers reset completion when required learning-profile data is edited.
+

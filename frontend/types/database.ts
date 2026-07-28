@@ -1,7 +1,4 @@
-﻿// File: /frontend/types/database.ts
-// Purpose: Contains TypeScript types generated from the linked hosted Supabase public schema.
-
-export type Json =
+﻿export type Json =
   | string
   | number
   | boolean
@@ -17,6 +14,85 @@ export type Database = {
   }
   public: {
     Tables: {
+      learning_profile_subjects: {
+        Row: {
+          confidence_level: number
+          created_at: string
+          id: string
+          subject_name: string
+          subject_strength: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          confidence_level: number
+          created_at?: string
+          id?: string
+          subject_name: string
+          subject_strength: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          confidence_level?: number
+          created_at?: string
+          id?: string
+          subject_name?: string
+          subject_strength?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "learning_profile_subjects_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      learning_profiles: {
+        Row: {
+          common_study_challenges: string[]
+          created_at: string
+          estimated_task_completion_minutes: number | null
+          preferred_learning_methods: string[]
+          preferred_study_duration_minutes: number | null
+          preferred_study_times: string[]
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          common_study_challenges?: string[]
+          created_at?: string
+          estimated_task_completion_minutes?: number | null
+          preferred_learning_methods?: string[]
+          preferred_study_duration_minutes?: number | null
+          preferred_study_times?: string[]
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          common_study_challenges?: string[]
+          created_at?: string
+          estimated_task_completion_minutes?: number | null
+          preferred_learning_methods?: string[]
+          preferred_study_duration_minutes?: number | null
+          preferred_study_times?: string[]
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "learning_profiles_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -24,7 +100,13 @@ export type Database = {
           full_name: string
           id: string
           onboarding_completed: boolean
+          onboarding_completed_at: string | null
+          onboarding_current_step: number
+          program_name: string | null
+          school_name: string | null
+          timezone: string
           updated_at: string
+          year_level: string | null
         }
         Insert: {
           avatar_url?: string | null
@@ -32,7 +114,13 @@ export type Database = {
           full_name?: string
           id: string
           onboarding_completed?: boolean
+          onboarding_completed_at?: string | null
+          onboarding_current_step?: number
+          program_name?: string | null
+          school_name?: string | null
+          timezone?: string
           updated_at?: string
+          year_level?: string | null
         }
         Update: {
           avatar_url?: string | null
@@ -40,16 +128,68 @@ export type Database = {
           full_name?: string
           id?: string
           onboarding_completed?: boolean
+          onboarding_completed_at?: string | null
+          onboarding_current_step?: number
+          program_name?: string | null
+          school_name?: string | null
+          timezone?: string
           updated_at?: string
+          year_level?: string | null
         }
         Relationships: []
+      }
+      study_availability: {
+        Row: {
+          created_at: string
+          day_of_week: number
+          end_time: string
+          id: string
+          start_time: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          day_of_week: number
+          end_time: string
+          id?: string
+          start_time: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          day_of_week?: number
+          end_time?: string
+          id?: string
+          start_time?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "study_availability_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      complete_learning_profile_onboarding: { Args: never; Returns: boolean }
+      replace_learning_profile_subjects: {
+        Args: { p_subjects: Json }
+        Returns: undefined
+      }
+      replace_study_availability: {
+        Args: { p_slots: Json }
+        Returns: undefined
+      }
     }
     Enums: {
       [_ in never]: never
