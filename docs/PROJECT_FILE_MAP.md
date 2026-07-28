@@ -268,3 +268,11 @@ Coordinate with the team before making major changes to:
 - `/supabase/migrations/`
 - `/docs/PROJECT_FILE_MAP.md`
 - `/docs/ARCHITECTURE.md`
+
+# Authentication Foundation Files
+
+| Path | Status | Owner | Purpose | Connected To |
+|---|---|---|---|---|
+| `/docs/authentication.md` | Ready | Member 5 | Documents authentication routes, flows, security rules, and implementation phases | Supabase Auth, profiles table, frontend routes, and project architecture |
+| `/frontend/proxy.ts` | Ready | Member 1 | Runs the authentication session-refresh process for matched Next.js requests | `lib/supabase/proxy.ts` and Next.js request lifecycle |
+| `/frontend/lib/supabase/proxy.ts` | Ready | Member 1 | Validates authentication claims and synchronizes refreshed cookies between requests and responses | Supabase Auth, public configuration, generated database types, and root Proxy |
