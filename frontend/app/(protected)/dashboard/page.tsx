@@ -1,90 +1,65 @@
 // File: /frontend/app/(protected)/dashboard/page.tsx
-// Purpose: Provides a temporary authenticated dashboard for
-// verifying login, logout, session persistence, and profile loading.
+// Purpose: Displays the authenticated student dashboard after
+// the required learning-profile onboarding has been completed.
 
-import type { Metadata } from "next";
-import { redirect } from "next/navigation";
+import type {
+  Metadata,
+} from "next";
 
 import {
-  Alert,
+  Anchor,
   Badge,
   Button,
   Container,
   Group,
   Paper,
+  SimpleGrid,
   Stack,
   Text,
   ThemeIcon,
   Title,
 } from "@mantine/core";
 import {
-  IconAlertCircle,
+  IconBook,
+  IconCalendarTime,
   IconCircleCheck,
+  IconClock,
   IconLogout,
   IconUserCircle,
 } from "@tabler/icons-react";
 
-import { logoutAction } from "@/features/auth/actions/logout";
-import { createClient } from "@/lib/supabase/server";
+import {
+  logoutAction,
+} from "@/features/auth/actions/logout";
+import {
+  formatDuration,
+} from "@/features/learning-profile/display";
+import {
+  requireCompletedLearningProfile,
+} from "@/features/learning-profile/server/guards";
 
 export const metadata: Metadata = {
-  title: "Dashboard | STS Capstone Project",
-  description: "Authenticated student dashboard.",
+  title:
+    "Dashboard | STS Capstone Project",
+  description:
+    "Authenticated student dashboard.",
 };
 
-interface DashboardPageProps {
-  searchParams: Promise<{
-    logoutError?: string | string[];
-  }>;
-}
+export default async function DashboardPage() {
+  const snapshot =
+    await requireCompletedLearningProfile();
 
-function hasEnabledFlag(
-  value: string | string[] | undefined,
-): boolean {
-  return Array.isArray(value)
-    ? value.includes("1")
-    : value === "1";
-}
-
-export default async function DashboardPage({
-  searchParams,
-}: Readonly<DashboardPageProps>) {
-  const parameters = await searchParams;
-
-  const logoutError = hasEnabledFlag(
-    parameters.logoutError,
-  );
-
-  const supabase = await createClient();
-
-  const { data: claimsData } =
-    await supabase.auth.getClaims();
-
-  const userId = claimsData?.claims?.sub;
-
-  if (!userId) {
-    redirect("/login?next=%2Fdashboard");
-  }
-
-  const {
-    data: profile,
-    error: profileError,
-  } = await supabase
-    .from("profiles")
-    .select("full_name, onboarding_completed")
-    .eq("id", userId)
-    .maybeSingle();
+  const learningProfile =
+    snapshot.learningProfile;
 
   const displayName =
-    profile?.full_name?.trim() || "Student";
-
-  const onboardingCompleted =
-    profile?.onboarding_completed ?? false;
+    snapshot.profile.full_name?.trim() ||
+    "Student";
 
   return (
     <Container
-      py={{ base: 32, sm: 64 }}
-      size="md"
+      py={{ base: 32, sm: 56 }}
+      size="lg"
     >
       <Stack gap="xl">
         <Group
@@ -97,7 +72,7 @@ export default async function DashboardPage({
               fw={700}
               size="sm"
             >
-              Protected application
+              Student dashboard
             </Text>
 
             <Title order={1}>
@@ -105,7 +80,8 @@ export default async function DashboardPage({
             </Title>
 
             <Text c="dimmed">
-              Your authenticated session is working.
+              Your account and personalized
+              learning profile are ready.
             </Text>
           </Stack>
 
@@ -123,108 +99,204 @@ export default async function DashboardPage({
           </form>
         </Group>
 
-        {logoutError && (
-          <Alert
-            color="red"
-            icon={
-              <IconAlertCircle size={18} />
-            }
-            title="Sign-out was unsuccessful"
-          >
-            The application could not end your session.
-            Try signing out again.
-          </Alert>
-        )}
-
-        {profileError && (
-          <Alert
-            color="red"
-            icon={
-              <IconAlertCircle size={18} />
-            }
-            title="Profile could not be loaded"
-          >
-            Your authentication session is valid, but the
-            student profile record could not be read.
-          </Alert>
-        )}
-
         <Paper
-          p="xl"
+          p={{ base: "lg", sm: "xl" }}
           radius="lg"
           shadow="sm"
           withBorder
         >
-          <Stack gap="lg">
+          <Group
+            align="flex-start"
+            justify="space-between"
+          >
             <Group
               align="flex-start"
-              justify="space-between"
+              wrap="nowrap"
             >
-              <Group
-                align="flex-start"
-                wrap="nowrap"
-              >
-                <ThemeIcon
-                  color="violet"
-                  radius="md"
-                  size={48}
-                  variant="light"
-                >
-                  <IconUserCircle size={26} />
-                </ThemeIcon>
-
-                <Stack gap={4}>
-                  <Text fw={700}>
-                    Student profile
-                  </Text>
-
-                  <Text
-                    c="dimmed"
-                    size="sm"
-                  >
-                    Account profile connected to your
-                    Supabase user.
-                  </Text>
-                </Stack>
-              </Group>
-
-              <Badge
-                color={
-                  onboardingCompleted
-                    ? "green"
-                    : "yellow"
-                }
+              <ThemeIcon
+                color="green"
+                radius="md"
+                size={48}
                 variant="light"
               >
-                {onboardingCompleted
-                  ? "Onboarding complete"
-                  : "Onboarding pending"}
-              </Badge>
+                <IconCircleCheck
+                  size={26}
+                />
+              </ThemeIcon>
+
+              <Stack gap={3}>
+                <Text fw={700}>
+                  Learning profile complete
+                </Text>
+
+                <Text
+                  c="dimmed"
+                  size="sm"
+                >
+                  Your study preferences,
+                  challenges, subjects, and
+                  availability have been
+                  saved.
+                </Text>
+              </Stack>
             </Group>
 
-            {onboardingCompleted ? (
-              <Alert
-                color="green"
-                icon={
-                  <IconCircleCheck size={18} />
-                }
-                title="Learning profile complete"
-              >
-                Your saved learning profile can be used by
-                future study-planning features.
-              </Alert>
-            ) : (
-              <Alert
+            <Badge
+              color="green"
+              variant="light"
+            >
+              Onboarding complete
+            </Badge>
+          </Group>
+        </Paper>
+
+        <SimpleGrid
+          cols={{
+            base: 1,
+            sm: 2,
+            lg: 4,
+          }}
+          spacing="lg"
+        >
+          <Paper
+            p="lg"
+            radius="lg"
+            withBorder
+          >
+            <Stack gap="sm">
+              <ThemeIcon
                 color="violet"
-                icon={
-                  <IconUserCircle size={18} />
-                }
-                title="Learning profile required"
+                radius="md"
+                variant="light"
               >
-                The learning-profile questionnaire will be
-                added in the next Phase 2 checkpoint.
-              </Alert>
-            )}
+                <IconClock size={19} />
+              </ThemeIcon>
+
+              <Text
+                c="dimmed"
+                size="sm"
+              >
+                Preferred session
+              </Text>
+
+              <Text fw={700}>
+                {formatDuration(
+                  learningProfile
+                    ?.preferred_study_duration_minutes ??
+                    null,
+                )}
+              </Text>
+            </Stack>
+          </Paper>
+
+          <Paper
+            p="lg"
+            radius="lg"
+            withBorder
+          >
+            <Stack gap="sm">
+              <ThemeIcon
+                color="violet"
+                radius="md"
+                variant="light"
+              >
+                <IconBook size={19} />
+              </ThemeIcon>
+
+              <Text
+                c="dimmed"
+                size="sm"
+              >
+                Saved subjects
+              </Text>
+
+              <Text fw={700}>
+                {snapshot.subjects.length}
+              </Text>
+            </Stack>
+          </Paper>
+
+          <Paper
+            p="lg"
+            radius="lg"
+            withBorder
+          >
+            <Stack gap="sm">
+              <ThemeIcon
+                color="violet"
+                radius="md"
+                variant="light"
+              >
+                <IconCalendarTime
+                  size={19}
+                />
+              </ThemeIcon>
+
+              <Text
+                c="dimmed"
+                size="sm"
+              >
+                Available periods
+              </Text>
+
+              <Text fw={700}>
+                {
+                  snapshot.availability
+                    .length
+                }
+              </Text>
+            </Stack>
+          </Paper>
+
+          <Paper
+            p="lg"
+            radius="lg"
+            withBorder
+          >
+            <Stack gap="sm">
+              <ThemeIcon
+                color="violet"
+                radius="md"
+                variant="light"
+              >
+                <IconUserCircle
+                  size={19}
+                />
+              </ThemeIcon>
+
+              <Text
+                c="dimmed"
+                size="sm"
+              >
+                Student profile
+              </Text>
+
+              <Anchor
+                fw={700}
+                href="/profile"
+              >
+                View profile
+              </Anchor>
+            </Stack>
+          </Paper>
+        </SimpleGrid>
+
+        <Paper
+          p={{ base: "lg", sm: "xl" }}
+          radius="lg"
+          withBorder
+        >
+          <Stack gap="sm">
+            <Title order={2}>
+              Phase 2 foundation ready
+            </Title>
+
+            <Text c="dimmed">
+              Future dashboard, study-plan,
+              task, reviewer, quiz, and AI
+              features can now use the saved
+              learning-profile information.
+            </Text>
           </Stack>
         </Paper>
       </Stack>

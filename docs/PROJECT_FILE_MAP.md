@@ -276,3 +276,22 @@ Coordinate with the team before making major changes to:
 | `/docs/authentication.md` | Ready | Member 5 | Documents authentication routes, flows, security rules, and implementation phases | Supabase Auth, profiles table, frontend routes, and project architecture |
 | `/frontend/proxy.ts` | Ready | Member 1 | Runs the authentication session-refresh process for matched Next.js requests | `lib/supabase/proxy.ts` and Next.js request lifecycle |
 | `/frontend/lib/supabase/proxy.ts` | Ready | Member 1 | Validates authentication claims and synchronizes refreshed cookies between requests and responses | Supabase Auth, public configuration, generated database types, and root Proxy |
+
+# Phase 2 Files (Onboarding and Learning Profile)
+| Path | Status | Owner | Purpose | Connections |
+|---|---|---|---|---|
+| `/frontend/features/learning-profile/constants.ts` | Integrated | Member 2 | Defines questionnaire options and onboarding steps | Validation, actions, forms, routing |
+| `/frontend/features/learning-profile/types.ts` | Integrated | Member 2 | Defines learning-profile input and snapshot types | Generated database types, queries, mutations |
+| `/frontend/features/learning-profile/validation.ts` | Integrated | Member 2 | Validates student-profile and questionnaire values | Server mutations and Server Actions |
+| `/frontend/features/learning-profile/progress.ts` | Integrated | Member 2 | Calculates onboarding progress from saved records | Onboarding shell and resume routing |
+| `/frontend/features/learning-profile/routing.ts` | Integrated | Member 2 | Maps onboarding steps to application routes | Onboarding entry route |
+| `/frontend/features/learning-profile/display.ts` | Integrated | Member 2 | Formats stored profile values for display | Review, dashboard, profile page |
+| `/frontend/features/learning-profile/server/auth.ts` | Integrated | Member 2 | Retrieves the verified authenticated user ID | Queries and mutations |
+| `/frontend/features/learning-profile/server/queries.ts` | Integrated | Member 2 | Loads the complete onboarding snapshot | Onboarding pages, dashboard, profile |
+| `/frontend/features/learning-profile/server/mutations.ts` | Integrated | Member 2 | Saves learning-profile sections and completes onboarding | Server Actions and Supabase RPCs |
+| `/frontend/features/learning-profile/server/guards.ts` | Integrated | Member 2 | Protects pages requiring completed onboarding | Dashboard and profile |
+| `/frontend/app/(protected)/onboarding/` | Integrated | Member 2 | Contains the six-step learning-profile onboarding flow | Supabase profile tables and Server Actions |
+| `/frontend/app/(protected)/profile/page.tsx` | Integrated | Member 2 | Displays and manages the completed learning profile | Dashboard and onboarding edit routes |
+| `/supabase/migrations/20260728070745_create_learning_profile_foundation.sql` | Integrated | Member 4 | Creates learning-profile tables and completion function | Supabase Auth and frontend database types |
+| `/supabase/migrations/20260728074910_create_learning_profile_data_functions.sql` | Integrated | Member 4 | Creates atomic replacement functions and reset triggers | Subject and availability mutations |
+| `/supabase/migrations/<actual_timestamp>_fix_replace_study_availability.sql` | Integrated | Member 4 | Corrects recurring availability JSON parsing | Availability RPC |

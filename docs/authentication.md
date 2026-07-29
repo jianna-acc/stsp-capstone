@@ -173,3 +173,31 @@ Phase 1H.3: Shared validation and action-state types complete
 Phase 1H.4: Registration Server Action and interface complete
 Phase 1H.5: Email-confirmation callback pending
 Phase 1H.6: Password login pending
+
+# Post-Login Learning-Profile Gate
+
+Authenticated users are divided into two states:
+
+1. Authenticated with incomplete onboarding
+2. Authenticated with completed onboarding
+
+Incomplete users are redirected to `/onboarding`.
+
+Completed users may access:
+
+- `/dashboard`
+- `/profile`
+- Future protected application modules
+
+Authentication confirms the student's identity. The onboarding completion check determines whether the student's learning profile is ready for use by the application.
+
+## Protected Route Behavior
+
+| Route | Authentication Required | Completed Onboarding Required |
+|---|---:|---:|
+| `/register` | No | No |
+| `/login` | No | No |
+| `/onboarding` | Yes | No |
+| `/onboarding/*` | Yes | No |
+| `/dashboard` | Yes | Yes |
+| `/profile` | Yes | Yes |

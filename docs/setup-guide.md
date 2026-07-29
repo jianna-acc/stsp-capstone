@@ -869,3 +869,20 @@ Test registration validation:
 4. Confirm all expected field errors appear.
 5. Test invalid email and password combinations.
 6. Do not submit a valid registration until `/auth/confirm` exists.
+
+## Applying Phase 2 Supabase Migrations
+
+From the repository root:
+
+```powershell
+npx supabase migration list
+npx supabase db push --dry-run
+npx supabase db push
+
+After applying migrations, regenerate TypeScript database types:
+npx supabase gen types typescript `
+  --linked `
+  --schema public |
+Set-Content `
+  -LiteralPath ".\frontend\types\database.ts" `
+  -Encoding utf8
