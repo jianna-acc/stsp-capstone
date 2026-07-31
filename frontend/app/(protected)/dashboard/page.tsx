@@ -1,10 +1,8 @@
 // File: /frontend/app/(protected)/dashboard/page.tsx
 // Purpose: Displays the authenticated student dashboard after
-// the required learning-profile onboarding has been completed.
+// onboarding and connects the dashboard to Phase 3 subject management.
 
-import type {
-  Metadata,
-} from "next";
+import type { Metadata } from "next";
 
 import {
   Anchor,
@@ -20,23 +18,22 @@ import {
   Title,
 } from "@mantine/core";
 import {
-  IconBook,
+  IconBooks,
   IconCalendarTime,
   IconCircleCheck,
   IconClock,
-  IconLogout,
   IconUserCircle,
 } from "@tabler/icons-react";
 
-import {
-  logoutAction,
-} from "@/features/auth/actions/logout";
 import {
   formatDuration,
 } from "@/features/learning-profile/display";
 import {
   requireCompletedLearningProfile,
 } from "@/features/learning-profile/server/guards";
+import {
+  getSubjects,
+} from "@/features/subjects/queries";
 
 export const metadata: Metadata = {
   title:
@@ -46,8 +43,17 @@ export const metadata: Metadata = {
 };
 
 export default async function DashboardPage() {
-  const snapshot =
-    await requireCompletedLearningProfile();
+  /*
+   * Load the learning-profile snapshot and Phase 3 academic
+   * subjects concurrently.
+   */
+  const [
+    snapshot,
+    academicSubjects,
+  ] = await Promise.all([
+    requireCompletedLearningProfile(),
+    getSubjects(),
+  ]);
 
   const learningProfile =
     snapshot.learningProfile;
@@ -62,42 +68,24 @@ export default async function DashboardPage() {
       size="lg"
     >
       <Stack gap="xl">
-        <Group
-          align="flex-start"
-          justify="space-between"
-        >
-          <Stack gap={4}>
-            <Text
-              c="violet.7"
-              fw={700}
-              size="sm"
-            >
-              Student dashboard
-            </Text>
+        <Stack gap={4}>
+          <Text
+            c="violet.7"
+            fw={700}
+            size="sm"
+          >
+            Student dashboard
+          </Text>
 
-            <Title order={1}>
-              Welcome, {displayName}
-            </Title>
+          <Title order={1}>
+            Welcome, {displayName}
+          </Title>
 
-            <Text c="dimmed">
-              Your account and personalized
-              learning profile are ready.
-            </Text>
-          </Stack>
-
-          <form action={logoutAction}>
-            <Button
-              color="gray"
-              leftSection={
-                <IconLogout size={18} />
-              }
-              type="submit"
-              variant="light"
-            >
-              Sign out
-            </Button>
-          </form>
-        </Group>
+          <Text c="dimmed">
+            Your account and personalized
+            learning profile are ready.
+          </Text>
+        </Stack>
 
         <Paper
           p={{ base: "lg", sm: "xl" }}
@@ -135,8 +123,7 @@ export default async function DashboardPage() {
                 >
                   Your study preferences,
                   challenges, subjects, and
-                  availability have been
-                  saved.
+                  availability have been saved.
                 </Text>
               </Stack>
             </Group>
@@ -200,19 +187,32 @@ export default async function DashboardPage() {
                 radius="md"
                 variant="light"
               >
-                <IconBook size={19} />
+                <IconBooks size={19} />
               </ThemeIcon>
 
               <Text
                 c="dimmed"
                 size="sm"
               >
-                Saved subjects
+                Academic subjects
               </Text>
 
               <Text fw={700}>
-                {snapshot.subjects.length}
+                {academicSubjects.length}
               </Text>
+
+              <Button
+                component="a"
+                href="/subjects"
+                leftSection={
+                  <IconBooks size={16} />
+                }
+                size="compact-sm"
+                variant="light"
+                fullWidth
+              >
+                Manage subjects
+              </Button>
             </Stack>
           </Paper>
 
@@ -288,15 +288,28 @@ export default async function DashboardPage() {
         >
           <Stack gap="sm">
             <Title order={2}>
-              Phase 2 foundation ready
+              Subject and file management
             </Title>
 
             <Text c="dimmed">
-              Future dashboard, study-plan,
-              task, reviewer, quiz, and AI
-              features can now use the saved
-              learning-profile information.
+              Create subjects and organize the
+              learning materials that will later
+              be used for reviewers, quizzes,
+              study plans, and AI-supported
+              learning features.
             </Text>
+
+            <Group>
+              <Button
+                component="a"
+                href="/subjects"
+                leftSection={
+                  <IconBooks size={18} />
+                }
+              >
+                Open subjects
+              </Button>
+            </Group>
           </Stack>
         </Paper>
       </Stack>

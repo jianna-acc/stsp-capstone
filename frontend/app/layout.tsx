@@ -5,6 +5,7 @@
 import "@mantine/core/styles.layer.css";
 import "@mantine/notifications/styles.layer.css";
 import "./globals.css";
+import "@mantine/dropzone/styles.css";
 
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";

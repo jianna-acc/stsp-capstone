@@ -1,4 +1,4 @@
-﻿export type Json =
+export type Json =
   | string
   | number
   | boolean
@@ -175,6 +175,92 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      study_files: {
+        Row: {
+          created_at: string
+          failure_code: string | null
+          failure_message: string | null
+          id: string
+          mime_type: string
+          original_filename: string
+          processed_at: string | null
+          processing_status: string
+          size_bytes: number
+          storage_path: string
+          subject_id: string
+          topic: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          failure_code?: string | null
+          failure_message?: string | null
+          id?: string
+          mime_type: string
+          original_filename: string
+          processed_at?: string | null
+          processing_status?: string
+          size_bytes: number
+          storage_path: string
+          subject_id: string
+          topic: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          failure_code?: string | null
+          failure_message?: string | null
+          id?: string
+          mime_type?: string
+          original_filename?: string
+          processed_at?: string | null
+          processing_status?: string
+          size_bytes?: number
+          storage_path?: string
+          subject_id?: string
+          topic?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "study_files_subject_owner_fk"
+            columns: ["subject_id", "user_id"]
+            isOneToOne: false
+            referencedRelation: "subjects"
+            referencedColumns: ["id", "user_id"]
+          },
+        ]
+      }
+      subjects: {
+        Row: {
+          color: string
+          created_at: string
+          id: string
+          name: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          color?: string
+          created_at?: string
+          id?: string
+          name: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          color?: string
+          created_at?: string
+          id?: string
+          name?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
       }
     }
     Views: {

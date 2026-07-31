@@ -37,9 +37,10 @@ export async function createClient() {
             );
           } catch {
             /*
-             * Server Components cannot always modify cookies.
-             * Authentication session refresh will be handled
-             * by the Next.js proxy during the auth phase.
+             * Server Components cannot always modify response
+             * cookies during rendering. Server Actions and Route
+             * Handlers can update them, while the root proxy
+             * handles session refresh synchronization.
              */
           }
         },
