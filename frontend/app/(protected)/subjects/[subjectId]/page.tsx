@@ -32,6 +32,13 @@ interface SubjectWorkspacePageProps {
   }>;
 }
 
+const ACTIVE_PROCESSING_STATUSES = new Set([
+  "uploading",
+  "queued",
+  "reading",
+  "indexing",
+]);
+
 export default async function SubjectWorkspacePage({
   params,
 }: SubjectWorkspacePageProps) {
@@ -60,8 +67,16 @@ export default async function SubjectWorkspacePage({
       activeSubject.id,
   );
 
+  const hasActiveFileProcessing =
+    subjectFiles.some((file) =>
+      ACTIVE_PROCESSING_STATUSES.has(
+        file.processing_status,
+      ),
+    );
+
   return (
     <Stack gap={0}>
+
       <Container
         size="xl"
         w="100%"
@@ -82,7 +97,9 @@ export default async function SubjectWorkspacePage({
             w="fit-content"
           >
             <Group gap={6}>
-              <IconArrowLeft size={16} />
+              <IconArrowLeft
+                size={16}
+              />
 
               <Text size="sm">
                 All subjects
@@ -101,15 +118,23 @@ export default async function SubjectWorkspacePage({
 
       <FileUploadManager
         key={activeSubject.id}
-        subjects={[activeSubject]}
-        initialFiles={subjectFiles}
+        subjects={[
+          activeSubject,
+        ]}
+        initialFiles={
+          subjectFiles
+        }
         initialSubjectId={
-            activeSubject.id
+          activeSubject.id
         }
         hideSubjectSelector
-        title={activeSubject.name}
-        description={`Upload and manage learning materials for ${activeSubject.name}.`}
-        />
-            </Stack>
+        title={
+          activeSubject.name
+        }
+        description={
+          `Upload and manage learning materials for ${activeSubject.name}.`
+        }
+      />
+    </Stack>
   );
 }

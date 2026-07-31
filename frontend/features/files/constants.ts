@@ -28,6 +28,7 @@ export type SupportedMimeType =
 
 export type ProcessingStatus =
   | "uploading"
+  | "queued"
   | "reading"
   | "indexing"
   | "ready"
@@ -46,6 +47,13 @@ export const PROCESSING_STATUS_META: Record<
     color: "violet",
     description:
       "Your file is being transferred.",
+  },
+
+  queued: {
+    label: "Queued",
+    color: "yellow",
+    description:
+      "Your file is waiting to be processed.",
   },
 
   reading: {
@@ -73,7 +81,7 @@ export const PROCESSING_STATUS_META: Record<
     label: "Needs attention",
     color: "red",
     description:
-      "The upload could not be completed.",
+      "The file could not be processed.",
   },
 };
 

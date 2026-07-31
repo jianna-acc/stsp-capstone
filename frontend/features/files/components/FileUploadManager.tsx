@@ -1,6 +1,7 @@
 // File: /frontend/features/files/components/FileUploadManager.tsx
 // Purpose: Provides subject-aware file uploads, secure previews,
-// downloads, deletion, retry controls, progress tracking, and statuses.
+// downloads, deletion, retry controls, progress tracking, and
+// automatic processing-status synchronization.
 
 "use client";
 
@@ -24,12 +25,8 @@ import {
   Dropzone,
   type FileRejection,
 } from "@mantine/dropzone";
-import {
-  modals,
-} from "@mantine/modals";
-import {
-  notifications,
-} from "@mantine/notifications";
+import { modals } from "@mantine/modals";
+import { notifications } from "@mantine/notifications";
 import {
   IconAlertCircle,
   IconCheck,
@@ -45,8 +42,10 @@ import {
   IconTrash,
   IconUpload,
 } from "@tabler/icons-react";
+import { useRouter } from "next/navigation";
 import {
   type ChangeEvent,
+  useEffect,
   useMemo,
   useRef,
   useState,
@@ -110,6 +109,60 @@ const RETRY_FILE_ACCEPT = [
   ".webp",
 ].join(",");
 
+const ACTIVE_PROCESSING_STATUSES =
+  new Set([
+    "uploading",
+    "queued",
+    "reading",
+    "indexing",
+  ]);
+
+const STATUS_REFRESH_INTERVAL_MS =
+  2_000;
+
+function isActiveProcessingStatus(
+  processingStatus:
+    | string
+    | null
+    | undefined,
+): boolean {
+  return ACTIVE_PROCESSING_STATUSES.has(
+    processingStatus ?? "",
+  );
+}
+
+function mergeRefreshedFiles(
+  currentFiles: StudyFileSummary[],
+  refreshedFiles: StudyFileSummary[],
+): StudyFileSummary[] {
+  const refreshedFileIds = new Set(
+    refreshedFiles.map(
+      (file) => file.id,
+    ),
+  );
+
+  /*
+   * Preserve locally created active records that have not appeared
+   * in the refreshed server response yet. Once the server returns
+   * the same ID, the server version becomes authoritative.
+   */
+  const localOnlyActiveFiles =
+    currentFiles.filter(
+      (file) =>
+        !refreshedFileIds.has(
+          file.id,
+        ) &&
+        isActiveProcessingStatus(
+          file.processing_status,
+        ),
+    );
+
+  return [
+    ...localOnlyActiveFiles,
+    ...refreshedFiles,
+  ];
+}
+
 function formatFileSize(
   bytes: number,
 ): string {
@@ -165,7 +218,9 @@ function getFileIcon(
   }
 
   if (
-    mimeType.startsWith("image/")
+    mimeType.startsWith(
+      "image/",
+    )
   ) {
     return IconPhoto;
   }
@@ -181,7 +236,8 @@ function replaceFile(
     nextFile,
     ...files.filter(
       (file) =>
-        file.id !== nextFile.id,
+        file.id !==
+        nextFile.id,
     ),
   ];
 }
@@ -210,6 +266,8 @@ export function FileUploadManager({
   description =
     "Add PDFs, PowerPoint presentations, Excel spreadsheets, text files, and images to your academic subjects.",
 }: FileUploadManagerProps) {
+  const router = useRouter();
+
   const resolvedInitialSubjectId =
     initialSubjectId ??
     subjects[0]?.id ??
@@ -237,7 +295,10 @@ export function FileUploadManager({
   const [
     files,
     setFiles,
-  ] = useState(initialFiles);
+  ] =
+    useState<StudyFileSummary[]>(
+      initialFiles,
+    );
 
   const [
     progress,
@@ -334,6 +395,103 @@ export function FileUploadManager({
       [subjects],
     );
 
+  const hasActiveFileProcessing =
+    useMemo(
+      () =>
+        files.some((file) =>
+          isActiveProcessingStatus(
+            file.processing_status,
+          ),
+        ),
+      [files],
+    );
+
+  /*
+   * A Next.js router refresh returns new initialFiles props, but
+   * useState does not automatically replace its original value.
+   * This effect synchronizes the refreshed server records into the
+   * local list.
+   */
+  useEffect(() => {
+  const synchronizationTimer =
+    window.setTimeout(() => {
+      setFiles(
+        (currentFiles) =>
+          mergeRefreshedFiles(
+            currentFiles,
+            initialFiles,
+          ),
+      );
+    }, 0);
+
+  return () => {
+    window.clearTimeout(
+      synchronizationTimer,
+    );
+  };
+}, [initialFiles]);
+
+  /*
+   * Poll the server while at least one file is still being processed.
+   * Polling automatically stops when all files are ready or failed.
+   */
+  useEffect(() => {
+    if (
+      !hasActiveFileProcessing
+    ) {
+      return;
+    }
+
+    const refreshFileStatuses =
+      () => {
+        if (
+          document.visibilityState !==
+          "visible"
+        ) {
+          return;
+        }
+
+        router.refresh();
+      };
+
+    const handleVisibilityChange =
+      () => {
+        if (
+          document.visibilityState ===
+          "visible"
+        ) {
+          refreshFileStatuses();
+        }
+      };
+
+    refreshFileStatuses();
+
+    const intervalId =
+      window.setInterval(
+        refreshFileStatuses,
+        STATUS_REFRESH_INTERVAL_MS,
+      );
+
+    document.addEventListener(
+      "visibilitychange",
+      handleVisibilityChange,
+    );
+
+    return () => {
+      window.clearInterval(
+        intervalId,
+      );
+
+      document.removeEventListener(
+        "visibilitychange",
+        handleVisibilityChange,
+      );
+    };
+  }, [
+    hasActiveFileProcessing,
+    router,
+  ]);
+
   function handleAcceptedFiles(
     acceptedFiles: File[],
   ) {
@@ -426,6 +584,7 @@ export function FileUploadManager({
         });
 
         closePreview();
+
         return;
       }
 
@@ -550,10 +709,6 @@ export function FileUploadManager({
     retryTargetFileRef.current =
       file;
 
-    /*
-     * Reset the hidden input so selecting the same file again
-     * still triggers the change event.
-     */
     if (
       retryInputRef.current
     ) {
@@ -681,11 +836,13 @@ export function FileUploadManager({
             ),
         );
 
+        router.refresh();
+
         notifications.show({
           title:
-            "Retry complete",
+            "Retry uploaded",
           message:
-            `${completion.file.original_filename} is ready.`,
+            `${completion.file.original_filename} has been queued for processing.`,
           color: "green",
           icon: (
             <IconCheck
@@ -715,6 +872,8 @@ export function FileUploadManager({
               ),
           );
         }
+
+        router.refresh();
 
         notifications.show({
           title:
@@ -788,6 +947,8 @@ export function FileUploadManager({
       ) {
         closePreview();
       }
+
+      router.refresh();
 
       notifications.show({
         title:
@@ -987,6 +1148,8 @@ export function FileUploadManager({
             ),
         );
 
+        router.refresh();
+
         notifications.show({
           title:
             "Upload complete",
@@ -1025,6 +1188,8 @@ export function FileUploadManager({
               ),
           );
         }
+
+        router.refresh();
 
         notifications.show({
           title:

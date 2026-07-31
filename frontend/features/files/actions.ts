@@ -399,8 +399,10 @@ export async function reserveStudyFileAction(
 }
 
 /**
- * Marks an uploaded Storage object as ready after the browser
- * completes the resumable upload.
+ * Confirms that the browser finished uploading the Storage object.
+ *
+ * The file is then queued for FastAPI extraction. It must not
+ * become ready until extraction and chunking have completed.
  */
 export async function completeStudyFileUploadAction(
   fileId: unknown,
@@ -430,61 +432,55 @@ export async function completeStudyFileUploadAction(
   }
 
   const {
-    data: updatedFile,
-    error: updateError,
-  } = await supabase
-    .from("study_files")
-    .update({
-      processing_status: "ready",
-      failure_code: null,
-      failure_message: null,
-      processed_at:
-        new Date().toISOString(),
-    })
-    .eq("id", fileId)
-    .eq("user_id", user.id)
-    .select("*")
-    .maybeSingle();
+    data: queuedFiles,
+    error: queueError,
+  } = await supabase.rpc(
+    "queue_study_file_processing",
+    {
+      p_study_file_id: fileId,
+    },
+  );
 
-  if (updateError) {
+  if (queueError) {
     console.error(
-      "Upload completion update failed:",
+      "File-processing queue creation failed:",
       {
-        code: updateError.code,
-        message:
-          updateError.message,
-        details:
-          updateError.details,
-        hint: updateError.hint,
+        code: queueError.code,
+        message: queueError.message,
+        details: queueError.details,
+        hint: queueError.hint,
       },
     );
 
     return {
       success: false,
       message:
-        "The uploaded file status could not be updated.",
+        "The uploaded file could not be queued for processing.",
     };
   }
 
-  if (!updatedFile) {
+  const queuedFile =
+    queuedFiles?.[0];
+
+  if (!queuedFile) {
     return {
       success: false,
       message:
-        "The uploaded file record was not found.",
+        "The queued file record was not returned.",
     };
   }
 
   revalidateStudyFilePaths(
-    updatedFile.subject_id,
+    queuedFile.subject_id,
   );
 
   return {
     success: true,
     message:
-      "Your file is ready.",
+      "Your file was uploaded and queued for processing.",
     file:
       toStudyFileSummary(
-        updatedFile,
+        queuedFile,
       ),
   };
 }

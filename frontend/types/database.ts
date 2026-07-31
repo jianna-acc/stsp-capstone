@@ -14,6 +14,56 @@ export type Database = {
   }
   public: {
     Tables: {
+      file_processing_jobs: {
+        Row: {
+          attempt_count: number
+          completed_at: string | null
+          created_at: string
+          error_code: string | null
+          error_message: string | null
+          id: string
+          started_at: string | null
+          status: string
+          study_file_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          attempt_count?: number
+          completed_at?: string | null
+          created_at?: string
+          error_code?: string | null
+          error_message?: string | null
+          id?: string
+          started_at?: string | null
+          status?: string
+          study_file_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          attempt_count?: number
+          completed_at?: string | null
+          created_at?: string
+          error_code?: string | null
+          error_message?: string | null
+          id?: string
+          started_at?: string | null
+          status?: string
+          study_file_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "file_processing_jobs_study_file_id_fkey"
+            columns: ["study_file_id"]
+            isOneToOne: true
+            referencedRelation: "study_files"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       learning_profile_subjects: {
         Row: {
           confidence_level: number
@@ -176,6 +226,103 @@ export type Database = {
           },
         ]
       }
+      study_file_chunks: {
+        Row: {
+          chunk_index: number
+          chunk_metadata: Json
+          content: string
+          created_at: string
+          id: string
+          locator_label: string | null
+          locator_type: string | null
+          study_file_id: string
+          token_count: number | null
+          user_id: string
+        }
+        Insert: {
+          chunk_index: number
+          chunk_metadata?: Json
+          content: string
+          created_at?: string
+          id?: string
+          locator_label?: string | null
+          locator_type?: string | null
+          study_file_id: string
+          token_count?: number | null
+          user_id: string
+        }
+        Update: {
+          chunk_index?: number
+          chunk_metadata?: Json
+          content?: string
+          created_at?: string
+          id?: string
+          locator_label?: string | null
+          locator_type?: string | null
+          study_file_id?: string
+          token_count?: number | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "study_file_chunks_study_file_id_fkey"
+            columns: ["study_file_id"]
+            isOneToOne: false
+            referencedRelation: "study_files"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      study_file_contents: {
+        Row: {
+          character_count: number
+          created_at: string
+          extracted_text: string
+          extraction_metadata: Json
+          id: string
+          page_count: number | null
+          sheet_count: number | null
+          slide_count: number | null
+          study_file_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          character_count?: number
+          created_at?: string
+          extracted_text?: string
+          extraction_metadata?: Json
+          id?: string
+          page_count?: number | null
+          sheet_count?: number | null
+          slide_count?: number | null
+          study_file_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          character_count?: number
+          created_at?: string
+          extracted_text?: string
+          extraction_metadata?: Json
+          id?: string
+          page_count?: number | null
+          sheet_count?: number | null
+          slide_count?: number | null
+          study_file_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "study_file_contents_study_file_id_fkey"
+            columns: ["study_file_id"]
+            isOneToOne: true
+            referencedRelation: "study_files"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       study_files: {
         Row: {
           created_at: string
@@ -267,13 +414,81 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      claim_next_file_processing_job: {
+        Args: never
+        Returns: {
+          processing_job_id: string
+          study_file_id: string
+        }[]
+      }
       complete_learning_profile_onboarding: { Args: never; Returns: boolean }
+      complete_study_file_processing: {
+        Args: {
+          p_character_count: number
+          p_chunks: Json
+          p_extracted_text: string
+          p_extraction_metadata: Json
+          p_page_count: number
+          p_sheet_count: number
+          p_slide_count: number
+          p_study_file_id: string
+        }
+        Returns: undefined
+      }
+      fail_study_file_processing: {
+        Args: {
+          p_error_code: string
+          p_error_message: string
+          p_study_file_id: string
+        }
+        Returns: undefined
+      }
+      mark_study_file_indexing: {
+        Args: { p_study_file_id: string }
+        Returns: undefined
+      }
+      queue_study_file_processing: {
+        Args: { p_study_file_id: string }
+        Returns: {
+          created_at: string
+          failure_code: string | null
+          failure_message: string | null
+          id: string
+          mime_type: string
+          original_filename: string
+          processed_at: string | null
+          processing_status: string
+          size_bytes: number
+          storage_path: string
+          subject_id: string
+          topic: string
+          updated_at: string
+          user_id: string
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "study_files"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
+      recover_stale_file_processing_jobs: {
+        Args: { p_max_attempts?: number; p_stale_after_minutes?: number }
+        Returns: {
+          failed_count: number
+          requeued_count: number
+        }[]
+      }
       replace_learning_profile_subjects: {
         Args: { p_subjects: Json }
         Returns: undefined
       }
       replace_study_availability: {
         Args: { p_slots: Json }
+        Returns: undefined
+      }
+      start_study_file_processing: {
+        Args: { p_study_file_id: string }
         Returns: undefined
       }
     }
