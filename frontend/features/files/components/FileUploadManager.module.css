@@ -1,0 +1,52 @@
+/* File: /frontend/features/files/components/FileUploadManager.module.css */
+/* Purpose: Styles the responsive Phase 3 file-upload interface. */
+
+.page {
+  width: 100%;
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 32px;
+}
+
+.eyebrow {
+  color: var(--mantine-color-violet-6);
+  font-size: 0.75rem;
+  letter-spacing: 0.08em;
+}
+
+.dropzone {
+  border-radius: var(--mantine-radius-lg);
+  border-color: var(--mantine-color-gray-3);
+  transition:
+    border-color 150ms ease,
+    background-color 150ms ease;
+}
+
+.dropzone:hover {
+  border-color: var(--mantine-color-violet-4);
+  background: var(--mantine-color-violet-0);
+}
+
+.dropzoneContent {
+  pointer-events: none;
+}
+
+.filename {
+  overflow-wrap: anywhere;
+}
+
+.emptyState {
+  min-height: 420px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 18px;
+  text-align: center;
+}
+
+@media (max-width: 48em) {
+  .page {
+    padding: 22px 16px;
+  }
+}

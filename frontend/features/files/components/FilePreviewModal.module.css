@@ -1,0 +1,60 @@
+/* File: /frontend/features/files/components/FilePreviewModal.module.css */
+/* Purpose: Styles secure previews for private learning materials. */
+
+.previewArea {
+  min-height: 420px;
+  max-height: 70vh;
+  overflow: hidden;
+  border: 1px solid var(--mantine-color-gray-3);
+  border-radius: var(--mantine-radius-md);
+  background: var(--mantine-color-gray-0);
+}
+
+.frame {
+  display: block;
+  width: 100%;
+  min-height: 520px;
+  border: 0;
+  background: white;
+}
+
+.imageWrapper {
+  display: flex;
+  min-height: 420px;
+  max-height: 70vh;
+  align-items: center;
+  justify-content: center;
+  overflow: auto;
+  padding: 16px;
+}
+
+.image {
+  display: block;
+  width: auto;
+  max-width: 100%;
+  max-height: 65vh;
+  object-fit: contain;
+}
+
+.unavailable {
+  display: flex;
+  min-height: 350px;
+  align-items: center;
+  justify-content: center;
+  padding: 32px;
+  text-align: center;
+}
+
+@media (max-width: 48em) {
+  .previewArea {
+    min-height: 340px;
+  }
+
+  .frame {
+    min-height: 430px;
+  }
+
+  .imageWrapper {
+    min-height: 340px;
+  }
+}
