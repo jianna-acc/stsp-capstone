@@ -6,7 +6,7 @@ from functools import lru_cache
 from pathlib import Path
 from typing import Literal
 
-from pydantic import field_validator
+from pydantic import field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 BACKEND_DIRECTORY = Path(__file__).resolve().parents[2]
@@ -50,6 +50,11 @@ class Settings(BaseSettings):
     gemini_request_timeout_seconds: float = 30.0
 
     ai_live_smoke_tests_enabled: bool = False
+    ai_chunk_target_characters: int = 2400
+    ai_chunk_overlap_characters: int = 300
+    ai_chunk_min_characters: int = 200
+    ai_embedding_batch_size: int = 16
+    ai_max_chunks_per_material: int = 1000
 
     model_config = SettingsConfigDict(
         env_file=str(ENV_FILE_PATH),
@@ -245,6 +250,100 @@ class Settings(BaseSettings):
             )
 
         return value
+
+    @field_validator("ai_chunk_target_characters")
+    @classmethod
+    def validate_chunk_target_characters(
+        cls,
+        value: int,
+    ) -> int:
+        """Keep target chunks within practical text-size limits."""
+
+        if value < 500 or value > 12000:
+            raise ValueError(
+                "AI_CHUNK_TARGET_CHARACTERS must be between 500 and 12000.",
+            )
+
+        return value
+
+    @field_validator("ai_chunk_overlap_characters")
+    @classmethod
+    def validate_chunk_overlap_characters(
+        cls,
+        value: int,
+    ) -> int:
+        """Ensure chunk overlap is non-negative and controlled."""
+
+        if value < 0 or value > 4000:
+            raise ValueError(
+                "AI_CHUNK_OVERLAP_CHARACTERS must be between 0 and 4000.",
+            )
+
+        return value
+
+    @field_validator("ai_chunk_min_characters")
+    @classmethod
+    def validate_chunk_min_characters(
+        cls,
+        value: int,
+    ) -> int:
+        """Prevent unusably small or excessive minimum chunks."""
+
+        if value < 1 or value > 12000:
+            raise ValueError(
+                "AI_CHUNK_MIN_CHARACTERS must be between 1 and 12000.",
+            )
+
+        return value
+
+    @field_validator("ai_embedding_batch_size")
+    @classmethod
+    def validate_embedding_batch_size(
+        cls,
+        value: int,
+    ) -> int:
+        """Limit the number of texts prepared for one embedding call."""
+
+        if value < 1 or value > 100:
+            raise ValueError(
+                "AI_EMBEDDING_BATCH_SIZE must be between 1 and 100.",
+            )
+
+        return value
+
+    @field_validator("ai_max_chunks_per_material")
+    @classmethod
+    def validate_max_chunks_per_material(
+        cls,
+        value: int,
+    ) -> int:
+        """Prevent unbounded chunk generation for one material."""
+
+        if value < 1 or value > 10000:
+            raise ValueError(
+                "AI_MAX_CHUNKS_PER_MATERIAL must be between 1 and 10000.",
+            )
+
+        return value
+
+    @model_validator(mode="after")
+    def validate_chunking_setting_relationships(
+        self,
+    ) -> "Settings":
+        """Validate relationships between chunk-size settings."""
+
+        if self.ai_chunk_overlap_characters >= self.ai_chunk_target_characters:
+            raise ValueError(
+                "AI_CHUNK_OVERLAP_CHARACTERS must be smaller than "
+                "AI_CHUNK_TARGET_CHARACTERS.",
+            )
+
+        if self.ai_chunk_min_characters > self.ai_chunk_target_characters:
+            raise ValueError(
+                "AI_CHUNK_MIN_CHARACTERS must not exceed AI_CHUNK_TARGET_CHARACTERS.",
+            )
+
+        return self
 
 
 @lru_cache

@@ -1408,3 +1408,314 @@ The following remain for later Phase 4 checkpoints:
 - Assistant API routes
 - Conversation persistence
 - Student-facing assistant integration
+
+## Phase 4C — Offline Study-Material Preparation
+
+Phase 4C adds deterministic AI preparation to the existing file-processing pipeline without calling Gemini or persisting vector embeddings.
+
+The existing source-aware extraction pipeline remains responsible for storing page, slide, worksheet, and document locator information. The new AI preparation pipeline creates normalized AI chunks, embedding batches, and provider-independent embedding requests in memory.
+
+### Component flow
+
+```mermaid
+flowchart LR
+    subgraph Existing_File_Processing["Existing File Processing"]
+        A["Private Supabase Storage"] --> B["FileProcessorService"]
+        B --> C["extract_document"]
+        C --> D["ExtractedDocument"]
+
+        D --> E["chunk_extracted_document"]
+        E --> F["Source-aware ExtractedChunk records"]
+        F --> G["complete_study_file_processing RPC"]
+        G --> H[("Supabase study-file data")]
+    end
+
+    subgraph Offline_AI_Preparation["Phase 4C Offline AI Preparation"]
+        D --> I["StudyMaterialPreparer"]
+        I --> J["ChunkingRequest"]
+        J --> K["TextChunker"]
+        K --> L["ChunkingResult"]
+        L --> M["EmbeddingBatchPreparer"]
+        M --> N["EmbeddingBatch records"]
+        N --> O["RETRIEVAL_DOCUMENT requests"]
+    end
+
+    O -. "No provider call in Phase 4C" .-> P["GeminiProvider"]
+    O -. "No vector persistence in Phase 4C" .-> Q[("Future vector storage")]
+```
+
+### Processing sequence
+
+```mermaid
+sequenceDiagram
+    participant Worker as FileProcessingWorker
+    participant Processor as FileProcessorService
+    participant Admin as SupabaseAdminService
+    participant Extractor as File extraction
+    participant Preparer as StudyMaterialPreparer
+    participant Chunker as TextChunker
+    participant Batcher as EmbeddingBatchPreparer
+
+    Worker->>Processor: process_file(study_file_id)
+    Processor->>Admin: Load file and processing job
+    Admin-->>Processor: File and job records
+
+    alt File and job are queued
+        Processor->>Admin: start_processing(study_file_id)
+        Admin-->>Processor: File moved to reading
+    else Worker already claimed the job
+        Note over Processor,Admin: Continue without starting twice
+    end
+
+    Processor->>Admin: download_private_object(storage_path)
+    Admin-->>Processor: Private file bytes
+
+    Processor->>Extractor: extract_document(payload, mime_type, filename)
+    Extractor-->>Processor: ExtractedDocument
+
+    Processor->>Preparer: prepare(material_id, extracted_text, filename)
+    Preparer->>Chunker: chunk(ChunkingRequest)
+    Chunker-->>Preparer: ChunkingResult
+
+    Preparer->>Batcher: prepare(ChunkingResult)
+    Batcher-->>Preparer: EmbeddingBatch list
+
+    loop Every embedding batch
+        Preparer->>Batcher: build_request(batch)
+        Batcher-->>Preparer: RETRIEVAL_DOCUMENT request
+    end
+
+    Preparer-->>Processor: StudyMaterialPreparation
+
+    Note over Processor,Preparer: No Gemini or vector-storage request occurs
+
+    Processor->>Extractor: chunk_extracted_document(document)
+    Extractor-->>Processor: Existing source-aware chunks
+
+    Processor->>Admin: mark_indexing(study_file_id)
+    Admin-->>Processor: File moved to indexing
+
+    Processor->>Admin: complete_processing(document, source-aware chunks)
+    Admin-->>Processor: Processing completed
+
+    Processor-->>Worker: ProcessedFileResult
+```
+
+### Preparation failure flow
+
+```mermaid
+flowchart TD
+    A["ExtractedDocument"] --> B["StudyMaterialPreparer"]
+    B --> C{"Preparation succeeds?"}
+
+    C -->|"Yes"| D["Continue source-aware persistence"]
+    C -->|"No"| E["AIChunkingError or validation error"]
+
+    E --> F["FileProcessorPreparationError"]
+    F --> G["fail_study_file_processing RPC"]
+    G --> H["Error code: PREPARATION_FAILED"]
+    H --> I["Worker receives FileProcessorError"]
+
+    I --> J["Job reported as failed"]
+```
+
+### Internal preparation structure
+
+```mermaid
+classDiagram
+    class ChunkingRequest {
+        +str material_id
+        +str text
+        +str source_name
+    }
+
+    class StudyMaterialChunk {
+        +str material_id
+        +int chunk_index
+        +str text
+        +int start_offset
+        +int end_offset
+        +str source_name
+        +character_count
+        +chunk_key
+    }
+
+    class ChunkingResult {
+        +str material_id
+        +int original_character_count
+        +tuple chunks
+        +str source_name
+    }
+
+    class EmbeddingBatch {
+        +int batch_index
+        +tuple chunks
+        +texts
+        +chunk_keys
+    }
+
+    class EmbeddingRequest {
+        +tuple texts
+        +EmbeddingTaskType task_type
+    }
+
+    class StudyMaterialPreparation {
+        +ChunkingResult chunking_result
+        +tuple batches
+        +tuple embedding_requests
+        +material_id
+        +chunk_count
+        +batch_count
+    }
+
+    ChunkingRequest --> StudyMaterialChunk : TextChunker creates
+    StudyMaterialChunk --> ChunkingResult : grouped into
+    ChunkingResult --> EmbeddingBatch : divided into
+    EmbeddingBatch --> EmbeddingRequest : converted to
+    ChunkingResult --> StudyMaterialPreparation
+    EmbeddingBatch --> StudyMaterialPreparation
+    EmbeddingRequest --> StudyMaterialPreparation
+```
+
+### Separation of chunk models
+
+The system intentionally maintains two chunk models during Phase 4C.
+
+#### Existing `ExtractedChunk`
+
+The existing extraction chunk contains source-locator information:
+
+- Chunk index
+- Content
+- Locator type
+- Locator label
+- Estimated token count
+- Section metadata
+
+Examples include:
+
+- PDF page number
+- PowerPoint slide number
+- Excel worksheet name
+- Complete text document
+
+These chunks continue to be persisted through the existing `complete_study_file_processing` RPC.
+
+#### New `StudyMaterialChunk`
+
+The AI preparation chunk contains embedding-oriented information:
+
+- Material ID
+- Contiguous chunk index
+- Normalized chunk text
+- Start character offset
+- End character offset
+- Optional source filename
+- Deterministic chunk key
+
+These chunks are prepared in memory during Phase 4C and are not yet persisted.
+
+Maintaining separate chunk models prevents the new AI preparation pipeline from breaking the existing source-aware database contract.
+
+### Configuration flow
+
+```mermaid
+flowchart LR
+    A["backend/.env or defaults"] --> B["Settings"]
+
+    B --> C["AI_CHUNK_TARGET_CHARACTERS"]
+    B --> D["AI_CHUNK_OVERLAP_CHARACTERS"]
+    B --> E["AI_CHUNK_MIN_CHARACTERS"]
+    B --> F["AI_EMBEDDING_BATCH_SIZE"]
+    B --> G["AI_MAX_CHUNKS_PER_MATERIAL"]
+
+    C --> H["TextChunker"]
+    D --> H
+    E --> H
+    G --> H
+
+    F --> I["EmbeddingBatchPreparer"]
+
+    H --> J["Deterministic ChunkingResult"]
+    I --> K["Deterministic EmbeddingBatch list"]
+```
+
+The configuration validates that:
+
+- The chunk target is between 500 and 12,000 characters.
+- The overlap is between 0 and 4,000 characters.
+- The overlap is smaller than the target.
+- The minimum chunk size is between 1 and 12,000 characters.
+- The minimum chunk size does not exceed the target.
+- The embedding batch size is between 1 and 100.
+- The maximum chunk count is between 1 and 10,000.
+
+### External-call boundary
+
+Phase 4C creates the following objects:
+
+```text
+ChunkingResult
+EmbeddingBatch
+EmbeddingRequest
+StudyMaterialPreparation
+```
+
+Phase 4C intentionally does not execute:
+
+```text
+GeminiProvider.embed(...)
+Vector persistence
+Similarity search
+Retrieval API requests
+```
+
+The live AI smoke-test setting remains disabled during normal Phase 4C validation:
+
+```env
+AI_LIVE_SMOKE_TESTS_ENABLED=false
+```
+
+### Phase 4C file connections
+
+```mermaid
+flowchart TD
+    A["app/core/config.py"] --> B["app/ai/text_chunker.py"]
+    A --> C["app/ai/embedding_batcher.py"]
+
+    D["app/ai/chunking.py"] --> B
+    D --> C
+    D --> E["app/ai/preparation.py"]
+
+    F["app/ai/contracts.py"] --> C
+    F --> E
+
+    B --> G["app/services/study_material_preparer.py"]
+    C --> G
+    E --> G
+
+    G --> H["app/services/file_processor.py"]
+
+    I["app/services/file_extraction.py"] --> H
+    J["app/services/supabase_admin.py"] --> H
+
+    H --> K["app/workers/file_processing_worker.py"]
+
+    L["tests/test_text_chunker.py"] --> B
+    M["tests/test_embedding_batcher.py"] --> C
+    N["tests/test_study_material_preparer.py"] --> G
+    O["tests/test_file_processor_preparation.py"] --> H
+```
+
+### Phase boundary
+
+The next phase may introduce:
+
+1. A vector-ready database schema.
+2. Gemini embedding execution.
+3. Safe and idempotent embedding persistence.
+4. Embedding retry handling.
+5. Similarity-search database functions.
+6. Retrieval services and API endpoints.
+
+Those changes must preserve the existing source-aware extraction records, maintain user-data isolation, and keep backend credentials outside frontend code.

@@ -5,13 +5,21 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from typing import Protocol
 from uuid import UUID
 
+from app.ai import (
+    AIChunkingError,
+    StudyMaterialPreparation,
+)
 from app.core.config import Settings
 from app.services.file_extraction import (
     FileExtractionError,
     chunk_extracted_document,
     extract_document,
+)
+from app.services.study_material_preparer import (
+    StudyMaterialPreparer,
 )
 from app.services.supabase_admin import (
     SupabaseAdminError,
@@ -37,6 +45,10 @@ class FileProcessorTooLargeError(FileProcessorError):
 
 class FileProcessorExtractionError(FileProcessorError):
     """Raised when readable content cannot be extracted."""
+
+
+class FileProcessorPreparationError(FileProcessorError):
+    """Raised when extracted content cannot be prepared for embedding."""
 
 
 class FileProcessorUpstreamError(FileProcessorError):
@@ -81,6 +93,21 @@ class ProcessedFileResult:
     job_status: str
 
 
+class StudyMaterialPreparerProtocol(Protocol):
+    """Operations required from the offline preparation service."""
+
+    def prepare(
+        self,
+        *,
+        material_id: str,
+        text: str,
+        source_name: str | None = None,
+    ) -> StudyMaterialPreparation:
+        """Prepare extracted text without making provider requests."""
+
+        ...
+
+
 class FileProcessorService:
     """Reusable study-file processing workflow."""
 
@@ -88,6 +115,7 @@ class FileProcessorService:
         self,
         settings: Settings,
         admin_service: SupabaseAdminService | None = None,
+        preparer: StudyMaterialPreparerProtocol | None = None,
     ) -> None:
         self._settings = settings
 
@@ -95,6 +123,14 @@ class FileProcessorService:
             admin_service
             if admin_service is not None
             else SupabaseAdminService(
+                settings=settings,
+            )
+        )
+
+        self._preparer = (
+            preparer
+            if preparer is not None
+            else StudyMaterialPreparer(
                 settings=settings,
             )
         )
@@ -249,6 +285,12 @@ class FileProcessorService:
                 filename=filename,
             )
 
+            self._prepare_for_embedding(
+                file_id=file_id,
+                filename=filename,
+                extracted_text=document.extracted_text,
+            )
+
             chunks = chunk_extracted_document(
                 document=document,
             )
@@ -279,6 +321,16 @@ class FileProcessorService:
                 job_status="completed",
             )
 
+        except FileProcessorPreparationError as error:
+            if processing_active:
+                await self._best_effort_failure(
+                    file_id=file_id,
+                    error_code="PREPARATION_FAILED",
+                    error_message=str(error),
+                )
+
+            raise
+
         except FileProcessorError:
             raise
 
@@ -304,6 +356,33 @@ class FileProcessorService:
 
             raise FileProcessorUpstreamError(
                 str(error),
+            ) from error
+
+    def _prepare_for_embedding(
+        self,
+        *,
+        file_id: UUID,
+        filename: str,
+        extracted_text: str,
+    ) -> StudyMaterialPreparation:
+        """Prepare extracted text without calling an AI provider."""
+
+        try:
+            return self._preparer.prepare(
+                material_id=str(file_id),
+                text=extracted_text,
+                source_name=filename,
+            )
+
+        except (
+            AIChunkingError,
+            ValueError,
+        ) as error:
+            raise FileProcessorPreparationError(
+                str(error)
+                or (
+                    "The extracted study material could not be prepared for embedding."
+                ),
             ) from error
 
     async def _load_context(

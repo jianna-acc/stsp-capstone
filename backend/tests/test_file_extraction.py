@@ -154,6 +154,11 @@ def build_settings() -> Settings:
         Settings,
         SimpleNamespace(
             max_processing_file_bytes=(20 * 1024 * 1024),
+            ai_chunk_target_characters=2400,
+            ai_chunk_overlap_characters=300,
+            ai_chunk_min_characters=200,
+            ai_embedding_batch_size=16,
+            ai_max_chunks_per_material=1000,
         ),
     )
 

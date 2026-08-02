@@ -633,3 +633,29 @@ Confirm that all paths in this document are updated whenever files are renamed, 
 - Offline tests inject fake clients and never contact Gemini.
 - Live smoke tests require an API key, an enabled environment flag, and explicit command-line confirmation.
 - Future chunking, retrieval, RAG, citation, and assistant services will call the shared provider interfaces rather than the SDK directly.
+
+## Phase 4C — Offline AI Preparation Pipeline
+
+| File | Purpose | Owner | Main connections |
+|---|---|---|---|
+| `backend/.env.example` | Documents chunking and embedding-batch environment settings. | Backend / DevOps | `app/core/config.py` |
+| `backend/app/core/config.py` | Validates chunk target, overlap, minimum size, batch size, and maximum chunks. | Backend | `.env`, AI preparation services |
+| `backend/app/ai/chunking.py` | Defines chunking requests, chunks, results, and embedding batches. | AI Backend | `text_chunker.py`, `embedding_batcher.py`, `preparation.py` |
+| `backend/app/ai/text_chunker.py` | Normalizes and divides extracted text into deterministic overlapping chunks. | AI Backend | `ChunkingRequest`, `ChunkingResult`, application settings |
+| `backend/app/ai/embedding_batcher.py` | Converts ordered chunks into bounded batches and embedding requests. | AI Backend | `EmbeddingBatch`, `EmbeddingRequest` |
+| `backend/app/ai/preparation.py` | Defines the complete validated offline preparation result. | AI Backend | Chunk results, batches, embedding requests |
+| `backend/app/ai/errors.py` | Adds the controlled `AIChunkingError`. | AI Backend | Text chunker, file processor |
+| `backend/app/ai/__init__.py` | Exports the Phase 4C preparation contracts and implementations. | AI Backend | Backend services and tests |
+| `backend/app/services/study_material_preparer.py` | Coordinates chunking and embedding-request preparation without provider calls. | Backend / AI | Text chunker, embedding batch preparer |
+| `backend/app/services/file_processor.py` | Runs offline preparation after extraction while preserving existing source-aware persistence. | Backend | Extractor, preparer, Supabase admin service |
+| `backend/tests/test_chunking_config.py` | Tests chunking-setting defaults, limits, and relationships. | Backend QA | `Settings` |
+| `backend/tests/test_chunking_contracts.py` | Tests chunk requests, results, offsets, keys, and batches. | Backend QA | `app.ai.chunking` |
+| `backend/tests/test_text_chunker.py` | Tests normalization, boundaries, overlap, limits, and deterministic offsets. | Backend QA | `TextChunker` |
+| `backend/tests/test_embedding_batcher.py` | Tests batch sizes, ordering, indexes, and retrieval-document requests. | Backend QA | `EmbeddingBatchPreparer` |
+| `backend/tests/test_study_material_preparer.py` | Tests complete offline text-to-request preparation. | Backend QA | `StudyMaterialPreparer` |
+| `backend/tests/test_file_processor_preparation.py` | Tests file-processor preparation integration and controlled failure handling. | Backend QA | `FileProcessorService` |
+| `backend/tests/test_file_processor.py` | Extends processor fixtures with Phase 4C configuration. | Backend QA | `FileProcessorService` |
+| `backend/tests/test_file_extraction.py` | Extends extraction/processor fixtures with Phase 4C configuration. | Backend QA | Extractor and file processor |
+| `docs/AI_PREPARATION_PIPELINE.md` | Documents Phase 4C behavior, boundaries, configuration, and failure handling. | Documentation | AI preparation implementation |
+| `docs/ARCHITECTURE.md` | Adds the Phase 4C Mermaid architecture and sequence flow. | Architecture | File processor, preparation pipeline, persistence |
+| `docs/PROJECT_FILE_MAP.md` | Records Phase 4C file ownership and system connections. | Documentation | Entire repository |

@@ -17,3 +17,7 @@ class AIProviderRequestError(AIProviderError):
 
 class AIProviderResponseError(AIProviderError):
     """Raised when the provider returns an unusable response."""
+
+
+class AIChunkingError(RuntimeError):
+    """Raised when deterministic chunk preparation cannot complete."""
