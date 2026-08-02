@@ -15,7 +15,6 @@ from app.services.file_processor import (
     FileProcessorService,
 )
 
-
 FILE_ID = UUID(
     "f0dbc2c6-3e77-4609-a5b5-ecf8f64b60c7",
 )
@@ -54,9 +53,7 @@ class FakeSupabaseAdminService:
                 ),
             ),
             "original_filename": "lesson.txt",
-            "storage_path": (
-                f"{USER_ID}/materials/lesson.txt"
-            ),
+            "storage_path": (f"{USER_ID}/materials/lesson.txt"),
             "mime_type": mime_type,
             "size_bytes": len(payload),
             "processing_status": file_status,
@@ -103,13 +100,9 @@ class FakeSupabaseAdminService:
 
         self.start_called = True
 
-        self.study_file[
-            "processing_status"
-        ] = "reading"
+        self.study_file["processing_status"] = "reading"
 
-        self.processing_job[
-            "status"
-        ] = "processing"
+        self.processing_job["status"] = "processing"
 
     async def mark_indexing(
         self,
@@ -119,9 +112,7 @@ class FakeSupabaseAdminService:
 
         self.indexing_called = True
 
-        self.study_file[
-            "processing_status"
-        ] = "indexing"
+        self.study_file["processing_status"] = "indexing"
 
     async def complete_processing(
         self,
@@ -135,13 +126,9 @@ class FakeSupabaseAdminService:
 
         self.complete_called = True
 
-        self.study_file[
-            "processing_status"
-        ] = "ready"
+        self.study_file["processing_status"] = "ready"
 
-        self.processing_job[
-            "status"
-        ] = "completed"
+        self.processing_job["status"] = "completed"
 
     async def fail_processing(
         self,
@@ -155,13 +142,9 @@ class FakeSupabaseAdminService:
 
         self.failure_called = True
 
-        self.study_file[
-            "processing_status"
-        ] = "failed"
+        self.study_file["processing_status"] = "failed"
 
-        self.processing_job[
-            "status"
-        ] = "failed"
+        self.processing_job["status"] = "failed"
 
 
 def build_settings() -> Settings:
@@ -170,9 +153,7 @@ def build_settings() -> Settings:
     return cast(
         Settings,
         SimpleNamespace(
-            max_processing_file_bytes=(
-                20 * 1024 * 1024
-            ),
+            max_processing_file_bytes=(20 * 1024 * 1024),
         ),
     )
 
@@ -257,10 +238,7 @@ def test_validate_queued_source() -> None:
     assert result.study_file_id == FILE_ID
     assert result.processing_job_id == JOB_ID
 
-    assert (
-        result.expected_size_bytes
-        == result.downloaded_size_bytes
-    )
+    assert result.expected_size_bytes == result.downloaded_size_bytes
 
     assert result.processing_status == "queued"
     assert result.job_status == "queued"
@@ -275,9 +253,7 @@ def test_extraction_failure_marks_job_failed() -> None:
     admin = FakeSupabaseAdminService(
         payload=b"Unsupported file content.",
         mime_type=(
-            "application/"
-            "vnd.openxmlformats-officedocument."
-            "wordprocessingml.document"
+            "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
         ),
     )
 
@@ -300,12 +276,6 @@ def test_extraction_failure_marks_job_failed() -> None:
     assert admin.complete_called is False
     assert admin.failure_called is True
 
-    assert (
-        admin.study_file["processing_status"]
-        == "failed"
-    )
+    assert admin.study_file["processing_status"] == "failed"
 
-    assert (
-        admin.processing_job["status"]
-        == "failed"
-    )
+    assert admin.processing_job["status"] == "failed"

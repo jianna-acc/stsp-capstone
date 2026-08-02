@@ -106,10 +106,8 @@ class FileProcessorService:
         """Confirm that a queued private file can be downloaded."""
 
         try:
-            study_file, processing_job = (
-                await self._load_context(
-                    file_id=file_id,
-                )
+            study_file, processing_job = await self._load_context(
+                file_id=file_id,
             )
 
             self._validate_matching_user(
@@ -129,10 +127,7 @@ class FileProcessorService:
             storage_path = self._get_required_text(
                 row=study_file,
                 field_name="storage_path",
-                error_message=(
-                    "The study file does not have "
-                    "a Storage path."
-                ),
+                error_message=("The study file does not have a Storage path."),
             )
 
             payload = await self._admin.download_private_object(
@@ -145,8 +140,7 @@ class FileProcessorService:
 
             if downloaded_size != expected_size:
                 raise FileProcessorConflictError(
-                    "The downloaded file size does not "
-                    "match the database record.",
+                    "The downloaded file size does not match the database record.",
                 )
 
             return ValidatedFileSource(
@@ -164,17 +158,13 @@ class FileProcessorService:
                     row=study_file,
                     field_name="original_filename",
                     error_message=(
-                        "The study file does not have "
-                        "an original filename."
+                        "The study file does not have an original filename."
                     ),
                 ),
                 mime_type=self._get_required_text(
                     row=study_file,
                     field_name="mime_type",
-                    error_message=(
-                        "The study file does not have "
-                        "a MIME type."
-                    ),
+                    error_message=("The study file does not have a MIME type."),
                 ),
                 expected_size_bytes=expected_size,
                 downloaded_size_bytes=downloaded_size,
@@ -199,10 +189,8 @@ class FileProcessorService:
         processing_active = False
 
         try:
-            study_file, processing_job = (
-                await self._load_context(
-                    file_id=file_id,
-                )
+            study_file, processing_job = await self._load_context(
+                file_id=file_id,
             )
 
             self._validate_matching_user(
@@ -217,28 +205,19 @@ class FileProcessorService:
             storage_path = self._get_required_text(
                 row=study_file,
                 field_name="storage_path",
-                error_message=(
-                    "The study file does not have "
-                    "a Storage path."
-                ),
+                error_message=("The study file does not have a Storage path."),
             )
 
             filename = self._get_required_text(
                 row=study_file,
                 field_name="original_filename",
-                error_message=(
-                    "The study file does not have "
-                    "an original filename."
-                ),
+                error_message=("The study file does not have an original filename."),
             )
 
             mime_type = self._get_required_text(
                 row=study_file,
                 field_name="mime_type",
-                error_message=(
-                    "The study file does not have "
-                    "a MIME type."
-                ),
+                error_message=("The study file does not have a MIME type."),
             )
 
             processing_job_id = self._get_uuid(
@@ -261,8 +240,7 @@ class FileProcessorService:
 
             if len(payload) != expected_size:
                 raise FileExtractionError(
-                    "The downloaded file size does not "
-                    "match its database record.",
+                    "The downloaded file size does not match its database record.",
                 )
 
             document = extract_document(
@@ -290,9 +268,7 @@ class FileProcessorService:
                 processing_job_id=processing_job_id,
                 filename=filename,
                 mime_type=mime_type,
-                character_count=(
-                    document.character_count
-                ),
+                character_count=(document.character_count),
                 chunk_count=len(
                     chunks,
                 ),
@@ -348,16 +324,13 @@ class FileProcessorService:
                 "The study file was not found.",
             )
 
-        processing_job = (
-            await self._admin.get_processing_job(
-                file_id=file_id,
-            )
+        processing_job = await self._admin.get_processing_job(
+            file_id=file_id,
         )
 
         if processing_job is None:
             raise FileProcessorConflictError(
-                "The study file does not have "
-                "a processing job.",
+                "The study file does not have a processing job.",
             )
 
         return study_file, processing_job
@@ -384,25 +357,18 @@ class FileProcessorService:
             ),
         )
 
-        if (
-            file_status == "queued"
-            and job_status == "queued"
-        ):
+        if file_status == "queued" and job_status == "queued":
             await self._admin.start_processing(
                 file_id=file_id,
             )
 
             return
 
-        if (
-            file_status == "reading"
-            and job_status == "processing"
-        ):
+        if file_status == "reading" and job_status == "processing":
             return
 
         raise FileProcessorConflictError(
-            "The file-processing state is not eligible "
-            "for processing.",
+            "The file-processing state is not eligible for processing.",
         )
 
     def _require_queued_state(
@@ -457,14 +423,9 @@ class FileProcessorService:
             ),
         ).strip()
 
-        if (
-            not file_user_id
-            or not job_user_id
-            or file_user_id != job_user_id
-        ):
+        if not file_user_id or not job_user_id or file_user_id != job_user_id:
             raise FileProcessorConflictError(
-                "The study file and processing job "
-                "do not belong to the same user.",
+                "The study file and processing job do not belong to the same user.",
             )
 
     def _get_expected_size(
@@ -485,23 +446,17 @@ class FileProcessorService:
             ValueError,
         ) as error:
             raise FileProcessorConflictError(
-                "The study file has an invalid "
-                "recorded size.",
+                "The study file has an invalid recorded size.",
             ) from error
 
         if expected_size <= 0:
             raise FileProcessorConflictError(
-                "The study file has an invalid "
-                "recorded size.",
+                "The study file has an invalid recorded size.",
             )
 
-        if (
-            expected_size
-            > self._settings.max_processing_file_bytes
-        ):
+        if expected_size > self._settings.max_processing_file_bytes:
             raise FileProcessorTooLargeError(
-                "The file exceeds the backend "
-                "processing limit.",
+                "The file exceeds the backend processing limit.",
             )
 
         return expected_size

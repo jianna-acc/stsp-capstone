@@ -10,7 +10,6 @@ from fastapi.security import APIKeyHeader
 
 from app.core.config import Settings, get_settings
 
-
 processor_key_header = APIKeyHeader(
     name="X-Processor-Key",
     auto_error=False,

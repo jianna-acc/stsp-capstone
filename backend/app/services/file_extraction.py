@@ -15,25 +15,22 @@ from zipfile import BadZipFile
 import xlrd
 from openpyxl import load_workbook
 from openpyxl.utils.exceptions import InvalidFileException
-from pypdf import PdfReader
-from pypdf.errors import PdfReadError
 from pptx import Presentation
 from pptx.exc import PackageNotFoundError, PythonPptxError
+from pypdf import PdfReader
+from pypdf.errors import PdfReadError
 from xlrd.xldate import XLDateError, xldate_as_datetime
-
 
 PDF_MIME_TYPE = "application/pdf"
 
 TEXT_MIME_TYPE = "text/plain"
 
 POWERPOINT_MIME_TYPE = (
-    "application/vnd.openxmlformats-officedocument."
-    "presentationml.presentation"
+    "application/vnd.openxmlformats-officedocument.presentationml.presentation"
 )
 
 EXCEL_XLSX_MIME_TYPE = (
-    "application/vnd.openxmlformats-officedocument."
-    "spreadsheetml.sheet"
+    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
 )
 
 EXCEL_XLS_MIME_TYPE = "application/vnd.ms-excel"
@@ -112,9 +109,7 @@ def extract_document(
             "The uploaded study file is empty.",
         )
 
-    normalized_mime_type = (
-        mime_type.strip().lower()
-    )
+    normalized_mime_type = mime_type.strip().lower()
 
     if normalized_mime_type == PDF_MIME_TYPE:
         return extract_pdf(
@@ -147,8 +142,7 @@ def extract_document(
         )
 
     raise FileExtractionError(
-        "This file type is not supported by the "
-        "current extractor.",
+        "This file type is not supported by the current extractor.",
     )
 
 
@@ -370,8 +364,7 @@ def extract_powerpoint(
 
         if notes_text:
             slide_parts.append(
-                "Speaker notes:\n"
-                f"{notes_text}",
+                f"Speaker notes:\n{notes_text}",
             )
 
         slide_text = normalize_extracted_text(
@@ -421,8 +414,7 @@ def extract_powerpoint(
 
     if not extracted_text:
         raise FileExtractionError(
-            "No readable text was found in the "
-            "PowerPoint presentation.",
+            "No readable text was found in the PowerPoint presentation.",
         )
 
     return ExtractedDocument(
@@ -462,9 +454,7 @@ def extract_powerpoint_shape_text(
 
         shape_text = normalize_extracted_text(
             "\n".join(
-                paragraph_text
-                for paragraph_text in paragraph_texts
-                if paragraph_text
+                paragraph_text for paragraph_text in paragraph_texts if paragraph_text
             ),
         )
 
@@ -492,10 +482,7 @@ def extract_powerpoint_shape_text(
                 cell_values,
             ):
                 fragments.append(
-                    " | ".join(
-                        value or ""
-                        for value in cell_values
-                    ).strip(),
+                    " | ".join(value or "" for value in cell_values).strip(),
                 )
 
     if bool(
@@ -558,9 +545,7 @@ def extract_powerpoint_notes(
         if not slide.has_notes_slide:
             return ""
 
-        notes_text_frame = (
-            slide.notes_slide.notes_text_frame
-        )
+        notes_text_frame = slide.notes_slide.notes_text_frame
 
         if notes_text_frame is None:
             return ""
@@ -573,11 +558,7 @@ def extract_powerpoint_notes(
         ]
 
         return normalize_extracted_text(
-            "\n".join(
-                line
-                for line in note_lines
-                if line
-            ),
+            "\n".join(line for line in note_lines if line),
         )
 
     except (
@@ -644,8 +625,7 @@ def extract_excel_workbook(
         workbook.close()
 
         raise FileExtractionError(
-            "The Excel workbook does not contain "
-            "any worksheets.",
+            "The Excel workbook does not contain any worksheets.",
         )
 
     sections: list[ExtractedSection] = []
@@ -674,10 +654,7 @@ def extract_excel_workbook(
                     for value in row
                 ]
 
-                while (
-                    formatted_values
-                    and not formatted_values[-1]
-                ):
+                while formatted_values and not formatted_values[-1]:
                     formatted_values.pop()
 
                 if not any(
@@ -687,11 +664,7 @@ def extract_excel_workbook(
 
                 populated_row_count += 1
 
-                populated_cell_count += sum(
-                    1
-                    for value in formatted_values
-                    if value
-                )
+                populated_cell_count += sum(1 for value in formatted_values if value)
 
                 row_fragments.append(
                     f"Row {row_number}: "
@@ -709,10 +682,7 @@ def extract_excel_workbook(
             if not sheet_text:
                 continue
 
-            locator_label = (
-                f"Sheet {sheet_number}: "
-                f"{worksheet.title}"
-            )
+            locator_label = f"Sheet {sheet_number}: {worksheet.title}"
 
             sections.append(
                 ExtractedSection(
@@ -722,12 +692,8 @@ def extract_excel_workbook(
                     metadata={
                         "sheet_number": sheet_number,
                         "sheet_name": worksheet.title,
-                        "populated_row_count": (
-                            populated_row_count
-                        ),
-                        "populated_cell_count": (
-                            populated_cell_count
-                        ),
+                        "populated_row_count": (populated_row_count),
+                        "populated_cell_count": (populated_cell_count),
                         "filename": filename,
                         "workbook_format": "xlsx",
                     },
@@ -749,8 +715,7 @@ def extract_excel_workbook(
 
     if not extracted_text:
         raise FileExtractionError(
-            "No readable cell values were found in "
-            "the Excel workbook.",
+            "No readable cell values were found in the Excel workbook.",
         )
 
     return ExtractedDocument(
@@ -791,8 +756,7 @@ def extract_legacy_excel_workbook(
         workbook.release_resources()
 
         raise FileExtractionError(
-            "The legacy Excel workbook does not contain "
-            "any worksheets.",
+            "The legacy Excel workbook does not contain any worksheets.",
         )
 
     sections: list[ExtractedSection] = []
@@ -833,10 +797,7 @@ def extract_legacy_excel_workbook(
                     )
                 ]
 
-                while (
-                    formatted_values
-                    and not formatted_values[-1]
-                ):
+                while formatted_values and not formatted_values[-1]:
                     formatted_values.pop()
 
                 if not any(
@@ -846,11 +807,7 @@ def extract_legacy_excel_workbook(
 
                 populated_row_count += 1
 
-                populated_cell_count += sum(
-                    1
-                    for value in formatted_values
-                    if value
-                )
+                populated_cell_count += sum(1 for value in formatted_values if value)
 
                 row_fragments.append(
                     f"Row {row_index + 1}: "
@@ -868,10 +825,7 @@ def extract_legacy_excel_workbook(
             if not sheet_text:
                 continue
 
-            locator_label = (
-                f"Sheet {sheet_number}: "
-                f"{worksheet.name}"
-            )
+            locator_label = f"Sheet {sheet_number}: {worksheet.name}"
 
             sections.append(
                 ExtractedSection(
@@ -881,12 +835,8 @@ def extract_legacy_excel_workbook(
                     metadata={
                         "sheet_number": sheet_number,
                         "sheet_name": worksheet.name,
-                        "populated_row_count": (
-                            populated_row_count
-                        ),
-                        "populated_cell_count": (
-                            populated_cell_count
-                        ),
+                        "populated_row_count": (populated_row_count),
+                        "populated_cell_count": (populated_cell_count),
                         "filename": filename,
                         "workbook_format": "xls",
                     },
@@ -916,8 +866,7 @@ def extract_legacy_excel_workbook(
 
     if not extracted_text:
         raise FileExtractionError(
-            "No readable cell values were found in "
-            "the legacy Excel workbook.",
+            "No readable cell values were found in the legacy Excel workbook.",
         )
 
     return ExtractedDocument(
@@ -1092,12 +1041,8 @@ def normalize_numeric_value(
 
 def chunk_extracted_document(
     document: ExtractedDocument,
-    max_characters: int = (
-        DEFAULT_MAX_CHUNK_CHARACTERS
-    ),
-    overlap_characters: int = (
-        DEFAULT_CHUNK_OVERLAP_CHARACTERS
-    ),
+    max_characters: int = (DEFAULT_MAX_CHUNK_CHARACTERS),
+    overlap_characters: int = (DEFAULT_CHUNK_OVERLAP_CHARACTERS),
 ) -> list[ExtractedChunk]:
     """Split extracted sections into overlapping text chunks."""
 
@@ -1113,8 +1058,7 @@ def chunk_extracted_document(
 
     if overlap_characters >= max_characters:
         raise ValueError(
-            "overlap_characters must be smaller than "
-            "max_characters.",
+            "overlap_characters must be smaller than max_characters.",
         )
 
     chunks: list[ExtractedChunk] = []
@@ -1142,17 +1086,14 @@ def chunk_extracted_document(
                     ),
                     metadata={
                         **section.metadata,
-                        "section_chunk_index": (
-                            section_chunk_index
-                        ),
+                        "section_chunk_index": (section_chunk_index),
                     },
                 ),
             )
 
     if not chunks:
         raise FileExtractionError(
-            "The extracted document did not produce "
-            "any readable chunks.",
+            "The extracted document did not produce any readable chunks.",
         )
 
     return chunks
@@ -1194,9 +1135,7 @@ def split_text_into_chunks(
                 proposed_end=proposed_end,
             )
 
-        chunk = normalized_text[
-            start_index:end_index
-        ].strip()
+        chunk = normalized_text[start_index:end_index].strip()
 
         if chunk:
             chunks.append(
@@ -1211,10 +1150,7 @@ def split_text_into_chunks(
             start_index + 1,
         )
 
-        while (
-            next_start < text_length
-            and normalized_text[next_start].isspace()
-        ):
+        while next_start < text_length and normalized_text[next_start].isspace():
             next_start += 1
 
         start_index = next_start
@@ -1229,15 +1165,8 @@ def find_chunk_boundary(
 ) -> int:
     """Find a natural break before the maximum size."""
 
-    minimum_boundary = (
-        start_index
-        + int(
-            (
-                proposed_end
-                - start_index
-            )
-            * 0.6,
-        )
+    minimum_boundary = start_index + int(
+        (proposed_end - start_index) * 0.6,
     )
 
     boundary_candidates = [

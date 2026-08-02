@@ -601,3 +601,35 @@ git diff --check
 ```
 
 Confirm that all paths in this document are updated whenever files are renamed, added, or removed.
+---
+
+## Phase 4B — AI Provider Foundation
+
+| File | Purpose | Owner | System connections |
+|---|---|---|---|
+| `backend/.env.example` | Documents safe AI provider environment-variable names and defaults without storing credentials. | Backend / AI | `Settings`, local `.env`, Gemini provider |
+| `backend/app/core/config.py` | Loads and validates AI provider, model, dimension, timeout, generation, and live-test settings. | Backend / AI | `.env`, `GeminiProvider`, smoke-test scripts |
+| `backend/app/ai/__init__.py` | Exposes shared AI contracts and controlled exception types. | Backend / AI | Backend services, providers, tests |
+| `backend/app/ai/contracts.py` | Defines generation and embedding requests, results, task types, and asynchronous provider protocols. | Backend / AI | Future RAG services, `GeminiProvider`, tests |
+| `backend/app/ai/errors.py` | Defines controlled configuration, request, and response exceptions for AI providers. | Backend / AI | `GeminiProvider`, future API error handling |
+| `backend/app/ai/providers/__init__.py` | Exposes concrete AI provider implementations. | Backend / AI | Provider imports, backend services |
+| `backend/app/ai/providers/gemini.py` | Implements asynchronous Gemini generation and embedding operations behind shared interfaces. | Backend / AI | Google Gen AI SDK, `Settings`, AI contracts |
+| `backend/app/ai/smoke/__init__.py` | Marks the package containing explicitly controlled live AI smoke tests. | Backend / AI | Embedding and generation smoke scripts |
+| `backend/app/ai/smoke/embedding.py` | Runs guarded live document and query embedding connectivity tests without printing vectors or credentials. | Backend / AI | `GeminiProvider`, Gemini Embedding 2, private `.env` |
+| `backend/app/ai/smoke/generation.py` | Runs a guarded live generation connectivity test using a fixed non-sensitive marker. | Backend / AI | `GeminiProvider`, Gemini 3.6 Flash, private `.env` |
+| `backend/tests/test_ai_config.py` | Tests AI settings, safe defaults, normalization, and validation without external requests. | Backend / QA | `Settings` |
+| `backend/tests/test_ai_contracts.py` | Tests provider-independent AI contracts, validation, protocols, and exception hierarchy. | Backend / QA | `app.ai.contracts`, `app.ai.errors` |
+| `backend/tests/test_gemini_provider.py` | Tests Gemini request construction, response parsing, errors, timeout handling, and cleanup using fake clients. | Backend / QA | `GeminiProvider`, Google Gen AI SDK types |
+| `docs/AI_PROVIDER.md` | Documents the AI provider architecture, configuration, safety controls, and smoke-test workflow. | Documentation / AI | All Phase 4B AI files |
+| `docs/PROJECT_FILE_MAP.md` | Maintains the master inventory of project files, purposes, owners, and connections. | Documentation | Entire repository |
+| `docs/ARCHITECTURE.md` | Shows how the AI provider layer connects to backend services, configuration, Gemini models, and tests. | Documentation / Architecture | Backend, AI provider, Gemini API |
+
+### Phase 4B System Connections
+
+- Backend services depend on the provider-independent interfaces in `contracts.py`.
+- `GeminiProvider` implements both `GenerationProvider` and `EmbeddingProvider`.
+- `GeminiProvider` reads model and request settings through `Settings`.
+- The Google Gen AI SDK is isolated inside the concrete Gemini provider.
+- Offline tests inject fake clients and never contact Gemini.
+- Live smoke tests require an API key, an enabled environment flag, and explicit command-line confirmation.
+- Future chunking, retrieval, RAG, citation, and assistant services will call the shared provider interfaces rather than the SDK directly.

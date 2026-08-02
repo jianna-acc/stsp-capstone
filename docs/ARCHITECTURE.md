@@ -1309,3 +1309,102 @@ Update this document when:
 8. Ownership of a module changes.
 9. A major connection is removed.
 10. A development phase is completed.
+---
+
+## Phase 4B — AI Provider Foundation
+
+Phase 4B introduces a provider-independent AI layer between backend application services and external AI models.
+
+Backend services must use the shared generation and embedding contracts instead of importing the Google Gen AI SDK directly.
+
+```mermaid
+flowchart TD
+    Services["Backend and Future RAG Services"]
+    Contracts["AI Contracts and Provider Protocols"]
+    Generation["GenerationProvider"]
+    Embedding["EmbeddingProvider"]
+    Provider["GeminiProvider"]
+    Settings["Typed Settings and Private .env"]
+    GenerationModel["Gemini 3.6 Flash"]
+    EmbeddingModel["Gemini Embedding 2"]
+    Errors["Controlled AI Provider Errors"]
+    OfflineTests["Offline Tests with Fake Clients"]
+    SmokeTests["Explicitly Controlled Live Smoke Tests"]
+
+    Services --> Contracts
+    Contracts --> Generation
+    Contracts --> Embedding
+
+    Generation --> Provider
+    Embedding --> Provider
+
+    Settings --> Provider
+
+    Provider --> GenerationModel
+    Provider --> EmbeddingModel
+    Provider --> Errors
+
+    OfflineTests -. inject fake clients .-> Provider
+    SmokeTests --> Provider
+```
+
+### Generation Request Flow
+
+```mermaid
+sequenceDiagram
+    participant Service as Backend Service
+    participant Request as GenerationRequest
+    participant Provider as GeminiProvider
+    participant Gemini as Gemini 3.6 Flash
+
+    Service->>Request: Create validated request
+    Service->>Provider: await generate(request)
+    Provider->>Provider: Apply configured defaults
+    Provider->>Gemini: Send controlled generation request
+    Gemini-->>Provider: Return generated response
+    Provider->>Provider: Validate text and usage metadata
+    Provider-->>Service: Return GenerationResult
+```
+
+### Embedding Request Flow
+
+```mermaid
+sequenceDiagram
+    participant Service as Backend or RAG Service
+    participant Request as EmbeddingRequest
+    participant Provider as GeminiProvider
+    participant Gemini as Gemini Embedding 2
+
+    Service->>Request: Create texts and retrieval task type
+    Service->>Provider: await embed(request)
+    Provider->>Provider: Format document or query text
+    Provider->>Gemini: Request configured-dimension vectors
+    Gemini-->>Provider: Return embedding response
+    Provider->>Provider: Validate count, dimensions, and values
+    Provider-->>Service: Return EmbeddingResult
+```
+
+### Runtime Rules
+
+1. Importing FastAPI does not automatically instantiate the Gemini client.
+2. A Gemini client is created only when an AI operation requires it.
+3. API credentials remain in the ignored `backend/.env` file.
+4. Normal backend tests use fake clients and do not consume Gemini quota.
+5. Live smoke tests require both environment authorization and command-line confirmation.
+6. The live smoke-test flag returns to `false` after controlled testing.
+7. Future RAG and assistant services must depend on `GenerationProvider` and `EmbeddingProvider`, not directly on `GeminiProvider`.
+
+### Current Phase Boundary
+
+Phase 4B provides only the AI provider foundation.
+
+The following remain for later Phase 4 checkpoints:
+
+- Study-material chunking
+- Embedding persistence
+- Vector similarity search
+- Retrieval-augmented generation
+- Source citation construction
+- Assistant API routes
+- Conversation persistence
+- Student-facing assistant integration
