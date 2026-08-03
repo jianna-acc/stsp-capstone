@@ -1719,3 +1719,150 @@ The next phase may introduce:
 6. Retrieval services and API endpoints.
 
 Those changes must preserve the existing source-aware extraction records, maintain user-data isolation, and keep backend credentials outside frontend code.
+
+<!-- PHASE 4D VECTOR ARCHITECTURE START -->
+# Implemented Phase 4D AI Vector Indexing Architecture
+
+The following connection is implemented and has passed both offline tests and a controlled live smoke test.
+
+```mermaid
+flowchart LR
+    STORAGE[("Private Study File Storage")]
+    WORKER["FileProcessingWorker"]
+    PROCESSOR["FileProcessorService"]
+    EXTRACTOR["File Extraction"]
+    PREPARER["StudyMaterialPreparer"]
+    SOURCE_CHUNKS["Source-Aware Chunks"]
+    AI_CHUNKS["AI Chunks and Batches"]
+    INDEXER["StudyMaterialVectorIndexer"]
+    EMBEDDER["StudyMaterialEmbedder"]
+    GEMINI["Gemini Embedding API"]
+    VALIDATOR["Vector Validation"]
+    ADMIN["SupabaseAdminService"]
+    VECTOR_RPC["replace_study_file_ai_chunks"]
+    AI_TABLE[("study_file_ai_chunks")]
+    COMPLETE_RPC["complete_study_file_processing"]
+    CONTENT_TABLE[("study_file_contents")]
+    SOURCE_TABLE[("study_file_chunks")]
+    READY["Study File Ready"]
+
+    STORAGE --> WORKER
+    WORKER --> PROCESSOR
+    PROCESSOR --> EXTRACTOR
+
+    EXTRACTOR --> SOURCE_CHUNKS
+    EXTRACTOR --> PREPARER
+    PREPARER --> AI_CHUNKS
+
+    SOURCE_CHUNKS --> PROCESSOR
+    AI_CHUNKS --> INDEXER
+
+    INDEXER --> EMBEDDER
+    EMBEDDER --> GEMINI
+    GEMINI --> VALIDATOR
+    VALIDATOR --> INDEXER
+
+    INDEXER --> ADMIN
+    ADMIN --> VECTOR_RPC
+    VECTOR_RPC --> AI_TABLE
+
+    AI_TABLE --> COMPLETE_RPC
+    SOURCE_CHUNKS --> COMPLETE_RPC
+    EXTRACTOR --> COMPLETE_RPC
+
+    COMPLETE_RPC --> CONTENT_TABLE
+    COMPLETE_RPC --> SOURCE_TABLE
+    COMPLETE_RPC --> READY
+```
+
+## Phase 4D Processing Sequence
+
+```mermaid
+sequenceDiagram
+    participant Worker as FileProcessingWorker
+    participant Processor as FileProcessorService
+    participant Storage as Supabase Storage
+    participant Preparer as StudyMaterialPreparer
+    participant Database as Supabase Processing RPCs
+    participant Indexer as StudyMaterialVectorIndexer
+    participant Embedder as StudyMaterialEmbedder
+    participant Gemini as Gemini API
+    participant VectorRPC as Vector Persistence RPC
+
+    Worker->>Processor: process_file(study_file_id)
+    Processor->>Database: start or accept processing job
+    Processor->>Storage: download private object
+    Storage-->>Processor: file bytes
+    Processor->>Processor: extract document and source chunks
+    Processor->>Preparer: prepare normalized AI chunks
+    Preparer-->>Processor: StudyMaterialPreparation
+    Processor->>Database: mark_study_file_indexing
+    Processor->>Indexer: index_preparation()
+    Indexer->>Embedder: embed_preparation()
+    Embedder->>Gemini: retrieval_document embedding request
+    Gemini-->>Embedder: 768-dimensional vectors
+    Embedder-->>Indexer: validated embedding result
+    Indexer->>VectorRPC: replace_study_file_ai_chunks
+    VectorRPC-->>Indexer: persisted chunk count
+    Indexer-->>Processor: vector-indexing result
+    Processor->>Database: complete_study_file_processing
+    Database-->>Processor: file ready and job completed
+    Processor-->>Worker: ProcessedFileResult
+```
+
+## Implemented Vector Data Relationships
+
+```mermaid
+erDiagram
+    AUTH_USERS ||--o{ STUDY_FILES : owns
+    AUTH_USERS ||--o{ STUDY_FILE_AI_CHUNKS : owns
+    STUDY_FILES ||--|| FILE_PROCESSING_JOBS : has
+    STUDY_FILES ||--o| STUDY_FILE_CONTENTS : produces
+    STUDY_FILES ||--o{ STUDY_FILE_CHUNKS : produces
+    STUDY_FILES ||--o{ STUDY_FILE_AI_CHUNKS : indexes
+
+    STUDY_FILE_AI_CHUNKS {
+        uuid id PK
+        uuid user_id FK
+        uuid study_file_id FK
+        integer chunk_index
+        text content
+        integer start_offset
+        integer end_offset
+        text source_name
+        text embedding_model
+        integer embedding_dimensions
+        text embedding_task_type
+        vector embedding
+        jsonb chunk_metadata
+        timestamptz created_at
+        timestamptz updated_at
+    }
+```
+
+## Implemented Security Boundary
+
+```mermaid
+flowchart LR
+    USER["Authenticated Student"]
+    BROWSER["Supabase Browser Client"]
+    OWN_ROWS["Own AI Chunk Rows"]
+    BACKEND["Trusted FastAPI Backend"]
+    SERVICE_ROLE["Supabase Service Role"]
+    RPC["replace_study_file_ai_chunks"]
+    TABLE[("study_file_ai_chunks")]
+
+    USER --> BROWSER
+    BROWSER -->|"RLS-protected SELECT only"| OWN_ROWS
+    OWN_ROWS --> TABLE
+
+    BACKEND --> SERVICE_ROLE
+    SERVICE_ROLE -->|"EXECUTE"| RPC
+    RPC -->|"Validated INSERT / UPDATE / DELETE"| TABLE
+
+    BROWSER -. "No direct vector writes" .-> TABLE
+    USER -. "Cannot execute trusted RPC" .-> RPC
+```
+
+The retrieval-query embedding, vector similarity-search endpoint, and grounded AI-answer flow remain planned for the next retrieval phase.
+<!-- PHASE 4D VECTOR ARCHITECTURE END -->

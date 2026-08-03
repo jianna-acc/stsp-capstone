@@ -496,3 +496,74 @@ The following capabilities belong to later Phase 4 work:
 * Conversation persistence
 * Prompt orchestration
 * Student-facing assistant integration
+
+<!-- PHASE 4D PROVIDER INTEGRATION START -->
+# Phase 4D Embedding Integration Status
+
+The Gemini embedding provider is now connected to the production study-file processing pipeline.
+
+The implemented connection is:
+
+```text
+StudyMaterialPreparation
+? StudyMaterialEmbedder
+? Gemini embedding provider
+? validated 768-dimensional vectors
+? StudyMaterialVectorIndexer
+? Supabase vector persistence
+```
+
+## Document Embedding Configuration
+
+```text
+Embedding model: gemini-embedding-2
+Output dimensions: 768
+Document task type: retrieval_document
+Batch size: controlled by AI_EMBEDDING_BATCH_SIZE
+```
+
+The `retrieval_query` task type remains reserved for the later semantic-retrieval workflow.
+
+## Offline and Live Behavior
+
+Normal automated tests inject stub providers and do not call Gemini.
+
+Live embedding is permitted only when:
+
+```env
+AI_LIVE_SMOKE_TESTS_ENABLED=true
+```
+
+The complete live file-to-vector smoke command is:
+
+```powershell
+cd backend
+
+python -m scripts.smoke_live_file_vector_pipeline `
+    --file-id <DISPOSABLE-STUDY-FILE-UUID>
+```
+
+After the controlled test:
+
+```env
+AI_LIVE_SMOKE_TESTS_ENABLED=false
+```
+
+must be restored immediately.
+
+## Provider Response Validation
+
+The embedding execution layer verifies:
+
+- One returned vector for every requested text.
+- Exactly 768 values in every vector.
+- Numeric real values only.
+- No Boolean values.
+- No `NaN`.
+- No positive or negative infinity.
+- Preserved batch and chunk ordering.
+
+Invalid provider responses are converted into controlled embedding failures rather than being sent to the database.
+
+See `/docs/AI_VECTOR_PIPELINE.md` for the complete indexing, persistence, security, and cleanup workflow.
+<!-- PHASE 4D PROVIDER INTEGRATION END -->

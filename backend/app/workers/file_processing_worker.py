@@ -23,6 +23,12 @@ from app.services.file_processor import (
     FileProcessorService,
     ProcessedFileResult,
 )
+from app.services.study_material_embedder import (
+    StudyMaterialEmbedder,
+)
+from app.services.study_material_vector_indexer import (
+    StudyMaterialVectorIndexer,
+)
 from app.services.supabase_admin import (
     ClaimedProcessingJob,
     RecoveredProcessingJobs,
@@ -158,8 +164,23 @@ class FileProcessingWorker:
     ) -> FileProcessorService:
         """Create the reusable processor used by the worker."""
 
+        admin_service = SupabaseAdminService(
+            settings=self._settings,
+        )
+
+        embedder = StudyMaterialEmbedder(
+            settings=self._settings,
+        )
+
+        vector_indexer = StudyMaterialVectorIndexer(
+            embedder=embedder,
+            persistence=admin_service,
+        )
+
         return FileProcessorService(
             settings=self._settings,
+            admin_service=admin_service,
+            vector_indexer=vector_indexer,
         )
 
     async def recover_stale_jobs(

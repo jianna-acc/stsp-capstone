@@ -21,6 +21,11 @@ from app.services.file_extraction import (
 from app.services.study_material_preparer import (
     StudyMaterialPreparer,
 )
+from app.services.study_material_vector_indexer import (
+    StudyMaterialVectorEmbeddingStepError,
+    StudyMaterialVectorPersistenceStepError,
+    StudyMaterialVectorPreparationError,
+)
 from app.services.supabase_admin import (
     SupabaseAdminError,
     SupabaseAdminService,
@@ -51,8 +56,30 @@ class FileProcessorPreparationError(FileProcessorError):
     """Raised when extracted content cannot be prepared for embedding."""
 
 
+class FileProcessorEmbeddingError(FileProcessorError):
+    """Raised when study-material embedding execution fails."""
+
+
+class FileProcessorVectorPersistenceError(FileProcessorError):
+    """Raised when AI vectors cannot be persisted safely."""
+
+
 class FileProcessorUpstreamError(FileProcessorError):
     """Raised when Supabase or Storage cannot be reached."""
+
+
+class StudyMaterialVectorIndexerProtocol(Protocol):
+    """Vector-indexing dependency required by the processor."""
+
+    async def index_preparation(
+        self,
+        *,
+        study_file_id: UUID,
+        preparation: StudyMaterialPreparation,
+    ) -> object:
+        """Embed and persist one prepared study material."""
+
+        ...
 
 
 @dataclass(frozen=True)
@@ -116,6 +143,7 @@ class FileProcessorService:
         settings: Settings,
         admin_service: SupabaseAdminService | None = None,
         preparer: StudyMaterialPreparerProtocol | None = None,
+        vector_indexer: StudyMaterialVectorIndexerProtocol | None = None,
     ) -> None:
         self._settings = settings
 
@@ -134,6 +162,8 @@ class FileProcessorService:
                 settings=settings,
             )
         )
+
+        self._vector_indexer = vector_indexer
 
     async def validate_source(
         self,
@@ -285,7 +315,7 @@ class FileProcessorService:
                 filename=filename,
             )
 
-            self._prepare_for_embedding(
+            preparation = self._prepare_for_embedding(
                 file_id=file_id,
                 filename=filename,
                 extracted_text=document.extracted_text,
@@ -297,6 +327,11 @@ class FileProcessorService:
 
             await self._admin.mark_indexing(
                 file_id=file_id,
+            )
+
+            await self._index_for_retrieval(
+                file_id=file_id,
+                preparation=preparation,
             )
 
             await self._admin.complete_processing(
@@ -326,6 +361,26 @@ class FileProcessorService:
                 await self._best_effort_failure(
                     file_id=file_id,
                     error_code="PREPARATION_FAILED",
+                    error_message=str(error),
+                )
+
+            raise
+
+        except FileProcessorEmbeddingError as error:
+            if processing_active:
+                await self._best_effort_failure(
+                    file_id=file_id,
+                    error_code="EMBEDDING_FAILED",
+                    error_message=str(error),
+                )
+
+            raise
+
+        except FileProcessorVectorPersistenceError as error:
+            if processing_active:
+                await self._best_effort_failure(
+                    file_id=file_id,
+                    error_code="VECTOR_PERSISTENCE_FAILED",
                     error_message=str(error),
                 )
 
@@ -383,6 +438,38 @@ class FileProcessorService:
                 or (
                     "The extracted study material could not be prepared for embedding."
                 ),
+            ) from error
+
+    async def _index_for_retrieval(
+        self,
+        *,
+        file_id: UUID,
+        preparation: StudyMaterialPreparation,
+    ) -> None:
+        """Embed and persist prepared chunks when configured."""
+
+        if self._vector_indexer is None:
+            return
+
+        try:
+            await self._vector_indexer.index_preparation(
+                study_file_id=file_id,
+                preparation=preparation,
+            )
+
+        except StudyMaterialVectorPreparationError as error:
+            raise FileProcessorPreparationError(
+                str(error),
+            ) from error
+
+        except StudyMaterialVectorEmbeddingStepError as error:
+            raise FileProcessorEmbeddingError(
+                str(error),
+            ) from error
+
+        except StudyMaterialVectorPersistenceStepError as error:
+            raise FileProcessorVectorPersistenceError(
+                str(error),
             ) from error
 
     async def _load_context(

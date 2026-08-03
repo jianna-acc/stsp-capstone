@@ -270,3 +270,55 @@ Similarity-search database functions.
 Retrieval services and APIs.
 
 Those changes must preserve the existing source-aware extraction records and must not expose backend credentials.
+
+<!-- PHASE 4D PREPARATION INTEGRATION START -->
+# Current Downstream Integration Status
+
+The preparation pipeline is no longer an isolated or future-only component.
+
+Its implemented downstream flow is:
+
+```text
+Extracted document text
+? StudyMaterialPreparer
+? StudyMaterialPreparation
+? StudyMaterialEmbedder
+? Gemini retrieval_document embeddings
+? StudyMaterialVectorIndexer
+? validated persistence payload
+? Supabase study_file_ai_chunks
+```
+
+Any earlier statement in this document that describes embedding execution or vector persistence as future work is superseded by this section.
+
+The preparation layer remains responsible only for deterministic local work:
+
+- Text normalization.
+- Chunk creation.
+- Character offsets.
+- Stable chunk ordering.
+- Source filename preservation.
+- Embedding batching.
+- Provider-independent embedding requests.
+
+The preparation layer does not:
+
+- Read Gemini credentials.
+- Call Gemini directly.
+- Write to Supabase directly.
+- Change processing database state.
+- Complete the processing job.
+
+Those responsibilities belong to:
+
+| Responsibility | Component |
+|---|---|
+| Execute embedding requests | `StudyMaterialEmbedder` |
+| Validate provider vectors | `StudyMaterialEmbedder` |
+| Build validated RPC payloads | `vector_persistence.py` |
+| Orchestrate embedding and persistence | `StudyMaterialVectorIndexer` |
+| Persist through trusted RPC | `SupabaseAdminService` |
+| Control processing order and failure codes | `FileProcessorService` |
+
+See `/docs/AI_VECTOR_PIPELINE.md` for the complete implemented downstream workflow.
+<!-- PHASE 4D PREPARATION INTEGRATION END -->

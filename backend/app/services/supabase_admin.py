@@ -9,6 +9,7 @@ from uuid import UUID
 
 import httpx
 
+from app.ai.vector_persistence import AIChunkPersistencePayload
 from app.core.config import Settings
 from app.services.file_extraction import (
     ExtractedChunk,
@@ -651,6 +652,43 @@ class SupabaseAdminService:
                 "p_chunks": (serialized_chunks),
             },
         )
+
+    async def persist_ai_chunks(
+        self,
+        payload: AIChunkPersistencePayload,
+    ) -> int:
+        """Persist AI chunks and validate the stored count."""
+
+        response_data = await self._call_rpc_json(
+            function_name=("replace_study_file_ai_chunks"),
+            payload=payload.to_rpc_payload(),
+        )
+
+        if isinstance(
+            response_data,
+            bool,
+        ) or not isinstance(
+            response_data,
+            int,
+        ):
+            raise SupabaseAdminError(
+                "Supabase returned an invalid AI-chunk persistence count.",
+            )
+
+        if response_data < 0:
+            raise SupabaseAdminError(
+                "Supabase returned a negative AI-chunk persistence count.",
+            )
+
+        if response_data != payload.chunk_count:
+            raise SupabaseAdminError(
+                "Supabase persisted an unexpected "
+                "number of AI chunks. "
+                f"Expected {payload.chunk_count}, "
+                f"received {response_data}."
+            )
+
+        return response_data
 
     async def fail_processing(
         self,

@@ -659,3 +659,25 @@ Confirm that all paths in this document are updated whenever files are renamed, 
 | `docs/AI_PREPARATION_PIPELINE.md` | Documents Phase 4C behavior, boundaries, configuration, and failure handling. | Documentation | AI preparation implementation |
 | `docs/ARCHITECTURE.md` | Adds the Phase 4C Mermaid architecture and sequence flow. | Architecture | File processor, preparation pipeline, persistence |
 | `docs/PROJECT_FILE_MAP.md` | Records Phase 4C file ownership and system connections. | Documentation | Entire repository |
+
+<!-- PHASE 4D VECTOR FILE MAP START -->
+# Phase 4D AI Vector Indexing Files
+
+| Path | Status | Owner | Purpose | Connected To |
+|---|---|---|---|---|
+| `/docs/AI_VECTOR_PIPELINE.md` | Integrated | Member 3 and Member 5 | Documents the implemented Gemini embedding and Supabase vector-indexing pipeline | File processor, Gemini provider, pgvector migration, tests, and live smoke script |
+| `/backend/app/ai/vector_persistence.py` | Integrated | Member 3 | Validates AI chunks, embeddings, metadata, and trusted RPC serialization | `StudyMaterialChunk`, `StudyMaterialVectorIndexer`, and `SupabaseAdminService` |
+| `/backend/app/services/study_material_embedder.py` | Integrated | Member 3 | Executes prepared embedding batches and validates provider vectors | `StudyMaterialPreparation`, Gemini provider, and vector indexer |
+| `/backend/app/services/study_material_vector_indexer.py` | Integrated | Member 3 | Orchestrates embedding, validated payload creation, and vector persistence | Study-material embedder, vector-persistence contracts, Supabase admin service, and file processor |
+| `/backend/app/services/file_processor.py` | Integrated | Member 3 | Runs AI preparation and vector indexing between extraction and final processing completion | Extractors, preparer, vector indexer, Supabase admin service, and worker |
+| `/backend/app/services/supabase_admin.py` | Integrated | Member 3 and Member 4 | Calls trusted processing and vector-persistence RPC functions | Hosted Supabase PostgreSQL, Storage, processing functions, and `replace_study_file_ai_chunks` |
+| `/backend/app/workers/file_processing_worker.py` | Integrated | Member 3 | Constructs and executes the production file processor, embedder, and vector indexer | File-processing queue, Gemini, Supabase, and stale-job recovery |
+| `/backend/scripts/smoke_live_file_vector_pipeline.py` | Ready | Member 3 and Member 5 | Runs one explicitly enabled live file-to-vector smoke test | Private backend settings, Gemini API, Supabase Storage, and vector RPC |
+| `/backend/tests/test_ai_vector_migration.py` | Ready | Member 5 | Verifies the vector migration's schema, RLS, index, and RPC contracts offline | Phase 4D pgvector migration |
+| `/backend/tests/test_vector_persistence.py` | Ready | Member 5 | Tests AI chunk and embedding validation and RPC serialization | `vector_persistence.py` |
+| `/backend/tests/test_supabase_ai_chunk_persistence.py` | Ready | Member 5 | Tests mocked trusted vector RPC calls and stored-count validation | `SupabaseAdminService.persist_ai_chunks()` |
+| `/backend/tests/test_study_material_embedder.py` | Ready | Member 5 | Tests embedding execution and vector validation using stub providers | `StudyMaterialEmbedder` |
+| `/backend/tests/test_study_material_vector_indexer.py` | Ready | Member 5 | Tests embed-and-persist orchestration without external calls | `StudyMaterialVectorIndexer` |
+| `/backend/tests/test_file_processor_vector_indexing.py` | Ready | Member 5 | Tests processing order and controlled vector failure codes | `FileProcessorService` and injected vector indexer |
+| `/supabase/migrations/20260803020921_create_ai_chunk_vector_foundation.sql` | Integrated | Member 4 | Enables pgvector, creates AI chunk storage and HNSW indexing, configures RLS, and creates the trusted persistence RPC | `study_files`, `file_processing_jobs`, `study_file_ai_chunks`, service role, and backend persistence |
+<!-- PHASE 4D VECTOR FILE MAP END -->
