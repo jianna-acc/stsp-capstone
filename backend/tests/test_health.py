@@ -5,7 +5,6 @@ from fastapi.testclient import TestClient
 
 from app.main import app
 
-
 client = TestClient(app)
 
 
@@ -37,7 +36,4 @@ def test_health_endpoint_allows_frontend_origin() -> None:
 
     assert response.status_code == 200
 
-    assert (
-        response.headers["access-control-allow-origin"]
-        == "http://localhost:3000"
-    )
+    assert response.headers["access-control-allow-origin"] == "http://localhost:3000"

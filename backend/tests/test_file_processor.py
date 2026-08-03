@@ -22,7 +22,6 @@ from app.services.supabase_admin import (
     SupabaseAdminService,
 )
 
-
 FILE_ID = UUID(
     "f0dbc2c6-3e77-4609-a5b5-ecf8f64b60c7",
 )
@@ -35,9 +34,7 @@ USER_ID = UUID(
     "c1ec7032-b353-4577-9b98-1f2dc8392af8",
 )
 
-STORAGE_PATH = (
-    f"{USER_ID}/subject/file/lesson.txt"
-)
+STORAGE_PATH = f"{USER_ID}/subject/file/lesson.txt"
 
 TEXT_PAYLOAD = (
     b"Operating systems manage hardware resources.\n"
@@ -60,9 +57,7 @@ class FakeAdminService:
         self.study_file: dict[str, Any] = {
             "id": str(FILE_ID),
             "user_id": str(USER_ID),
-            "subject_id": (
-                "f5a86910-d2b0-49f4-899e-6f40bf734557"
-            ),
+            "subject_id": ("f5a86910-d2b0-49f4-899e-6f40bf734557"),
             "topic": "Operating Systems",
             "original_filename": "lesson.txt",
             "storage_path": STORAGE_PATH,
@@ -93,13 +88,9 @@ class FakeAdminService:
         self.completed_file_id: UUID | None = None
         self.failed_file_id: UUID | None = None
 
-        self.completed_document: (
-            ExtractedDocument | None
-        ) = None
+        self.completed_document: ExtractedDocument | None = None
 
-        self.completed_chunks: (
-            list[ExtractedChunk] | None
-        ) = None
+        self.completed_chunks: list[ExtractedChunk] | None = None
 
         self.failure_code: str | None = None
         self.failure_message: str | None = None
@@ -150,13 +141,9 @@ class FakeAdminService:
         self.start_count += 1
         self.started_file_id = file_id
 
-        self.study_file[
-            "processing_status"
-        ] = "reading"
+        self.study_file["processing_status"] = "reading"
 
-        self.processing_job[
-            "status"
-        ] = "processing"
+        self.processing_job["status"] = "processing"
 
     async def mark_indexing(
         self,
@@ -167,9 +154,7 @@ class FakeAdminService:
         self.indexing_count += 1
         self.indexed_file_id = file_id
 
-        self.study_file[
-            "processing_status"
-        ] = "indexing"
+        self.study_file["processing_status"] = "indexing"
 
     async def complete_processing(
         self,
@@ -184,13 +169,9 @@ class FakeAdminService:
         self.completed_document = document
         self.completed_chunks = chunks
 
-        self.study_file[
-            "processing_status"
-        ] = "ready"
+        self.study_file["processing_status"] = "ready"
 
-        self.processing_job[
-            "status"
-        ] = "completed"
+        self.processing_job["status"] = "completed"
 
     async def fail_processing(
         self,
@@ -205,13 +186,9 @@ class FakeAdminService:
         self.failure_code = error_code
         self.failure_message = error_message
 
-        self.study_file[
-            "processing_status"
-        ] = "failed"
+        self.study_file["processing_status"] = "failed"
 
-        self.processing_job[
-            "status"
-        ] = "failed"
+        self.processing_job["status"] = "failed"
 
 
 def build_settings() -> Settings:
@@ -220,9 +197,12 @@ def build_settings() -> Settings:
     return cast(
         Settings,
         SimpleNamespace(
-            max_processing_file_bytes=(
-                20 * 1024 * 1024
-            ),
+            max_processing_file_bytes=20 * 1024 * 1024,
+            ai_chunk_target_characters=2400,
+            ai_chunk_overlap_characters=300,
+            ai_chunk_min_characters=200,
+            ai_embedding_batch_size=16,
+            ai_max_chunks_per_material=1000,
         ),
     )
 
@@ -262,15 +242,9 @@ def test_validate_source_returns_file_details() -> None:
     assert result.filename == "lesson.txt"
     assert result.mime_type == "text/plain"
 
-    assert (
-        result.expected_size_bytes
-        == len(TEXT_PAYLOAD)
-    )
+    assert result.expected_size_bytes == len(TEXT_PAYLOAD)
 
-    assert (
-        result.downloaded_size_bytes
-        == len(TEXT_PAYLOAD)
-    )
+    assert result.downloaded_size_bytes == len(TEXT_PAYLOAD)
 
     assert result.processing_status == "queued"
     assert result.job_status == "queued"
@@ -330,14 +304,11 @@ def test_process_file_starts_queued_job() -> None:
     assert admin.failure_count == 0
 
     assert admin.completed_document is not None
-    assert (
-        admin.completed_document.extracted_text
-        == (
-            "Operating systems manage hardware "
-            "resources.\n"
-            "They also provide services to "
-            "applications."
-        )
+    assert admin.completed_document.extracted_text == (
+        "Operating systems manage hardware "
+        "resources.\n"
+        "They also provide services to "
+        "applications."
     )
 
     assert admin.completed_chunks is not None
@@ -347,10 +318,7 @@ def test_process_file_starts_queued_job() -> None:
 
     assert first_chunk.chunk_index == 0
     assert first_chunk.locator_type == "document"
-    assert (
-        first_chunk.locator_label
-        == "Complete document"
-    )
+    assert first_chunk.locator_label == "Complete document"
 
 
 def test_process_file_accepts_claimed_job() -> None:
@@ -412,10 +380,7 @@ def test_process_file_records_extraction_failure() -> None:
     assert admin.failure_count == 1
     assert admin.failed_file_id == FILE_ID
 
-    assert (
-        admin.failure_code
-        == "EXTRACTION_FAILED"
-    )
+    assert admin.failure_code == "EXTRACTION_FAILED"
 
     assert admin.failure_message is not None
     assert "UTF-8" in admin.failure_message

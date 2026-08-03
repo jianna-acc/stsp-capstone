@@ -33,7 +33,6 @@ from app.services.file_processor import (
     FileProcessorUpstreamError,
 )
 
-
 router = APIRouter(
     prefix="/internal/file-processing",
     tags=[
@@ -82,9 +81,7 @@ def raise_processor_http_error(
         FileProcessorExtractionError,
     ):
         raise HTTPException(
-            status_code=(
-                status.HTTP_422_UNPROCESSABLE_CONTENT
-            ),
+            status_code=(status.HTTP_422_UNPROCESSABLE_CONTENT),
             detail=str(error),
         ) from error
 
@@ -132,20 +129,12 @@ async def validate_file_source(
 
     return FileSourceValidationResponse(
         study_file_id=result.study_file_id,
-        processing_job_id=(
-            result.processing_job_id
-        ),
+        processing_job_id=(result.processing_job_id),
         filename=result.filename,
         mime_type=result.mime_type,
-        expected_size_bytes=(
-            result.expected_size_bytes
-        ),
-        downloaded_size_bytes=(
-            result.downloaded_size_bytes
-        ),
-        processing_status=(
-            result.processing_status
-        ),
+        expected_size_bytes=(result.expected_size_bytes),
+        downloaded_size_bytes=(result.downloaded_size_bytes),
+        processing_status=(result.processing_status),
         job_status=result.job_status,
         source_available=True,
     )
@@ -180,9 +169,7 @@ async def process_file(
 
     return FileProcessingResponse(
         study_file_id=result.study_file_id,
-        processing_job_id=(
-            result.processing_job_id
-        ),
+        processing_job_id=(result.processing_job_id),
         filename=result.filename,
         mime_type=result.mime_type,
         character_count=result.character_count,
@@ -190,8 +177,6 @@ async def process_file(
         page_count=result.page_count,
         slide_count=result.slide_count,
         sheet_count=result.sheet_count,
-        processing_status=(
-            result.processing_status
-        ),
+        processing_status=(result.processing_status),
         job_status=result.job_status,
     )

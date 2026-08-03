@@ -19,29 +19,19 @@ def create_supabase_client(
     normalized_key = secret_key.strip()
 
     if not normalized_url:
-        raise RuntimeError(
-            "SUPABASE_URL is not configured."
-        )
+        raise RuntimeError("SUPABASE_URL is not configured.")
 
     if not normalized_url.startswith("https://"):
-        raise RuntimeError(
-            "SUPABASE_URL must use HTTPS."
-        )
+        raise RuntimeError("SUPABASE_URL must use HTTPS.")
 
     if ".supabase.co" not in normalized_url:
-        raise RuntimeError(
-            "SUPABASE_URL is not a valid hosted Supabase URL."
-        )
+        raise RuntimeError("SUPABASE_URL is not a valid hosted Supabase URL.")
 
     if not normalized_key:
-        raise RuntimeError(
-            "SUPABASE_SECRET_KEY is not configured."
-        )
+        raise RuntimeError("SUPABASE_SECRET_KEY is not configured.")
 
     if not normalized_key.startswith("sb_secret_"):
-        raise RuntimeError(
-            "The backend must use a Supabase secret key."
-        )
+        raise RuntimeError("The backend must use a Supabase secret key.")
 
     return create_client(
         normalized_url,

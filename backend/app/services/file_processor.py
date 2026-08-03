@@ -5,13 +5,26 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from typing import Protocol
 from uuid import UUID
 
+from app.ai import (
+    AIChunkingError,
+    StudyMaterialPreparation,
+)
 from app.core.config import Settings
 from app.services.file_extraction import (
     FileExtractionError,
     chunk_extracted_document,
     extract_document,
+)
+from app.services.study_material_preparer import (
+    StudyMaterialPreparer,
+)
+from app.services.study_material_vector_indexer import (
+    StudyMaterialVectorEmbeddingStepError,
+    StudyMaterialVectorPersistenceStepError,
+    StudyMaterialVectorPreparationError,
 )
 from app.services.supabase_admin import (
     SupabaseAdminError,
@@ -39,8 +52,34 @@ class FileProcessorExtractionError(FileProcessorError):
     """Raised when readable content cannot be extracted."""
 
 
+class FileProcessorPreparationError(FileProcessorError):
+    """Raised when extracted content cannot be prepared for embedding."""
+
+
+class FileProcessorEmbeddingError(FileProcessorError):
+    """Raised when study-material embedding execution fails."""
+
+
+class FileProcessorVectorPersistenceError(FileProcessorError):
+    """Raised when AI vectors cannot be persisted safely."""
+
+
 class FileProcessorUpstreamError(FileProcessorError):
     """Raised when Supabase or Storage cannot be reached."""
+
+
+class StudyMaterialVectorIndexerProtocol(Protocol):
+    """Vector-indexing dependency required by the processor."""
+
+    async def index_preparation(
+        self,
+        *,
+        study_file_id: UUID,
+        preparation: StudyMaterialPreparation,
+    ) -> object:
+        """Embed and persist one prepared study material."""
+
+        ...
 
 
 @dataclass(frozen=True)
@@ -81,6 +120,21 @@ class ProcessedFileResult:
     job_status: str
 
 
+class StudyMaterialPreparerProtocol(Protocol):
+    """Operations required from the offline preparation service."""
+
+    def prepare(
+        self,
+        *,
+        material_id: str,
+        text: str,
+        source_name: str | None = None,
+    ) -> StudyMaterialPreparation:
+        """Prepare extracted text without making provider requests."""
+
+        ...
+
+
 class FileProcessorService:
     """Reusable study-file processing workflow."""
 
@@ -88,6 +142,8 @@ class FileProcessorService:
         self,
         settings: Settings,
         admin_service: SupabaseAdminService | None = None,
+        preparer: StudyMaterialPreparerProtocol | None = None,
+        vector_indexer: StudyMaterialVectorIndexerProtocol | None = None,
     ) -> None:
         self._settings = settings
 
@@ -99,6 +155,16 @@ class FileProcessorService:
             )
         )
 
+        self._preparer = (
+            preparer
+            if preparer is not None
+            else StudyMaterialPreparer(
+                settings=settings,
+            )
+        )
+
+        self._vector_indexer = vector_indexer
+
     async def validate_source(
         self,
         file_id: UUID,
@@ -106,10 +172,8 @@ class FileProcessorService:
         """Confirm that a queued private file can be downloaded."""
 
         try:
-            study_file, processing_job = (
-                await self._load_context(
-                    file_id=file_id,
-                )
+            study_file, processing_job = await self._load_context(
+                file_id=file_id,
             )
 
             self._validate_matching_user(
@@ -129,10 +193,7 @@ class FileProcessorService:
             storage_path = self._get_required_text(
                 row=study_file,
                 field_name="storage_path",
-                error_message=(
-                    "The study file does not have "
-                    "a Storage path."
-                ),
+                error_message=("The study file does not have a Storage path."),
             )
 
             payload = await self._admin.download_private_object(
@@ -145,8 +206,7 @@ class FileProcessorService:
 
             if downloaded_size != expected_size:
                 raise FileProcessorConflictError(
-                    "The downloaded file size does not "
-                    "match the database record.",
+                    "The downloaded file size does not match the database record.",
                 )
 
             return ValidatedFileSource(
@@ -164,17 +224,13 @@ class FileProcessorService:
                     row=study_file,
                     field_name="original_filename",
                     error_message=(
-                        "The study file does not have "
-                        "an original filename."
+                        "The study file does not have an original filename."
                     ),
                 ),
                 mime_type=self._get_required_text(
                     row=study_file,
                     field_name="mime_type",
-                    error_message=(
-                        "The study file does not have "
-                        "a MIME type."
-                    ),
+                    error_message=("The study file does not have a MIME type."),
                 ),
                 expected_size_bytes=expected_size,
                 downloaded_size_bytes=downloaded_size,
@@ -199,10 +255,8 @@ class FileProcessorService:
         processing_active = False
 
         try:
-            study_file, processing_job = (
-                await self._load_context(
-                    file_id=file_id,
-                )
+            study_file, processing_job = await self._load_context(
+                file_id=file_id,
             )
 
             self._validate_matching_user(
@@ -217,28 +271,19 @@ class FileProcessorService:
             storage_path = self._get_required_text(
                 row=study_file,
                 field_name="storage_path",
-                error_message=(
-                    "The study file does not have "
-                    "a Storage path."
-                ),
+                error_message=("The study file does not have a Storage path."),
             )
 
             filename = self._get_required_text(
                 row=study_file,
                 field_name="original_filename",
-                error_message=(
-                    "The study file does not have "
-                    "an original filename."
-                ),
+                error_message=("The study file does not have an original filename."),
             )
 
             mime_type = self._get_required_text(
                 row=study_file,
                 field_name="mime_type",
-                error_message=(
-                    "The study file does not have "
-                    "a MIME type."
-                ),
+                error_message=("The study file does not have a MIME type."),
             )
 
             processing_job_id = self._get_uuid(
@@ -261,8 +306,7 @@ class FileProcessorService:
 
             if len(payload) != expected_size:
                 raise FileExtractionError(
-                    "The downloaded file size does not "
-                    "match its database record.",
+                    "The downloaded file size does not match its database record.",
                 )
 
             document = extract_document(
@@ -271,12 +315,23 @@ class FileProcessorService:
                 filename=filename,
             )
 
+            preparation = self._prepare_for_embedding(
+                file_id=file_id,
+                filename=filename,
+                extracted_text=document.extracted_text,
+            )
+
             chunks = chunk_extracted_document(
                 document=document,
             )
 
             await self._admin.mark_indexing(
                 file_id=file_id,
+            )
+
+            await self._index_for_retrieval(
+                file_id=file_id,
+                preparation=preparation,
             )
 
             await self._admin.complete_processing(
@@ -290,9 +345,7 @@ class FileProcessorService:
                 processing_job_id=processing_job_id,
                 filename=filename,
                 mime_type=mime_type,
-                character_count=(
-                    document.character_count
-                ),
+                character_count=(document.character_count),
                 chunk_count=len(
                     chunks,
                 ),
@@ -302,6 +355,36 @@ class FileProcessorService:
                 processing_status="ready",
                 job_status="completed",
             )
+
+        except FileProcessorPreparationError as error:
+            if processing_active:
+                await self._best_effort_failure(
+                    file_id=file_id,
+                    error_code="PREPARATION_FAILED",
+                    error_message=str(error),
+                )
+
+            raise
+
+        except FileProcessorEmbeddingError as error:
+            if processing_active:
+                await self._best_effort_failure(
+                    file_id=file_id,
+                    error_code="EMBEDDING_FAILED",
+                    error_message=str(error),
+                )
+
+            raise
+
+        except FileProcessorVectorPersistenceError as error:
+            if processing_active:
+                await self._best_effort_failure(
+                    file_id=file_id,
+                    error_code="VECTOR_PERSISTENCE_FAILED",
+                    error_message=str(error),
+                )
+
+            raise
 
         except FileProcessorError:
             raise
@@ -330,6 +413,65 @@ class FileProcessorService:
                 str(error),
             ) from error
 
+    def _prepare_for_embedding(
+        self,
+        *,
+        file_id: UUID,
+        filename: str,
+        extracted_text: str,
+    ) -> StudyMaterialPreparation:
+        """Prepare extracted text without calling an AI provider."""
+
+        try:
+            return self._preparer.prepare(
+                material_id=str(file_id),
+                text=extracted_text,
+                source_name=filename,
+            )
+
+        except (
+            AIChunkingError,
+            ValueError,
+        ) as error:
+            raise FileProcessorPreparationError(
+                str(error)
+                or (
+                    "The extracted study material could not be prepared for embedding."
+                ),
+            ) from error
+
+    async def _index_for_retrieval(
+        self,
+        *,
+        file_id: UUID,
+        preparation: StudyMaterialPreparation,
+    ) -> None:
+        """Embed and persist prepared chunks when configured."""
+
+        if self._vector_indexer is None:
+            return
+
+        try:
+            await self._vector_indexer.index_preparation(
+                study_file_id=file_id,
+                preparation=preparation,
+            )
+
+        except StudyMaterialVectorPreparationError as error:
+            raise FileProcessorPreparationError(
+                str(error),
+            ) from error
+
+        except StudyMaterialVectorEmbeddingStepError as error:
+            raise FileProcessorEmbeddingError(
+                str(error),
+            ) from error
+
+        except StudyMaterialVectorPersistenceStepError as error:
+            raise FileProcessorVectorPersistenceError(
+                str(error),
+            ) from error
+
     async def _load_context(
         self,
         file_id: UUID,
@@ -348,16 +490,13 @@ class FileProcessorService:
                 "The study file was not found.",
             )
 
-        processing_job = (
-            await self._admin.get_processing_job(
-                file_id=file_id,
-            )
+        processing_job = await self._admin.get_processing_job(
+            file_id=file_id,
         )
 
         if processing_job is None:
             raise FileProcessorConflictError(
-                "The study file does not have "
-                "a processing job.",
+                "The study file does not have a processing job.",
             )
 
         return study_file, processing_job
@@ -384,25 +523,18 @@ class FileProcessorService:
             ),
         )
 
-        if (
-            file_status == "queued"
-            and job_status == "queued"
-        ):
+        if file_status == "queued" and job_status == "queued":
             await self._admin.start_processing(
                 file_id=file_id,
             )
 
             return
 
-        if (
-            file_status == "reading"
-            and job_status == "processing"
-        ):
+        if file_status == "reading" and job_status == "processing":
             return
 
         raise FileProcessorConflictError(
-            "The file-processing state is not eligible "
-            "for processing.",
+            "The file-processing state is not eligible for processing.",
         )
 
     def _require_queued_state(
@@ -457,14 +589,9 @@ class FileProcessorService:
             ),
         ).strip()
 
-        if (
-            not file_user_id
-            or not job_user_id
-            or file_user_id != job_user_id
-        ):
+        if not file_user_id or not job_user_id or file_user_id != job_user_id:
             raise FileProcessorConflictError(
-                "The study file and processing job "
-                "do not belong to the same user.",
+                "The study file and processing job do not belong to the same user.",
             )
 
     def _get_expected_size(
@@ -485,23 +612,17 @@ class FileProcessorService:
             ValueError,
         ) as error:
             raise FileProcessorConflictError(
-                "The study file has an invalid "
-                "recorded size.",
+                "The study file has an invalid recorded size.",
             ) from error
 
         if expected_size <= 0:
             raise FileProcessorConflictError(
-                "The study file has an invalid "
-                "recorded size.",
+                "The study file has an invalid recorded size.",
             )
 
-        if (
-            expected_size
-            > self._settings.max_processing_file_bytes
-        ):
+        if expected_size > self._settings.max_processing_file_bytes:
             raise FileProcessorTooLargeError(
-                "The file exceeds the backend "
-                "processing limit.",
+                "The file exceeds the backend processing limit.",
             )
 
         return expected_size

@@ -9,6 +9,7 @@ from uuid import UUID
 
 import httpx
 
+from app.ai.vector_persistence import AIChunkPersistencePayload
 from app.core.config import Settings
 from app.services.file_extraction import (
     ExtractedChunk,
@@ -57,9 +58,7 @@ class SupabaseAdminService:
         """Return headers for trusted PostgREST requests."""
 
         return {
-            "apikey": (
-                self._settings.supabase_secret_key
-            ),
+            "apikey": (self._settings.supabase_secret_key),
             "Accept": "application/json",
         }
 
@@ -70,9 +69,7 @@ class SupabaseAdminService:
         """Return headers for trusted Storage requests."""
 
         return {
-            "apikey": (
-                self._settings.supabase_secret_key
-            ),
+            "apikey": (self._settings.supabase_secret_key),
             "Accept": "application/octet-stream",
         }
 
@@ -82,10 +79,7 @@ class SupabaseAdminService:
     ) -> dict[str, Any] | None:
         """Return one study-file row by its UUID."""
 
-        endpoint = (
-            f"{self._settings.supabase_url}"
-            "/rest/v1/study_files"
-        )
+        endpoint = f"{self._settings.supabase_url}/rest/v1/study_files"
 
         params = {
             "select": (
@@ -104,10 +98,7 @@ class SupabaseAdminService:
 
         try:
             async with httpx.AsyncClient(
-                timeout=(
-                    self._settings
-                    .request_timeout_seconds
-                ),
+                timeout=(self._settings.request_timeout_seconds),
             ) as client:
                 response = await client.get(
                     endpoint,
@@ -122,8 +113,7 @@ class SupabaseAdminService:
 
         except httpx.RequestError as error:
             raise SupabaseAdminError(
-                "The study-file lookup could not "
-                "reach Supabase.",
+                "The study-file lookup could not reach Supabase.",
             ) from error
 
         if response.status_code != 200:
@@ -138,8 +128,7 @@ class SupabaseAdminService:
 
         except ValueError as error:
             raise SupabaseAdminError(
-                "Supabase returned invalid JSON for the "
-                "study-file lookup.",
+                "Supabase returned invalid JSON for the study-file lookup.",
             ) from error
 
         if not isinstance(
@@ -147,8 +136,7 @@ class SupabaseAdminService:
             list,
         ):
             raise SupabaseAdminError(
-                "Supabase returned an invalid "
-                "study-file response.",
+                "Supabase returned an invalid study-file response.",
             )
 
         if not rows:
@@ -161,8 +149,7 @@ class SupabaseAdminService:
             dict,
         ):
             raise SupabaseAdminError(
-                "Supabase returned an invalid "
-                "study-file row.",
+                "Supabase returned an invalid study-file row.",
             )
 
         return row
@@ -173,10 +160,7 @@ class SupabaseAdminService:
     ) -> dict[str, Any] | None:
         """Return the processing job connected to a study file."""
 
-        endpoint = (
-            f"{self._settings.supabase_url}"
-            "/rest/v1/file_processing_jobs"
-        )
+        endpoint = f"{self._settings.supabase_url}/rest/v1/file_processing_jobs"
 
         params = {
             "select": (
@@ -196,10 +180,7 @@ class SupabaseAdminService:
 
         try:
             async with httpx.AsyncClient(
-                timeout=(
-                    self._settings
-                    .request_timeout_seconds
-                ),
+                timeout=(self._settings.request_timeout_seconds),
             ) as client:
                 response = await client.get(
                     endpoint,
@@ -214,8 +195,7 @@ class SupabaseAdminService:
 
         except httpx.RequestError as error:
             raise SupabaseAdminError(
-                "The processing-job lookup could not "
-                "reach Supabase.",
+                "The processing-job lookup could not reach Supabase.",
             ) from error
 
         if response.status_code != 200:
@@ -230,8 +210,7 @@ class SupabaseAdminService:
 
         except ValueError as error:
             raise SupabaseAdminError(
-                "Supabase returned invalid JSON for the "
-                "processing-job lookup.",
+                "Supabase returned invalid JSON for the processing-job lookup.",
             ) from error
 
         if not isinstance(
@@ -239,8 +218,7 @@ class SupabaseAdminService:
             list,
         ):
             raise SupabaseAdminError(
-                "Supabase returned an invalid "
-                "processing-job response.",
+                "Supabase returned an invalid processing-job response.",
             )
 
         if not rows:
@@ -253,8 +231,7 @@ class SupabaseAdminService:
             dict,
         ):
             raise SupabaseAdminError(
-                "Supabase returned an invalid "
-                "processing-job row.",
+                "Supabase returned an invalid processing-job row.",
             )
 
         return row
@@ -265,23 +242,16 @@ class SupabaseAdminService:
     ) -> bytes:
         """Download one private object through the backend."""
 
-        normalized_path = (
-            storage_path
-            .strip()
-            .lstrip("/")
-        )
+        normalized_path = storage_path.strip().lstrip("/")
 
-        path_parts = (
-            normalized_path.split("/")
-            if normalized_path
-            else []
-        )
+        path_parts = normalized_path.split("/") if normalized_path else []
 
         if (
             not normalized_path
             or not path_parts
             or any(
-                part in {
+                part
+                in {
                     "",
                     ".",
                     "..",
@@ -294,8 +264,7 @@ class SupabaseAdminService:
             )
 
         encoded_bucket = quote(
-            self._settings
-            .study_materials_bucket,
+            self._settings.study_materials_bucket,
             safe="",
         )
 
@@ -312,10 +281,7 @@ class SupabaseAdminService:
 
         try:
             async with httpx.AsyncClient(
-                timeout=(
-                    self._settings
-                    .request_timeout_seconds
-                ),
+                timeout=(self._settings.request_timeout_seconds),
                 follow_redirects=True,
             ) as client:
                 response = await client.get(
@@ -330,8 +296,7 @@ class SupabaseAdminService:
 
         except httpx.RequestError as error:
             raise SupabaseAdminError(
-                "The private file download could not "
-                "reach Supabase.",
+                "The private file download could not reach Supabase.",
             ) from error
 
         if response.status_code == 404:
@@ -344,8 +309,7 @@ class SupabaseAdminService:
             403,
         }:
             raise SupabaseAdminError(
-                "Supabase rejected the backend "
-                "Storage credentials.",
+                "Supabase rejected the backend Storage credentials.",
             )
 
         if response.status_code != 200:
@@ -363,14 +327,9 @@ class SupabaseAdminService:
                 "The downloaded private file is empty.",
             )
 
-        if (
-            len(payload)
-            > self._settings
-            .max_processing_file_bytes
-        ):
+        if len(payload) > self._settings.max_processing_file_bytes:
             raise SupabaseAdminError(
-                "The downloaded file exceeds the "
-                "backend processing limit.",
+                "The downloaded file exceeds the backend processing limit.",
             )
 
         return payload
@@ -382,9 +341,7 @@ class SupabaseAdminService:
     ) -> None:
         """Call one trusted Supabase function."""
 
-        normalized_function_name = (
-            function_name.strip()
-        )
+        normalized_function_name = function_name.strip()
 
         if not normalized_function_name:
             raise SupabaseAdminError(
@@ -392,8 +349,7 @@ class SupabaseAdminService:
             )
 
         endpoint = (
-            f"{self._settings.supabase_url}"
-            f"/rest/v1/rpc/{normalized_function_name}"
+            f"{self._settings.supabase_url}/rest/v1/rpc/{normalized_function_name}"
         )
 
         headers = {
@@ -403,10 +359,7 @@ class SupabaseAdminService:
 
         try:
             async with httpx.AsyncClient(
-                timeout=(
-                    self._settings
-                    .request_timeout_seconds
-                ),
+                timeout=(self._settings.request_timeout_seconds),
             ) as client:
                 response = await client.post(
                     endpoint,
@@ -416,14 +369,12 @@ class SupabaseAdminService:
 
         except httpx.TimeoutException as error:
             raise SupabaseAdminError(
-                f"The {normalized_function_name} "
-                "request timed out.",
+                f"The {normalized_function_name} request timed out.",
             ) from error
 
         except httpx.RequestError as error:
             raise SupabaseAdminError(
-                f"The {normalized_function_name} request "
-                "could not reach Supabase.",
+                f"The {normalized_function_name} request could not reach Supabase.",
             ) from error
 
         if response.status_code not in {
@@ -445,9 +396,7 @@ class SupabaseAdminService:
     ) -> Any:
         """Call a trusted RPC and return its JSON response."""
 
-        normalized_function_name = (
-            function_name.strip()
-        )
+        normalized_function_name = function_name.strip()
 
         if not normalized_function_name:
             raise SupabaseAdminError(
@@ -455,8 +404,7 @@ class SupabaseAdminService:
             )
 
         endpoint = (
-            f"{self._settings.supabase_url}"
-            f"/rest/v1/rpc/{normalized_function_name}"
+            f"{self._settings.supabase_url}/rest/v1/rpc/{normalized_function_name}"
         )
 
         headers = {
@@ -466,10 +414,7 @@ class SupabaseAdminService:
 
         try:
             async with httpx.AsyncClient(
-                timeout=(
-                    self._settings
-                    .request_timeout_seconds
-                ),
+                timeout=(self._settings.request_timeout_seconds),
             ) as client:
                 response = await client.post(
                     endpoint,
@@ -479,14 +424,12 @@ class SupabaseAdminService:
 
         except httpx.TimeoutException as error:
             raise SupabaseAdminError(
-                f"The {normalized_function_name} "
-                "request timed out.",
+                f"The {normalized_function_name} request timed out.",
             ) from error
 
         except httpx.RequestError as error:
             raise SupabaseAdminError(
-                f"The {normalized_function_name} request "
-                "could not reach Supabase.",
+                f"The {normalized_function_name} request could not reach Supabase.",
             ) from error
 
         if response.status_code not in {
@@ -501,10 +444,7 @@ class SupabaseAdminService:
                 f"{response.text}"
             )
 
-        if (
-            response.status_code == 204
-            or not response.content
-        ):
+        if response.status_code == 204 or not response.content:
             return None
 
         try:
@@ -512,9 +452,7 @@ class SupabaseAdminService:
 
         except ValueError as error:
             raise SupabaseAdminError(
-                "Supabase function "
-                f"{normalized_function_name} returned "
-                "invalid JSON.",
+                f"Supabase function {normalized_function_name} returned invalid JSON.",
             ) from error
 
     async def claim_next_processing_job(
@@ -523,17 +461,11 @@ class SupabaseAdminService:
         """Atomically claim the next queued processing job."""
 
         response_data = await self._call_rpc_json(
-            function_name=(
-                "claim_next_file_processing_job"
-            ),
+            function_name=("claim_next_file_processing_job"),
             payload={},
         )
 
-        if (
-            response_data is None
-            or response_data == ""
-            or response_data == []
-        ):
+        if response_data is None or response_data == "" or response_data == []:
             return None
 
         if (
@@ -548,8 +480,7 @@ class SupabaseAdminService:
             )
         ):
             raise SupabaseAdminError(
-                "Supabase returned an invalid "
-                "processing-job claim response.",
+                "Supabase returned an invalid processing-job claim response.",
             )
 
         row = response_data[0]
@@ -573,8 +504,7 @@ class SupabaseAdminService:
             ValueError,
         ) as error:
             raise SupabaseAdminError(
-                "Supabase returned invalid IDs for the "
-                "claimed processing job.",
+                "Supabase returned invalid IDs for the claimed processing job.",
             ) from error
 
         return ClaimedProcessingJob(
@@ -600,16 +530,10 @@ class SupabaseAdminService:
             )
 
         response_data = await self._call_rpc_json(
-            function_name=(
-                "recover_stale_file_processing_jobs"
-            ),
+            function_name=("recover_stale_file_processing_jobs"),
             payload={
-                "p_stale_after_minutes": (
-                    stale_after_minutes
-                ),
-                "p_max_attempts": (
-                    max_attempts
-                ),
+                "p_stale_after_minutes": (stale_after_minutes),
+                "p_max_attempts": (max_attempts),
             },
         )
 
@@ -625,8 +549,7 @@ class SupabaseAdminService:
             )
         ):
             raise SupabaseAdminError(
-                "Supabase returned an invalid stale-job "
-                "recovery response.",
+                "Supabase returned an invalid stale-job recovery response.",
             )
 
         row = response_data[0]
@@ -646,26 +569,17 @@ class SupabaseAdminService:
             ValueError,
         ) as error:
             raise SupabaseAdminError(
-                "Supabase returned invalid stale-job "
-                "recovery counts.",
+                "Supabase returned invalid stale-job recovery counts.",
             ) from error
 
-        if (
-            requeued_count < 0
-            or failed_count < 0
-        ):
+        if requeued_count < 0 or failed_count < 0:
             raise SupabaseAdminError(
-                "Supabase returned negative stale-job "
-                "recovery counts.",
+                "Supabase returned negative stale-job recovery counts.",
             )
 
         return RecoveredProcessingJobs(
-            requeued_count=(
-                requeued_count
-            ),
-            failed_count=(
-                failed_count
-            ),
+            requeued_count=(requeued_count),
+            failed_count=(failed_count),
         )
 
     async def start_processing(
@@ -675,9 +589,7 @@ class SupabaseAdminService:
         """Move a queued file into the reading state."""
 
         await self._call_rpc(
-            function_name=(
-                "start_study_file_processing"
-            ),
+            function_name=("start_study_file_processing"),
             payload={
                 "p_study_file_id": str(
                     file_id,
@@ -692,9 +604,7 @@ class SupabaseAdminService:
         """Move a study file from reading to indexing."""
 
         await self._call_rpc(
-            function_name=(
-                "mark_study_file_indexing"
-            ),
+            function_name=("mark_study_file_indexing"),
             payload={
                 "p_study_file_id": str(
                     file_id,
@@ -717,59 +627,68 @@ class SupabaseAdminService:
 
         serialized_chunks = [
             {
-                "chunk_index": (
-                    chunk.chunk_index
-                ),
-                "content": (
-                    chunk.content
-                ),
-                "locator_type": (
-                    chunk.locator_type
-                ),
-                "locator_label": (
-                    chunk.locator_label
-                ),
-                "token_count": (
-                    chunk.token_count
-                ),
-                "metadata": (
-                    chunk.metadata
-                ),
+                "chunk_index": (chunk.chunk_index),
+                "content": (chunk.content),
+                "locator_type": (chunk.locator_type),
+                "locator_label": (chunk.locator_label),
+                "token_count": (chunk.token_count),
+                "metadata": (chunk.metadata),
             }
             for chunk in chunks
         ]
 
         await self._call_rpc(
-            function_name=(
-                "complete_study_file_processing"
-            ),
+            function_name=("complete_study_file_processing"),
             payload={
                 "p_study_file_id": str(
                     file_id,
                 ),
-                "p_extracted_text": (
-                    document.extracted_text
-                ),
-                "p_page_count": (
-                    document.page_count
-                ),
-                "p_slide_count": (
-                    document.slide_count
-                ),
-                "p_sheet_count": (
-                    document.sheet_count
-                ),
-                "p_character_count": (
-                    document.character_count
-                ),
-                "p_extraction_metadata": (
-                    document.metadata
-                ),
-                "p_chunks": (
-                    serialized_chunks
-                ),
+                "p_extracted_text": (document.extracted_text),
+                "p_page_count": (document.page_count),
+                "p_slide_count": (document.slide_count),
+                "p_sheet_count": (document.sheet_count),
+                "p_character_count": (document.character_count),
+                "p_extraction_metadata": (document.metadata),
+                "p_chunks": (serialized_chunks),
             },
         )
+
+    async def persist_ai_chunks(
+        self,
+        payload: AIChunkPersistencePayload,
+    ) -> int:
+        """Persist AI chunks and validate the stored count."""
+
+        response_data = await self._call_rpc_json(
+            function_name=("replace_study_file_ai_chunks"),
+            payload=payload.to_rpc_payload(),
+        )
+
+        if isinstance(
+            response_data,
+            bool,
+        ) or not isinstance(
+            response_data,
+            int,
+        ):
+            raise SupabaseAdminError(
+                "Supabase returned an invalid AI-chunk persistence count.",
+            )
+
+        if response_data < 0:
+            raise SupabaseAdminError(
+                "Supabase returned a negative AI-chunk persistence count.",
+            )
+
+        if response_data != payload.chunk_count:
+            raise SupabaseAdminError(
+                "Supabase persisted an unexpected "
+                "number of AI chunks. "
+                f"Expected {payload.chunk_count}, "
+                f"received {response_data}."
+            )
+
+        return response_data
 
     async def fail_processing(
         self,
@@ -779,29 +698,19 @@ class SupabaseAdminService:
     ) -> None:
         """Mark a file-processing attempt as failed."""
 
-        normalized_error_code = (
-            error_code.strip()
-            or "PROCESSING_FAILED"
-        )
+        normalized_error_code = error_code.strip() or "PROCESSING_FAILED"
 
         normalized_error_message = (
-            error_message.strip()
-            or "The file could not be processed."
+            error_message.strip() or "The file could not be processed."
         )
 
         await self._call_rpc(
-            function_name=(
-                "fail_study_file_processing"
-            ),
+            function_name=("fail_study_file_processing"),
             payload={
                 "p_study_file_id": str(
                     file_id,
                 ),
-                "p_error_code": (
-                    normalized_error_code
-                ),
-                "p_error_message": (
-                    normalized_error_message
-                ),
+                "p_error_code": (normalized_error_code),
+                "p_error_message": (normalized_error_message),
             },
         )

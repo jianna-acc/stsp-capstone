@@ -23,13 +23,18 @@ from app.services.file_processor import (
     FileProcessorService,
     ProcessedFileResult,
 )
+from app.services.study_material_embedder import (
+    StudyMaterialEmbedder,
+)
+from app.services.study_material_vector_indexer import (
+    StudyMaterialVectorIndexer,
+)
 from app.services.supabase_admin import (
     ClaimedProcessingJob,
     RecoveredProcessingJobs,
     SupabaseAdminError,
     SupabaseAdminService,
 )
-
 
 logger = logging.getLogger(
     __name__,
@@ -103,12 +108,8 @@ class FileProcessingWorker:
     def __init__(
         self,
         settings: Settings,
-        admin_service: (
-            AdminServiceProtocol | None
-        ) = None,
-        processor_factory: (
-            ProcessorFactory | None
-        ) = None,
+        admin_service: (AdminServiceProtocol | None) = None,
+        processor_factory: (ProcessorFactory | None) = None,
         poll_seconds: float = 2.0,
         recovery_interval_seconds: float = 60.0,
         stale_after_minutes: int = 30,
@@ -121,8 +122,7 @@ class FileProcessingWorker:
 
         if recovery_interval_seconds <= 0:
             raise ValueError(
-                "recovery_interval_seconds must be "
-                "greater than zero.",
+                "recovery_interval_seconds must be greater than zero.",
             )
 
         if stale_after_minutes < 1:
@@ -151,29 +151,36 @@ class FileProcessingWorker:
             else self._create_default_processor
         )
 
-        self._poll_seconds = (
-            poll_seconds
-        )
+        self._poll_seconds = poll_seconds
 
-        self._recovery_interval_seconds = (
-            recovery_interval_seconds
-        )
+        self._recovery_interval_seconds = recovery_interval_seconds
 
-        self._stale_after_minutes = (
-            stale_after_minutes
-        )
+        self._stale_after_minutes = stale_after_minutes
 
-        self._max_attempts = (
-            max_attempts
-        )
+        self._max_attempts = max_attempts
 
     def _create_default_processor(
         self,
     ) -> FileProcessorService:
         """Create the reusable processor used by the worker."""
 
+        admin_service = SupabaseAdminService(
+            settings=self._settings,
+        )
+
+        embedder = StudyMaterialEmbedder(
+            settings=self._settings,
+        )
+
+        vector_indexer = StudyMaterialVectorIndexer(
+            embedder=embedder,
+            persistence=admin_service,
+        )
+
         return FileProcessorService(
             settings=self._settings,
+            admin_service=admin_service,
+            vector_indexer=vector_indexer,
         )
 
     async def recover_stale_jobs(
@@ -181,25 +188,14 @@ class FileProcessingWorker:
     ) -> RecoveredProcessingJobs:
         """Recover abandoned jobs before claiming new work."""
 
-        result = (
-            await self._admin
-            .recover_stale_processing_jobs(
-                stale_after_minutes=(
-                    self._stale_after_minutes
-                ),
-                max_attempts=(
-                    self._max_attempts
-                ),
-            )
+        result = await self._admin.recover_stale_processing_jobs(
+            stale_after_minutes=(self._stale_after_minutes),
+            max_attempts=(self._max_attempts),
         )
 
-        if (
-            result.requeued_count > 0
-            or result.failed_count > 0
-        ):
+        if result.requeued_count > 0 or result.failed_count > 0:
             logger.warning(
-                "Recovered stale processing jobs: "
-                "%s requeued, %s failed.",
+                "Recovered stale processing jobs: %s requeued, %s failed.",
                 result.requeued_count,
                 result.failed_count,
             )
@@ -211,10 +207,7 @@ class FileProcessingWorker:
     ) -> WorkerRunResult:
         """Claim and process at most one queued file."""
 
-        claimed_job = (
-            await self._admin
-            .claim_next_processing_job()
-        )
+        claimed_job = await self._admin.claim_next_processing_job()
 
         if claimed_job is None:
             return WorkerRunResult(
@@ -223,32 +216,22 @@ class FileProcessingWorker:
             )
 
         logger.info(
-            "Claimed processing job %s "
-            "for study file %s.",
+            "Claimed processing job %s for study file %s.",
             claimed_job.processing_job_id,
             claimed_job.study_file_id,
         )
 
-        processor = (
-            self._processor_factory()
-        )
+        processor = self._processor_factory()
 
         try:
-            result = (
-                await processor.process_file(
-                    file_id=(
-                        claimed_job
-                        .study_file_id
-                    ),
-                )
+            result = await processor.process_file(
+                file_id=(claimed_job.study_file_id),
             )
 
         except FileProcessorError as error:
             await self._mark_claim_failed(
                 claimed_job=claimed_job,
-                error_code=(
-                    type(error).__name__.upper()
-                ),
+                error_code=(type(error).__name__.upper()),
                 error_message=str(
                     error,
                 ),
@@ -263,12 +246,8 @@ class FileProcessingWorker:
             return WorkerRunResult(
                 claimed=True,
                 succeeded=False,
-                study_file_id=(
-                    claimed_job.study_file_id
-                ),
-                processing_job_id=(
-                    claimed_job.processing_job_id
-                ),
+                study_file_id=(claimed_job.study_file_id),
+                processing_job_id=(claimed_job.processing_job_id),
                 error_message=str(
                     error,
                 ),
@@ -277,30 +256,22 @@ class FileProcessingWorker:
         except Exception as error:
             await self._mark_claim_failed(
                 claimed_job=claimed_job,
-                error_code=(
-                    "WORKER_UNEXPECTED_ERROR"
-                ),
+                error_code=("WORKER_UNEXPECTED_ERROR"),
                 error_message=(
-                    "The background worker encountered "
-                    "an unexpected processing error."
+                    "The background worker encountered an unexpected processing error."
                 ),
             )
 
             logger.exception(
-                "Unexpected processing error for "
-                "study file %s.",
+                "Unexpected processing error for study file %s.",
                 claimed_job.study_file_id,
             )
 
             return WorkerRunResult(
                 claimed=True,
                 succeeded=False,
-                study_file_id=(
-                    claimed_job.study_file_id
-                ),
-                processing_job_id=(
-                    claimed_job.processing_job_id
-                ),
+                study_file_id=(claimed_job.study_file_id),
+                processing_job_id=(claimed_job.processing_job_id),
                 error_message=str(
                     error,
                 ),
@@ -315,12 +286,8 @@ class FileProcessingWorker:
         return WorkerRunResult(
             claimed=True,
             succeeded=True,
-            study_file_id=(
-                result.study_file_id
-            ),
-            processing_job_id=(
-                result.processing_job_id
-            ),
+            study_file_id=(result.study_file_id),
+            processing_job_id=(result.processing_job_id),
         )
 
     async def run_forever(
@@ -341,30 +308,18 @@ class FileProcessingWorker:
 
         while not stop_event.is_set():
             try:
-                current_time = (
-                    monotonic()
-                )
+                current_time = monotonic()
 
-                if (
-                    current_time
-                    >= next_recovery_time
-                ):
+                if current_time >= next_recovery_time:
                     await self.recover_stale_jobs()
 
-                    next_recovery_time = (
-                        current_time
-                        + self
-                        ._recovery_interval_seconds
-                    )
+                    next_recovery_time = current_time + self._recovery_interval_seconds
 
-                run_result = (
-                    await self.run_once()
-                )
+                run_result = await self.run_once()
 
             except SupabaseAdminError as error:
                 logger.error(
-                    "Unable to communicate with "
-                    "the processing queue: %s",
+                    "Unable to communicate with the processing queue: %s",
                     error,
                 )
 
@@ -404,21 +359,14 @@ class FileProcessingWorker:
 
         try:
             await self._admin.fail_processing(
-                file_id=(
-                    claimed_job.study_file_id
-                ),
-                error_code=(
-                    error_code[:100]
-                ),
-                error_message=(
-                    error_message[:1000]
-                ),
+                file_id=(claimed_job.study_file_id),
+                error_code=(error_code[:100]),
+                error_message=(error_message[:1000]),
             )
 
         except SupabaseAdminError as error:
             logger.error(
-                "Could not save failure state for "
-                "study file %s: %s",
+                "Could not save failure state for study file %s: %s",
                 claimed_job.study_file_id,
                 error,
             )
@@ -443,18 +391,14 @@ def parse_arguments() -> argparse.Namespace:
     """Read worker command-line arguments."""
 
     parser = argparse.ArgumentParser(
-        description=(
-            "Recover and process queued study files "
-            "automatically."
-        ),
+        description=("Recover and process queued study files automatically."),
     )
 
     parser.add_argument(
         "--once",
         action="store_true",
         help=(
-            "Recover stale jobs, claim at most one "
-            "queued file, process it, and exit."
+            "Recover stale jobs, claim at most one queued file, process it, and exit."
         ),
     )
 
@@ -462,38 +406,28 @@ def parse_arguments() -> argparse.Namespace:
         "--poll-seconds",
         type=float,
         default=2.0,
-        help=(
-            "Seconds to wait when no queued work exists."
-        ),
+        help=("Seconds to wait when no queued work exists."),
     )
 
     parser.add_argument(
         "--recovery-interval-seconds",
         type=float,
         default=60.0,
-        help=(
-            "Seconds between stale-job recovery checks."
-        ),
+        help=("Seconds between stale-job recovery checks."),
     )
 
     parser.add_argument(
         "--stale-after-minutes",
         type=int,
         default=30,
-        help=(
-            "Minutes before an active job is "
-            "considered stale."
-        ),
+        help=("Minutes before an active job is considered stale."),
     )
 
     parser.add_argument(
         "--max-attempts",
         type=int,
         default=3,
-        help=(
-            "Maximum processing attempts before "
-            "permanent failure."
-        ),
+        help=("Maximum processing attempts before permanent failure."),
     )
 
     return parser.parse_args()
@@ -504,9 +438,7 @@ def register_shutdown_signals(
 ) -> None:
     """Stop the worker gracefully on SIGINT or SIGTERM."""
 
-    event_loop = (
-        asyncio.get_running_loop()
-    )
+    event_loop = asyncio.get_running_loop()
 
     for shutdown_signal in (
         signal.SIGINT,
@@ -531,34 +463,21 @@ async def run_from_arguments(
 
     worker = FileProcessingWorker(
         settings=settings,
-        poll_seconds=(
-            arguments.poll_seconds
-        ),
-        recovery_interval_seconds=(
-            arguments
-            .recovery_interval_seconds
-        ),
-        stale_after_minutes=(
-            arguments
-            .stale_after_minutes
-        ),
-        max_attempts=(
-            arguments.max_attempts
-        ),
+        poll_seconds=(arguments.poll_seconds),
+        recovery_interval_seconds=(arguments.recovery_interval_seconds),
+        stale_after_minutes=(arguments.stale_after_minutes),
+        max_attempts=(arguments.max_attempts),
     )
 
     if arguments.once:
         try:
             await worker.recover_stale_jobs()
 
-            result = (
-                await worker.run_once()
-            )
+            result = await worker.run_once()
 
         except SupabaseAdminError as error:
             logger.error(
-                "Unable to recover or claim "
-                "queued work: %s",
+                "Unable to recover or claim queued work: %s",
                 error,
             )
 
@@ -594,10 +513,7 @@ def main() -> None:
 
     logging.basicConfig(
         level=logging.INFO,
-        format=(
-            "%(asctime)s | %(levelname)s | "
-            "%(name)s | %(message)s"
-        ),
+        format=("%(asctime)s | %(levelname)s | %(name)s | %(message)s"),
     )
 
     arguments = parse_arguments()
