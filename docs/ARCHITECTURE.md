@@ -1941,3 +1941,37 @@ Security boundaries:
 - Provider resources are closed after use.
 - Phase 5B does not introduce a public query endpoint.
 <!-- PHASE 5B QUERY EMBEDDING ARCHITECTURE END -->
+
+<!-- PHASE 5C RETRIEVAL ORCHESTRATION ARCHITECTURE START -->
+## Phase 5C - Retrieval Orchestration Architecture
+
+```mermaid
+flowchart LR
+    A[Student question] --> B[RetrievalOrchestrationRequest]
+    B --> C[RetrievalOrchestrationService]
+    C --> D[Phase 5B QueryEmbeddingService]
+    D --> E[Gemini retrieval-query embedding]
+    E --> F[768-dimensional query vector]
+    F --> G[RetrievalRequest]
+    G --> H[SupabaseRetrievalPersistence]
+    H --> I[SupabaseAdminService]
+    I --> J[Phase 5A search_study_file_ai_chunks RPC]
+    J --> K[Validated RetrievedStudyChunk objects]
+    K --> L{Context available?}
+    L -->|Yes| M[matches]
+    L -->|No| N[no_context]
+    M --> O[Phase 5D grounded answer generation]
+    N --> O
+
+    P[AI_LIVE_SMOKE_TESTS_ENABLED] -. guards .-> Q[Live retrieval smoke script]
+    Q -. validates .-> C
+```
+
+Security boundaries:
+
+- Gemini and Supabase are called only by the backend.
+- Supabase service-role credentials never reach the browser.
+- Raw query embeddings are not exposed by the orchestration result.
+- The retrieval RPC enforces user ownership and ready-file restrictions.
+- Live external testing remains disabled by default.
+<!-- PHASE 5C RETRIEVAL ORCHESTRATION ARCHITECTURE END -->

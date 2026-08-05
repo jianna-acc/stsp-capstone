@@ -704,3 +704,23 @@ Confirm that all paths in this document are updated whenever files are renamed, 
 | `backend/tests/test_live_query_embedding_smoke_script.py` | Tests smoke-test safety, cleanup, and redacted output. | Backend / QA | Does not call Gemini. |
 | `docs/AI_QUERY_EMBEDDING.md` | Documents Phase 5B and its Phase 5C handoff. | Documentation | Connects query embedding to vector retrieval. |
 <!-- PHASE 5B QUERY EMBEDDING FILE MAP END -->
+
+<!-- PHASE 5C RETRIEVAL ORCHESTRATION FILE MAP START -->
+## Phase 5C - Retrieval Orchestration
+
+| File | Purpose | Owner | System connections |
+|---|---|---|---|
+| `backend/app/ai/retrieval_contracts.py` | Defines validated retrieval requests, chunks, results, outcomes, and failure codes. | Backend / AI | Matches the Phase 5A retrieval RPC contract. |
+| `backend/app/ai/retrieval_persistence.py` | Calls and validates the protected Supabase vector-search RPC. | Backend / AI | Uses `SupabaseAdminService` and returns retrieval contracts. |
+| `backend/app/api/retrieval_orchestration_dependency.py` | Constructs retrieval orchestration for future protected API routes. | Backend / API | Connects settings, query embedding, Supabase persistence, and orchestration. |
+| `backend/app/services/retrieval_orchestration.py` | Converts a question into an embedding and retrieves matching study chunks. | Backend / AI | Connects Phase 5B query embedding to Phase 5A vector search. |
+| `backend/app/services/supabase_admin.py` | Exposes the existing trusted JSON RPC helper. | Backend | Keeps the Supabase secret key backend-only. |
+| `backend/app/services/__init__.py` | Exports the public Phase 5C orchestration service types. | Backend | Provides consistent application imports. |
+| `backend/scripts/smoke_live_retrieval_orchestration.py` | Runs one guarded live Gemini-plus-Supabase retrieval workflow. | Backend / AI | Uses a real indexed study-file owner and the retrieval RPC. |
+| `backend/tests/test_retrieval_contracts.py` | Tests request, chunk, result, filter, and no-context validation. | Backend / QA | Uses only local test data. |
+| `backend/tests/test_retrieval_persistence.py` | Tests Supabase RPC parameters, response handling, and failures. | Backend / QA | Uses fake trusted RPC clients. |
+| `backend/tests/test_retrieval_orchestration.py` | Tests the complete embedding-to-retrieval workflow. | Backend / QA | Uses fake embedding and retrieval services. |
+| `backend/tests/test_retrieval_orchestration_dependency.py` | Tests service exports and FastAPI dependency wiring. | Backend / QA | Verifies application integration without external calls. |
+| `backend/tests/test_live_retrieval_orchestration_smoke_script.py` | Tests live-smoke configuration, safety, and output. | Backend / QA | Does not call Gemini or Supabase. |
+| `docs/AI_RETRIEVAL_ORCHESTRATION.md` | Documents Phase 5C architecture, contracts, testing, security, and handoff. | Documentation | Connects Phase 5C to Phase 5A, Phase 5B, and Phase 5D. |
+<!-- PHASE 5C RETRIEVAL ORCHESTRATION FILE MAP END -->

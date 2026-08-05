@@ -1,5 +1,5 @@
 # File: /backend/app/services/__init__.py
-# Purpose: Exposes shared application service contracts.
+# Purpose: Exposes public backend service contracts.
 
 from app.services.query_embedding import (
     QueryEmbeddingError,
@@ -9,6 +9,11 @@ from app.services.query_embedding import (
     QueryEmbeddingService,
     QueryEmbeddingValidationError,
 )
+from app.services.retrieval_orchestration import (
+    RetrievalOrchestrationRequest,
+    RetrievalOrchestrationResult,
+    RetrievalOrchestrationService,
+)
 
 __all__ = [
     "QueryEmbeddingError",
@@ -17,4 +22,7 @@ __all__ = [
     "QueryEmbeddingResult",
     "QueryEmbeddingService",
     "QueryEmbeddingValidationError",
+    "RetrievalOrchestrationRequest",
+    "RetrievalOrchestrationResult",
+    "RetrievalOrchestrationService",
 ]
