@@ -681,3 +681,11 @@ Confirm that all paths in this document are updated whenever files are renamed, 
 | `/backend/tests/test_file_processor_vector_indexing.py` | Ready | Member 5 | Tests processing order and controlled vector failure codes | `FileProcessorService` and injected vector indexer |
 | `/supabase/migrations/20260803020921_create_ai_chunk_vector_foundation.sql` | Integrated | Member 4 | Enables pgvector, creates AI chunk storage and HNSW indexing, configures RLS, and creates the trusted persistence RPC | `study_files`, `file_processing_jobs`, `study_file_ai_chunks`, service role, and backend persistence |
 <!-- PHASE 4D VECTOR FILE MAP END -->
+
+<!-- PHASE 5A RETRIEVAL DESIGN FILE MAP START -->
+## Phase 5A Retrieval Design Files
+
+| Path | Status | Owner | Purpose | Connected To |
+|---|---|---|---|---|
+| `/docs/AI_RETRIEVAL_DESIGN.md` | Designed | Member 3, Member 4, and Member 5 | Defines the vector-search RPC contract, authorization rules, filters, scoring, returned metadata, and planned tests | `study_file_ai_chunks`, `study_files`, Gemini query embeddings, Supabase service role, and future retrieval services |
+<!-- PHASE 5A RETRIEVAL DESIGN FILE MAP END -->

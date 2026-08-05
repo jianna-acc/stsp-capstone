@@ -1866,3 +1866,51 @@ flowchart LR
 
 The retrieval-query embedding, vector similarity-search endpoint, and grounded AI-answer flow remain planned for the next retrieval phase.
 <!-- PHASE 4D VECTOR ARCHITECTURE END -->
+
+<!-- PHASE 5A RETRIEVAL DESIGN ARCHITECTURE START -->
+## Planned Phase 5A Vector Retrieval Architecture
+
+This section documents the approved retrieval design before implementation.
+
+```mermaid
+flowchart LR
+    QUESTION["Student Question"]
+    API["Protected FastAPI Endpoint"]
+    QUERY_SERVICE["Query Embedding Service"]
+    GEMINI["Gemini Embedding API"]
+    QUERY_VECTOR["Validated retrieval_query Vector"]
+    RETRIEVER["Study Material Retriever"]
+    ADMIN["SupabaseAdminService"]
+    SEARCH_RPC["search_study_file_ai_chunks RPC"]
+    VECTOR_TABLE[("study_file_ai_chunks")]
+    FILE_TABLE[("study_files")]
+    RESULTS["Ranked Retrieved Chunks"]
+    ANSWER["Later Grounded Answer Service"]
+
+    QUESTION --> API
+    API --> QUERY_SERVICE
+    QUERY_SERVICE --> GEMINI
+    GEMINI --> QUERY_VECTOR
+    QUERY_VECTOR --> RETRIEVER
+    RETRIEVER --> ADMIN
+    ADMIN --> SEARCH_RPC
+    SEARCH_RPC --> VECTOR_TABLE
+    SEARCH_RPC --> FILE_TABLE
+    VECTOR_TABLE --> RESULTS
+    FILE_TABLE --> RESULTS
+    RESULTS --> ANSWER
+```
+
+The planned retrieval search will support:
+
+- Search across all ready study materials owned by one user.
+- Optional filtering by one study file.
+- Optional filtering by one subject.
+- Cosine similarity using pgvector.
+- A configurable result count with a hard maximum.
+- A configurable similarity threshold.
+- Source metadata needed for later citations.
+- Service-role-only RPC execution with explicit user ownership filtering.
+
+This section describes the approved design only. The SQL migration and Python services will be added in the following Phase 5 checkpoints.
+<!-- PHASE 5A RETRIEVAL DESIGN ARCHITECTURE END -->
