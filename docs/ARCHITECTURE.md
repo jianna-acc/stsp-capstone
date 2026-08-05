@@ -1914,3 +1914,30 @@ The planned retrieval search will support:
 
 This section describes the approved design only. The SQL migration and Python services will be added in the following Phase 5 checkpoints.
 <!-- PHASE 5A RETRIEVAL DESIGN ARCHITECTURE END -->
+
+<!-- PHASE 5B QUERY EMBEDDING ARCHITECTURE START -->
+## Phase 5B - Query Embedding Architecture
+
+```mermaid
+flowchart LR
+    A[Future protected RAG API] --> B[Query embedding dependency]
+    B --> C[QueryEmbeddingService]
+    C --> D[Normalize question]
+    D --> E[RETRIEVAL_QUERY request]
+    E --> F[GeminiProvider]
+    F --> G[768-dimensional query vector]
+    G --> H[QueryEmbeddingResult]
+    H --> I[Phase 5C retrieval orchestration]
+    I --> J[Phase 5A search RPC]
+
+    K[Live smoke safety flag] -. guards .-> L[Query embedding smoke script]
+```
+
+Security boundaries:
+
+- Gemini is called only by the backend.
+- Credentials and raw vectors are not returned to the browser.
+- Live smoke testing is disabled by default.
+- Provider resources are closed after use.
+- Phase 5B does not introduce a public query endpoint.
+<!-- PHASE 5B QUERY EMBEDDING ARCHITECTURE END -->

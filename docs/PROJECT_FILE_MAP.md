@@ -689,3 +689,18 @@ Confirm that all paths in this document are updated whenever files are renamed, 
 |---|---|---|---|---|
 | `/docs/AI_RETRIEVAL_DESIGN.md` | Designed | Member 3, Member 4, and Member 5 | Defines the vector-search RPC contract, authorization rules, filters, scoring, returned metadata, and planned tests | `study_file_ai_chunks`, `study_files`, Gemini query embeddings, Supabase service role, and future retrieval services |
 <!-- PHASE 5A RETRIEVAL DESIGN FILE MAP END -->
+
+<!-- PHASE 5B QUERY EMBEDDING FILE MAP START -->
+## Phase 5B - Query Embedding Service
+
+| File | Purpose | Owner | System connections |
+|---|---|---|---|
+| `backend/app/services/query_embedding.py` | Creates and validates one `retrieval_query` embedding. | Backend / AI | Uses Gemini and feeds Phase 5C retrieval. |
+| `backend/app/services/__init__.py` | Exports the query-embedding service contract. | Backend | Provides consistent service imports. |
+| `backend/app/api/query_embedding_dependency.py` | Creates and safely closes the service for future FastAPI routes. | Backend / API | Uses FastAPI dependency injection and typed settings. |
+| `backend/scripts/smoke_live_query_embedding.py` | Runs one guarded live Gemini query-embedding test. | Backend / AI | Controlled by `AI_LIVE_SMOKE_TESTS_ENABLED`. |
+| `backend/tests/test_query_embedding.py` | Tests query normalization and vector validation. | Backend / QA | Uses fake providers without external calls. |
+| `backend/tests/test_query_embedding_integration.py` | Tests failure codes, exports, and resource cleanup. | Backend / QA | Covers service and dependency integration. |
+| `backend/tests/test_live_query_embedding_smoke_script.py` | Tests smoke-test safety, cleanup, and redacted output. | Backend / QA | Does not call Gemini. |
+| `docs/AI_QUERY_EMBEDDING.md` | Documents Phase 5B and its Phase 5C handoff. | Documentation | Connects query embedding to vector retrieval. |
+<!-- PHASE 5B QUERY EMBEDDING FILE MAP END -->
