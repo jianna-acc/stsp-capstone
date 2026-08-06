@@ -724,3 +724,22 @@ Confirm that all paths in this document are updated whenever files are renamed, 
 | `backend/tests/test_live_retrieval_orchestration_smoke_script.py` | Tests live-smoke configuration, safety, and output. | Backend / QA | Does not call Gemini or Supabase. |
 | `docs/AI_RETRIEVAL_ORCHESTRATION.md` | Documents Phase 5C architecture, contracts, testing, security, and handoff. | Documentation | Connects Phase 5C to Phase 5A, Phase 5B, and Phase 5D. |
 <!-- PHASE 5C RETRIEVAL ORCHESTRATION FILE MAP END -->
+
+<!-- PHASE 5D GROUNDED ANSWER FILE MAP START -->
+## Phase 5D - Grounded Answer Generation
+
+| File | Purpose | Owner | System connections |
+|---|---|---|---|
+| `backend/app/ai/grounded_answer_contracts.py` | Defines grounded-answer requests, outcomes, source references, results, and stable errors. | Backend / AI | Uses retrieved chunks from Phase 5C. |
+| `backend/app/ai/grounded_prompt.py` | Builds bounded prompts from untrusted retrieved study-material data. | Backend / AI | Converts Phase 5C chunks into Gemini generation input. |
+| `backend/app/api/grounded_answer_generation_dependency.py` | Constructs and closes the configured grounded-answer generation service. | Backend / API | Connects settings, Gemini, and the Phase 5D service. |
+| `backend/app/services/grounded_answer_generation.py` | Generates, validates, cites, and returns grounded answers. | Backend / AI | Connects the prompt builder to the existing generation provider. |
+| `backend/app/services/__init__.py` | Exports the Phase 5D grounded-answer service. | Backend | Provides consistent imports for later routes and orchestration. |
+| `backend/scripts/smoke_live_grounded_answer_generation.py` | Runs one guarded live retrieval-and-generation workflow. | Backend / AI | Connects Gemini query embedding, Supabase retrieval, and Gemini generation. |
+| `backend/tests/test_grounded_answer_contracts.py` | Tests request, result, outcome, error, and source-reference contracts. | Backend / QA | Uses local retrieved-chunk fixtures. |
+| `backend/tests/test_grounded_prompt.py` | Tests prompt limits, normalization, source numbering, and security boundaries. | Backend / QA | Uses local study-context fixtures. |
+| `backend/tests/test_grounded_answer_generation.py` | Tests generation, citation validation, retry behavior, fallback references, failures, and cleanup. | Backend / QA | Uses fake generation providers. |
+| `backend/tests/test_grounded_answer_generation_dependency.py` | Tests dependency construction, exports, generation, and cleanup. | Backend / QA | Uses a fake Gemini provider. |
+| `backend/tests/test_live_grounded_answer_smoke_script.py` | Tests disabled behavior, safe output, controlled failures, and fake end-to-end execution. | Backend / QA | Makes no live Gemini or Supabase request. |
+| `docs/AI_GROUNDED_ANSWER_GENERATION.md` | Documents Phase 5D contracts, prompt construction, generation, citations, testing, and security. | Documentation | Connects Phase 5C retrieval to later API integration. |
+<!-- PHASE 5D GROUNDED ANSWER FILE MAP END -->

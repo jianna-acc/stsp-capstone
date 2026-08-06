@@ -1975,3 +1975,46 @@ Security boundaries:
 - The retrieval RPC enforces user ownership and ready-file restrictions.
 - Live external testing remains disabled by default.
 <!-- PHASE 5C RETRIEVAL ORCHESTRATION ARCHITECTURE END -->
+
+<!-- PHASE 5D GROUNDED ANSWER ARCHITECTURE START -->
+## Phase 5D - Grounded Answer Generation Architecture
+
+```mermaid
+flowchart LR
+    A[Student question] --> B[Phase 5C retrieval orchestration]
+    B --> C{Retrieved context available?}
+
+    C -->|No| D[Approved no-context result]
+    C -->|Yes| E[GroundedAnswerRequest]
+
+    E --> F[GroundedPromptBuilder]
+    F --> G[Bounded REQUEST_JSON]
+    F --> H[System instruction]
+    F --> I[Effective selected chunks]
+
+    G --> J[GroundedAnswerGenerationService]
+    H --> J
+
+    J --> K[GeminiProvider]
+    K --> L[GenerationResult]
+
+    L --> M{Valid citation markers?}
+    M -->|Yes| N[GroundedAnswerResult]
+    M -->|No| O[One citation-correction retry]
+    O --> P{Valid citations after retry?}
+
+    P -->|Yes| N
+    P -->|No markers| Q[Deterministic sources-consulted footer]
+    Q --> R[Final citation validation]
+    R --> N
+
+    P -->|Malformed or unknown| S[Controlled response failure]
+
+    I --> N
+
+    N --> T[Answer plus safe source references]
+    D --> T
+
+    U[AI_LIVE_SMOKE_TESTS_ENABLED] -. guards .-> V[Live end-to-end smoke script]
+    V -. validates .-> B
+    V -. validates .-> J

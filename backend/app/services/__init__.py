@@ -1,6 +1,9 @@
 # File: /backend/app/services/__init__.py
 # Purpose: Exposes public backend service contracts.
 
+from app.services.grounded_answer_generation import (
+    GroundedAnswerGenerationService,
+)
 from app.services.query_embedding import (
     QueryEmbeddingError,
     QueryEmbeddingFailureCode,
@@ -16,6 +19,7 @@ from app.services.retrieval_orchestration import (
 )
 
 __all__ = [
+    "GroundedAnswerGenerationService",
     "QueryEmbeddingError",
     "QueryEmbeddingFailureCode",
     "QueryEmbeddingProviderError",
