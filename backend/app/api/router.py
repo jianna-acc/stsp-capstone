@@ -6,6 +6,7 @@ from fastapi import APIRouter
 from app.api.health import (
     router as health_router,
 )
+from app.api.routes import rag
 from app.api.routes.file_processing import (
     router as file_processing_router,
 )
@@ -18,4 +19,8 @@ api_router.include_router(
 
 api_router.include_router(
     file_processing_router,
+)
+
+api_router.include_router(
+    rag.router,
 )

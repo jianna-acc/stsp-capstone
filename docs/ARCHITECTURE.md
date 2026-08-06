@@ -2018,3 +2018,60 @@ flowchart LR
     U[AI_LIVE_SMOKE_TESTS_ENABLED] -. guards .-> V[Live end-to-end smoke script]
     V -. validates .-> B
     V -. validates .-> J
+
+    <!-- PHASE 5E PROTECTED RAG API ARCHITECTURE START -->
+## Phase 5E - Protected RAG API Architecture
+
+```mermaid
+flowchart LR
+    A[Student frontend] -->|POST /api/rag/answer| B[FastAPI RAG route]
+
+    A -->|Authorization: Bearer token| C[Authenticated-user dependency]
+    C --> D[Supabase Auth get_user]
+    D --> E{Token valid?}
+
+    E -->|No| F[HTTP 401]
+    E -->|Yes| G[Authenticated user UUID]
+
+    G --> B
+    B --> H[RagAnswerRequest validation]
+    H --> I{Request valid?}
+
+    I -->|No| J[Safe HTTP 422 handler]
+    I -->|Yes| K[RagOrchestrationRequest]
+
+    K --> L[RagOrchestrationService]
+    L --> M[Query embedding]
+    M --> N[Supabase vector retrieval]
+
+    N --> O{Relevant owned context?}
+    O -->|No| P[Normal no-context result]
+    O -->|Yes| Q[GroundedAnswerGenerationService]
+
+    Q --> R[Bounded grounded prompt]
+    R --> S[Gemini generation]
+    S --> T[Citation and source validation]
+
+    T --> U[RagOrchestrationResult]
+    P --> U
+
+    U --> V[Safe RagAnswerResponse]
+    V --> A
+
+    W[Processor key] -. not accepted .-> C
+
+    X[AI_LIVE_SMOKE_TESTS_ENABLED] -. guards .-> Y[Live protected API smoke]
+    Y -. validates .-> B
+```
+
+Security boundaries:
+
+- Student identity is derived only from the validated Supabase bearer token.
+- The request body cannot submit or override `user_id`.
+- Retrieval remains scoped to the authenticated user's eligible study materials.
+- `X-Processor-Key` cannot authenticate the RAG endpoint.
+- Access tokens are not stored in endpoint results.
+- Raw chunk content, internal UUIDs, and vectors are excluded from the API response.
+- Request-validation errors do not echo rejected values.
+- Live external testing is disabled by default.
+<!-- PHASE 5E PROTECTED RAG API ARCHITECTURE END -->

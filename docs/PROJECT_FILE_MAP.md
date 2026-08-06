@@ -743,3 +743,28 @@ Confirm that all paths in this document are updated whenever files are renamed, 
 | `backend/tests/test_live_grounded_answer_smoke_script.py` | Tests disabled behavior, safe output, controlled failures, and fake end-to-end execution. | Backend / QA | Makes no live Gemini or Supabase request. |
 | `docs/AI_GROUNDED_ANSWER_GENERATION.md` | Documents Phase 5D contracts, prompt construction, generation, citations, testing, and security. | Documentation | Connects Phase 5C retrieval to later API integration. |
 <!-- PHASE 5D GROUNDED ANSWER FILE MAP END -->
+
+<!-- PHASE 5E RAG API FILE MAP START -->
+## Phase 5E - Protected RAG API Endpoint
+
+| File | Purpose | Owner | System connections |
+|---|---|---|---|
+| `backend/app/api/authenticated_user_dependency.py` | Validates Supabase bearer tokens and returns a safe authenticated-user UUID. | Backend / Security | Connects FastAPI authentication to Supabase Auth. |
+| `backend/app/api/rag_orchestration_dependency.py` | Assembles retrieval and grounded-generation services into one RAG service. | Backend / API | Connects Phase 5C retrieval and Phase 5D generation. |
+| `backend/app/api/router.py` | Registers the protected RAG router. | Backend / API | Connects `/rag/answer` to the main API router. |
+| `backend/app/api/routes/rag.py` | Implements the protected `POST /api/rag/answer` endpoint and safe error mapping. | Backend / API | Connects authentication, RAG orchestration, and public response schemas. |
+| `backend/app/api/validation_error_handler.py` | Removes rejected input values from HTTP `422` validation responses. | Backend / Security | Registered globally in the FastAPI application. |
+| `backend/app/main.py` | Registers the safe validation handler while preserving the existing application configuration. | Backend / API | Connects application startup, routers, middleware, and exception handling. |
+| `backend/app/schemas/rag.py` | Defines public RAG request, answer, source, outcome, and error schemas. | Backend / API | Defines the protected endpoint's public contract. |
+| `backend/app/services/rag_orchestration.py` | Runs authenticated retrieval and grounded-answer generation as one validated operation. | Backend / AI | Connects Phase 5C and Phase 5D using the authenticated user UUID. |
+| `backend/scripts/smoke_live_rag_api_endpoint.py` | Runs one guarded authenticated live request through the protected endpoint. | Backend / AI | Connects Supabase Auth, FastAPI, retrieval, and grounded generation. |
+| `backend/tests/test_authenticated_user_dependency.py` | Tests bearer authentication, Supabase responses, safe errors, and token exclusion. | Backend / QA | Uses fake Supabase Auth responses. |
+| `backend/tests/test_live_rag_api_smoke_script.py` | Tests live-script guards, configuration, response validation, and safe output. | Backend / QA | Makes no live external requests. |
+| `backend/tests/test_rag_api_auth_integration.py` | Tests token-to-user ownership binding and authentication boundaries. | Backend / QA | Uses the real auth dependency with a fake Supabase client. |
+| `backend/tests/test_rag_api_contract.py` | Tests method restrictions, schema validation, defaults, OpenAPI, and safe `422` responses. | Backend / QA | Validates the public API contract. |
+| `backend/tests/test_rag_api_endpoint.py` | Tests answered, no-context, protected, and controlled-error endpoint responses. | Backend / QA | Uses isolated FastAPI applications and fake RAG services. |
+| `backend/tests/test_rag_api_schemas.py` | Tests public request, response, source, and error-schema consistency. | Backend / QA | Uses local Pydantic validation only. |
+| `backend/tests/test_rag_orchestration.py` | Tests combined retrieval and grounded-generation behavior and failures. | Backend / QA | Uses fake retrieval and generation services. |
+| `backend/tests/test_rag_orchestration_dependency.py` | Tests combined dependency metadata and service wiring. | Backend / QA | Uses fake child services. |
+| `docs/AI_RAG_API_ENDPOINT.md` | Documents the endpoint, authentication, API contract, security, testing, and live validation. | Documentation | Provides the Phase 5E handoff for frontend integration. |
+<!-- PHASE 5E RAG API FILE MAP END -->
