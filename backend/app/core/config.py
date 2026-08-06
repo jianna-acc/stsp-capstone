@@ -46,7 +46,7 @@ class Settings(BaseSettings):
     gemini_embedding_dimensions: int = 768
 
     gemini_generation_temperature: float = 0.2
-    gemini_generation_max_output_tokens: int = 256
+    gemini_generation_max_output_tokens: int = 1024
     gemini_request_timeout_seconds: float = 30.0
 
     ai_live_smoke_tests_enabled: bool = False

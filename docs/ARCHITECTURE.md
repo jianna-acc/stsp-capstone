@@ -2075,3 +2075,77 @@ Security boundaries:
 - Request-validation errors do not echo rejected values.
 - Live external testing is disabled by default.
 <!-- PHASE 5E PROTECTED RAG API ARCHITECTURE END -->
+
+## Phase 5F — Frontend Study Assistant Architecture
+
+Phase 5F connects the protected Next.js frontend to the authenticated FastAPI Retrieval-Augmented Generation endpoint.
+
+```mermaid
+flowchart LR
+    Student[Authenticated Student]
+
+    subgraph Frontend[Next.js Frontend]
+        Route["Protected Route<br/>/study-assistant"]
+        Options["Server Filter Loader"]
+        Panel["StudyAssistantPanel"]
+        BrowserAuth["Browser Supabase Session"]
+        ApiClient["Typed RAG API Client"]
+    end
+
+    subgraph Backend[FastAPI Backend]
+        Endpoint["POST /api/rag/answer"]
+        Auth["Bearer Token Validation"]
+        Orchestrator["RAG Orchestration Service"]
+        Retrieval["Vector Retrieval"]
+        Generation["Grounded Answer Generation"]
+    end
+
+    subgraph Services[External Services]
+        Supabase["Supabase Auth, PostgreSQL,<br/>Storage, and pgvector"]
+        Gemini["Gemini Generation Provider"]
+    end
+
+    Student --> Route
+    Route --> Options
+    Options --> Supabase
+    Route --> Panel
+
+    Panel --> BrowserAuth
+    BrowserAuth --> ApiClient
+    ApiClient -->|"Authorization: Bearer access token"| Endpoint
+
+    Endpoint --> Auth
+    Auth --> Supabase
+    Endpoint --> Orchestrator
+    Orchestrator --> Retrieval
+    Retrieval --> Supabase
+    Orchestrator --> Generation
+    Generation --> Gemini
+
+    Orchestrator --> Endpoint
+    Endpoint --> ApiClient
+    ApiClient --> Panel
+```
+
+### Frontend request flow
+
+1. The authenticated student opens `/study-assistant`.
+2. The server page loads the student's subjects and ready study files.
+3. The student enters a question and may select a subject or study material.
+4. The browser retrieves the current Supabase session.
+5. The typed API client sends the access token only in the request's `Authorization` header.
+6. FastAPI validates the token and identifies the authenticated user.
+7. The RAG service retrieves only chunks belonging to that user.
+8. Gemini generates a grounded answer from the retrieved context.
+9. The frontend displays the answer, source filenames, material sections, and similarity percentages.
+
+### Security boundaries
+
+- The Study Assistant route is protected by the existing authenticated layout.
+- The browser does not permanently store a separate API token.
+- The Supabase access token is retrieved from the active session for each request.
+- User identifiers are derived by the backend from the validated access token.
+- The frontend cannot provide or override the authenticated user ID.
+- Supabase Row Level Security remains responsible for database-level ownership protection.
+- Internal chunk IDs, embeddings, access tokens, and provider credentials are not returned to the frontend.
+- Source cards display only safe citation information such as filenames, source numbers, sections, and similarity percentages.

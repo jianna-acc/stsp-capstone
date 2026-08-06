@@ -768,3 +768,45 @@ Confirm that all paths in this document are updated whenever files are renamed, 
 | `backend/tests/test_rag_orchestration_dependency.py` | Tests combined dependency metadata and service wiring. | Backend / QA | Uses fake child services. |
 | `docs/AI_RAG_API_ENDPOINT.md` | Documents the endpoint, authentication, API contract, security, testing, and live validation. | Documentation | Provides the Phase 5E handoff for frontend integration. |
 <!-- PHASE 5E RAG API FILE MAP END -->
+
+## Phase 5F — Study Assistant Frontend Files
+
+| File | Purpose | Owner | Main Connections |
+|---|---|---|---|
+| `frontend/app/(protected)/study-assistant/page.tsx` | Defines the protected Study Assistant page and loads its filter options on the server. | Frontend | Protected layout, server option loader, Study Assistant panel |
+| `frontend/features/navigation/components/ProtectedAppShell.tsx` | Adds the Study Assistant entry to the authenticated application navigation. | Frontend | Protected routes, sidebar, mobile navigation |
+| `frontend/features/study-assistant/api.ts` | Sends authenticated and typed requests to `POST /api/rag/answer`. | Frontend | Browser Supabase session, FastAPI RAG endpoint |
+| `frontend/features/study-assistant/api.test.ts` | Tests token handling, request payloads, response validation, and safe errors. | Frontend | Study Assistant API client, mocked browser session and fetch |
+| `frontend/features/study-assistant/components/StudyAssistantPanel.tsx` | Implements the question form, filters, loading state, grounded answers, source cards, no-context state, and safe errors. | Frontend | Mantine, typed API client, RAG types |
+| `frontend/features/study-assistant/components/StudyAssistantPanel.module.css` | Provides responsive Study Assistant page and source-card styling. | Frontend | Study Assistant panel |
+| `frontend/features/study-assistant/components/StudyAssistantPanel.test.tsx` | Tests questions, subject and file filters, answers, source display, no-context results, and API errors. | Frontend | Vitest, Testing Library, Mantine |
+| `frontend/features/study-assistant/server/options.ts` | Loads authenticated subjects and ready study files without exposing user identifiers. | Frontend | Server Supabase client, subjects, study files |
+| `frontend/features/study-assistant/server/options.test.ts` | Tests safe server-side option loading and authentication fallback behavior. | Frontend | Mocked Supabase server client |
+| `frontend/types/rag.ts` | Defines request, response, source, error, and filter-option types for the Study Assistant. | Shared frontend | Study Assistant client, server loader, UI |
+| `frontend/tests/setup.ts` | Configures the jsdom test environment and required Mantine browser API mocks. | Frontend testing | Vitest, Testing Library, Mantine portals |
+| `frontend/tests/test-environment.test.ts` | Confirms that the frontend unit-test environment is operating correctly. | Frontend testing | Vitest, jsdom |
+| `frontend/vitest.config.mts` | Configures frontend unit and component testing. | Frontend testing | Vitest, React, jsdom, TypeScript paths |
+| `frontend/package.json` | Adds frontend test commands and test dependencies. | Frontend | npm, Vitest, Testing Library |
+| `frontend/package-lock.json` | Locks the versions of the frontend testing dependencies. | Frontend | npm |
+| `backend/app/core/config.py` | Configures the Gemini grounded-answer output allowance, including the updated 1024-token default. | Backend | Gemini provider, grounded-answer dependency |
+
+### Study Assistant component connections
+
+```mermaid
+flowchart TD
+    Page["study-assistant/page.tsx"]
+    Options["server/options.ts"]
+    Panel["StudyAssistantPanel.tsx"]
+    Types["types/rag.ts"]
+    Client["study-assistant/api.ts"]
+    Session["Supabase Browser Session"]
+    Endpoint["FastAPI /api/rag/answer"]
+
+    Page --> Options
+    Page --> Panel
+    Options --> Types
+    Panel --> Types
+    Panel --> Client
+    Client --> Types
+    Client --> Session
+    Client --> Endpoint

@@ -985,3 +985,86 @@ When changing an API or RPC contract:
 10. Regenerate database types after schema changes.
 11. Verify the OpenAPI output.
 12. Do not expose secrets in responses, logs, or screenshots.
+
+## Study Assistant Grounded-Answer Endpoint
+
+### Endpoint
+
+```http
+POST /api/rag/answer
+Authorization: Bearer <Supabase access token>
+Content-Type: application/json
+```
+
+The backend determines the user from the validated access token. A client-provided user ID is not accepted.
+
+### Request body
+
+```json
+{
+  "question": "What are the main ideas in my uploaded notes?",
+  "subject_id": "optional-subject-uuid",
+  "study_file_id": "optional-study-file-uuid",
+  "match_count": 5,
+  "similarity_threshold": 0.5
+}
+```
+
+| Field | Required | Description |
+|---|---:|---|
+| `question` | Yes | The student's question about their indexed study materials. |
+| `subject_id` | No | Restricts retrieval to one owned subject. |
+| `study_file_id` | No | Restricts retrieval to one owned and ready study file. |
+| `match_count` | No | Controls the maximum number of relevant chunks retrieved. |
+| `similarity_threshold` | No | Controls the minimum accepted similarity score. |
+
+The Phase 5F interface normally sends only `question`, `subject_id`, and `study_file_id`. Retrieval tuning values remain optional.
+
+### Answered response
+
+```json
+{
+  "outcome": "answered",
+  "answer": "The uploaded material explains ... [Source 1]",
+  "sources": [
+    {
+      "source_number": 1,
+      "source_name": "Biology Notes.pdf",
+      "chunk_index": 2,
+      "similarity_score": 0.91
+    }
+  ],
+  "retrieved_count": 3,
+  "source_count": 1,
+  "context_available": true
+}
+```
+
+### No-context response
+
+```json
+{
+  "outcome": "no_context",
+  "answer": "I could not find enough relevant information in your uploaded study materials to answer this question.",
+  "sources": [],
+  "retrieved_count": 0,
+  "source_count": 0,
+  "context_available": false
+}
+```
+
+A no-context result is a normal successful response and is not treated as an application error.
+
+### Controlled errors
+
+| HTTP status | Example condition |
+|---:|---|
+| `400` | Invalid question or filter input |
+| `401` | Missing, invalid, or expired access token |
+| `403` | Requested resource is not owned by the authenticated user |
+| `404` | Selected subject or study file does not exist |
+| `500` | Invalid internal orchestration result |
+| `502` | Upstream answer-generation provider failed or was rate-limited |
+| `503` | Retrieval, embedding, or dependent service temporarily unavailable |
+
+Provider error details, API keys, access tokens, internal embeddings, and database records are not included in public error responses.

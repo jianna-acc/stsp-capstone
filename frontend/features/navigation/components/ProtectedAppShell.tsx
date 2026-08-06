@@ -23,6 +23,7 @@ import {
   IconLayoutDashboard,
   IconLogout,
   IconSchool,
+  IconSparkles,
 } from "@tabler/icons-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -36,6 +37,7 @@ interface ProtectedAppShellProps {
   children: ReactNode;
 }
 
+
 const NAVIGATION_ITEMS = [
   {
     label: "Dashboard",
@@ -48,6 +50,12 @@ const NAVIGATION_ITEMS = [
     description: "Manage subjects and materials",
     href: "/subjects",
     icon: IconBooks,
+  },
+  {
+    label: "Study Assistant",
+    description: "Ask from your materials",
+    href: "/study-assistant",
+    icon: IconSparkles,
   },
 ] as const;
 

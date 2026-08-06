@@ -1,0 +1,76 @@
+/* File: /frontend/features/study-assistant/components/StudyAssistantPanel.module.css */
+/* Purpose: Styles the responsive Study Assistant workspace. */
+
+.page {
+  min-height: 100%;
+  padding: 2rem;
+  background:
+    radial-gradient(
+      circle at top right,
+      rgba(121, 80, 242, 0.1),
+      transparent 32rem
+    ),
+    var(--mantine-color-body);
+}
+
+.container {
+  width: 100%;
+}
+
+.header {
+  padding-top: 0.25rem;
+}
+
+.questionCard,
+.resultCard {
+  background: light-dark(
+    rgba(255, 255, 255, 0.92),
+    rgba(37, 38, 43, 0.92)
+  );
+  backdrop-filter: blur(8px);
+}
+
+.answer {
+  white-space: pre-wrap;
+  line-height: 1.75;
+}
+
+.sourceList {
+  display: grid;
+  grid-template-columns:
+    repeat(
+      auto-fit,
+      minmax(min(100%, 18rem), 1fr)
+    );
+  gap: 0.75rem;
+  padding: 0;
+  margin: 0;
+  list-style: none;
+}
+
+.sourceCard {
+  min-width: 0;
+  background: light-dark(
+    var(--mantine-color-gray-0),
+    var(--mantine-color-dark-6)
+  );
+}
+
+.sourceIcon {
+  flex-shrink: 0;
+}
+
+.sourceDetails {
+  min-width: 0;
+  flex: 1;
+}
+
+.sourceName {
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 48em) {
+  .page {
+    padding: 1rem;
+  }
+}

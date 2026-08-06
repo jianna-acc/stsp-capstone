@@ -37,7 +37,7 @@ def test_ai_settings_have_safe_defaults() -> None:
     assert settings.gemini_embedding_model == "gemini-embedding-2"
     assert settings.gemini_embedding_dimensions == 768
     assert settings.gemini_generation_temperature == 0.2
-    assert settings.gemini_generation_max_output_tokens == 256
+    assert settings.gemini_generation_max_output_tokens == 1024
     assert settings.gemini_request_timeout_seconds == 30.0
     assert settings.ai_live_smoke_tests_enabled is False
 

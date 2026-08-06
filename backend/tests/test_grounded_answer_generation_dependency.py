@@ -175,7 +175,7 @@ async def exercise_dependency() -> None:
         generation_request = provider.requests[0]
 
         assert generation_request.temperature == 0.2
-        assert generation_request.max_output_tokens == 256
+        assert generation_request.max_output_tokens == 1024
         assert generation_request.system_instruction
         assert "REQUEST_JSON" in generation_request.prompt
     finally:
@@ -197,7 +197,7 @@ def test_dependency_wires_and_closes_service(
 
     settings = SimpleNamespace(
         gemini_generation_temperature=0.2,
-        gemini_generation_max_output_tokens=256,
+        gemini_generation_max_output_tokens=1024,
     )
 
     FakeGeminiProvider.instances.clear()

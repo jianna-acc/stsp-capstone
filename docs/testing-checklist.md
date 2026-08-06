@@ -1003,3 +1003,61 @@ Browser or device:
 Priority:
 Assigned member:
 ```
+
+## Phase 5F — Study Assistant Validation
+
+### Automated frontend tests
+
+- [x] Vitest and React Testing Library configured.
+- [x] jsdom test environment configured.
+- [x] Mantine font, portal, resize, pointer, scroll, and media-query browser APIs mocked.
+- [x] Study Assistant API client rejects requests without an authenticated session.
+- [x] API client sends the current access token using the Bearer authorization scheme.
+- [x] API client sends optional subject and study-file filters using the backend's snake-case contract.
+- [x] Controlled backend error responses are converted into safe frontend errors.
+- [x] Malformed successful responses are rejected.
+- [x] Network failures do not expose private implementation details.
+- [x] Subject and ready-file options are loaded for the authenticated student.
+- [x] Option loading returns a safe fallback when authentication is unavailable.
+- [x] Questions can be submitted through the Study Assistant panel.
+- [x] Grounded answers and citation source cards are rendered.
+- [x] Subject and study-file filters are submitted correctly.
+- [x] No-context results are rendered as normal application outcomes.
+- [x] Authenticated API errors are displayed without crashing the page.
+- [x] Complete frontend automated test suite passed locally.
+
+### Frontend static validation
+
+- [x] Frontend linting passed.
+- [x] TypeScript validation passed.
+- [x] Production build passed.
+- [x] `/study-assistant` is included in the generated application routes.
+- [x] `git diff --check` passed.
+
+### Browser validation
+
+- [x] Study Assistant appears in the authenticated sidebar.
+- [x] `/study-assistant` is protected by the authenticated application layout.
+- [x] Subject and study-material filters load successfully.
+- [x] Selecting a study file automatically selects its related subject.
+- [x] Changing to an incompatible subject clears the selected study file.
+- [x] Loading, answer, source, no-context, and safe error states render correctly.
+- [x] Source cards do not display database UUIDs or internal chunk identifiers.
+- [x] The page remains usable at mobile widths.
+- [x] Stopping the backend produces a controlled frontend network error.
+- [x] Signing out prevents direct access to `/study-assistant`.
+
+### Live AI validation
+
+- [x] The authenticated frontend successfully reached `POST /api/rag/answer`.
+- [x] FastAPI successfully performed authenticated request handling.
+- [x] Provider errors were converted into a safe HTTP 502 response.
+- [x] The live Gemini smoke test identified the upstream failure as HTTP 429 rate limiting.
+- [x] No access token, API key, provider traceback, or private project data was displayed.
+- [ ] Repeat the final complete-answer browser test after the Gemini rate limit resets.
+
+### Known temporary validation constraint
+
+The final live-generation retest is temporarily blocked by the external Gemini API rate limit. This does not indicate a frontend routing, Supabase authentication, RAG retrieval, or FastAPI availability failure.
+
+The live test should be repeated after quota becomes available to confirm that the updated 1024-token output allowance produces a complete answer.
