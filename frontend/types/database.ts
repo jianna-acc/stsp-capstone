@@ -226,6 +226,128 @@ export type Database = {
           },
         ]
       }
+      study_conversations: {
+        Row: {
+          created_at: string
+          id: string
+          last_message_at: string
+          study_file_id: string | null
+          subject_id: string | null
+          summarized_message_count: number
+          summary_text: string | null
+          summary_updated_at: string | null
+          summary_version: number
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          last_message_at?: string
+          study_file_id?: string | null
+          subject_id?: string | null
+          summarized_message_count?: number
+          summary_text?: string | null
+          summary_updated_at?: string | null
+          summary_version?: number
+          title?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          last_message_at?: string
+          study_file_id?: string | null
+          subject_id?: string | null
+          summarized_message_count?: number
+          summary_text?: string | null
+          summary_updated_at?: string | null
+          summary_version?: number
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "study_conversations_study_file_id_fkey"
+            columns: ["study_file_id"]
+            isOneToOne: false
+            referencedRelation: "study_files"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "study_conversations_subject_id_fkey"
+            columns: ["subject_id"]
+            isOneToOne: false
+            referencedRelation: "subjects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      study_file_ai_chunks: {
+        Row: {
+          chunk_index: number
+          chunk_metadata: Json
+          content: string
+          created_at: string
+          embedding: string
+          embedding_dimensions: number
+          embedding_model: string
+          embedding_task_type: string
+          end_offset: number
+          id: string
+          source_name: string | null
+          start_offset: number
+          study_file_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          chunk_index: number
+          chunk_metadata?: Json
+          content: string
+          created_at?: string
+          embedding: string
+          embedding_dimensions?: number
+          embedding_model: string
+          embedding_task_type?: string
+          end_offset: number
+          id?: string
+          source_name?: string | null
+          start_offset: number
+          study_file_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          chunk_index?: number
+          chunk_metadata?: Json
+          content?: string
+          created_at?: string
+          embedding?: string
+          embedding_dimensions?: number
+          embedding_model?: string
+          embedding_task_type?: string
+          end_offset?: number
+          id?: string
+          source_name?: string | null
+          start_offset?: number
+          study_file_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "study_file_ai_chunks_study_file_id_fkey"
+            columns: ["study_file_id"]
+            isOneToOne: false
+            referencedRelation: "study_files"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       study_file_chunks: {
         Row: {
           chunk_index: number
@@ -382,6 +504,44 @@ export type Database = {
           },
         ]
       }
+      study_messages: {
+        Row: {
+          content: string
+          conversation_id: string
+          created_at: string
+          id: string
+          outcome: string | null
+          role: string
+          sources: Json
+        }
+        Insert: {
+          content: string
+          conversation_id: string
+          created_at?: string
+          id?: string
+          outcome?: string | null
+          role: string
+          sources?: Json
+        }
+        Update: {
+          content?: string
+          conversation_id?: string
+          created_at?: string
+          id?: string
+          outcome?: string | null
+          role?: string
+          sources?: Json
+        }
+        Relationships: [
+          {
+            foreignKeyName: "study_messages_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "study_conversations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       subjects: {
         Row: {
           color: string
@@ -486,6 +646,39 @@ export type Database = {
       replace_study_availability: {
         Args: { p_slots: Json }
         Returns: undefined
+      }
+      replace_study_file_ai_chunks: {
+        Args: {
+          p_chunks: Json
+          p_embedding_dimensions: number
+          p_embedding_model: string
+          p_original_character_count: number
+          p_study_file_id: string
+        }
+        Returns: number
+      }
+      search_study_file_ai_chunks: {
+        Args: {
+          p_match_count?: number
+          p_query_embedding: Json
+          p_similarity_threshold?: number
+          p_study_file_id?: string
+          p_subject_id?: string
+          p_user_id: string
+        }
+        Returns: {
+          chunk_id: string
+          chunk_index: number
+          chunk_metadata: Json
+          content: string
+          embedding_model: string
+          end_offset: number
+          similarity_score: number
+          source_name: string
+          start_offset: number
+          study_file_id: string
+          subject_id: string
+        }[]
       }
       start_study_file_processing: {
         Args: { p_study_file_id: string }

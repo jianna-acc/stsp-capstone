@@ -328,3 +328,19 @@ Student question
 ```
 
 Phase 4D provides the validated indexing foundation required by that later workflow.
+
+## Implementation Status
+
+| Area | Status |
+|---|---|
+| Study-material extraction | Implemented and tested |
+| AI text preparation | Implemented and tested |
+| Gemini document embeddings | Implemented and live-smoke tested |
+| Supabase pgvector persistence | Implemented and live-smoke tested |
+| File-processing integration | Implemented and tested |
+| Retrieval-query embedding | Implemented and tested in Phase 5B |
+| Similarity search | Implemented and tested in Phase 5A and Phase 5C |
+| Grounded RAG answer generation | Implemented and tested in Phase 5D |
+| Protected authenticated RAG API | Implemented and tested in Phase 5E |
+| Student-facing Study Assistant | Implemented and tested in Phase 5F |
+| Saved conversations and bounded memory | Implemented and tested in Phase 5G |

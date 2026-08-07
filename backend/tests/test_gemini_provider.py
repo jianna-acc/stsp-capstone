@@ -39,7 +39,7 @@ def build_settings(
         "gemini_embedding_model": "test-embedding-model",
         "gemini_embedding_dimensions": EMBEDDING_DIMENSIONS,
         "gemini_generation_temperature": 0.2,
-        "gemini_generation_max_output_tokens": 256,
+        "gemini_generation_max_output_tokens": 1024,
         "gemini_request_timeout_seconds": 30,
         "_env_file": None,
     }
@@ -252,7 +252,7 @@ def test_generation_uses_configured_defaults() -> None:
 
     assert config.system_instruction == "Use simple language."
     assert config.temperature == 0.2
-    assert config.max_output_tokens == 256
+    assert config.max_output_tokens == 1024
 
 
 def test_generation_honors_request_overrides() -> None:

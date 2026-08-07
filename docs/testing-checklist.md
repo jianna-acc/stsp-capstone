@@ -1,993 +1,536 @@
 <!-- File: /docs/testing-checklist.md -->
-<!-- Purpose: Tracks automated, manual, security, and regression tests required before a project phase is considered complete. -->
+<!-- Purpose: Tracks required automated, manual, security, regression, and release checks. -->
 
 # Testing Checklist
 
-A feature is not complete only because its page appears correctly.
-
-A completed feature must also handle:
-
-- Loading
-- Success
-- Empty data
-- Invalid input
-- Errors
-- Retry behavior
-- Mobile layout
-- Authentication
-- Authorization
-- Database consistency
-- Security boundaries
-- Automated validation
-- Regression testing
-
-A checked item means the test has already been completed successfully.
-
-An unchecked item must be completed before the related phase is merged.
+A feature is complete only when its functionality, errors, security boundaries, and regressions have been tested.
 
 ---
 
-# Phase 1 Repository Tests
+# Phase 1 — Foundation
 
-- [x] Local Git repository exists
-- [x] GitHub remote is connected
-- [x] `main` branch exists
-- [x] `development` branch exists
-- [x] Initial project commit is pushed
-- [x] Feature branches are used for active development
-- [x] Generated environment folders are ignored
-- [x] Private environment files are ignored
-- [x] Git workflow is documented
-
----
-
-# Documentation Tests
-
-- [x] Root README exists
-- [x] Project file map exists
-- [x] Architecture document exists
-- [x] Setup guide exists
-- [x] API contracts document exists
-- [x] Database document exists
-- [x] Authentication document exists
-- [x] Git workflow document exists
-- [x] Testing checklist exists
-- [ ] Every Mermaid diagram renders correctly
-- [ ] Every documented file path exists
-- [ ] Every documented command matches the current operating system
-- [ ] No outdated `Planned` labels remain for implemented features
-- [ ] No secrets appear in documentation
-- [ ] `git diff --check` passes after all documentation edits
-
----
-
-# Frontend Foundation Tests
-
-- [x] Supported Node.js version is installed
-- [x] Next.js project installs successfully
-- [x] `npm run dev` starts
-- [x] Home page opens
-- [x] CSS Modules work
-- [x] Tailwind is not used as the main styling system
-- [x] Mantine styles load
-- [x] Custom application theme is applied
-- [x] Tabler icons display
-- [x] Mantine notifications work
-- [x] Confirmation modals work
-- [x] Responsive card layout works
-- [x] Buttons stack correctly on narrow screens
-- [x] Browser console has no foundation errors
-- [x] `npm run lint` passes
-- [x] `npx tsc --noEmit` passes
-- [x] `npm run build` passes
-
----
-
-# Backend Foundation Tests
-
-- [x] Python virtual environment is created
-- [x] Python virtual environment activates
-- [x] Locked dependencies install
-- [x] `python -m pip check` reports no broken requirements
-- [x] Typed environment settings load
-- [x] Private `.env` is ignored by Git
-- [x] FastAPI application imports successfully
-- [x] FastAPI starts on port `8000`
-- [x] `/docs` opens
-- [x] `/openapi.json` opens
-- [x] CORS permits `http://localhost:3000`
+- [x] Git repository configured
+- [x] Feature-branch workflow established
+- [x] Next.js frontend runs
+- [x] Mantine UI loads
+- [x] FastAPI runs
 - [x] `/api/health` returns `200`
-- [x] Health response matches its schema
-- [x] Swagger displays the health endpoint
+- [x] CORS configured
+- [x] Supabase foundation configured
+- [x] Frontend lint passes
+- [x] Frontend TypeScript passes
+- [x] Frontend build passes
 - [x] Backend tests pass
 
 ---
 
-# Frontend-to-Backend Health Integration Tests
+# Authentication
 
-- [x] Frontend `.env.example` documents the backend base URL
-- [x] Frontend `.env.local` is ignored by Git
-- [x] `NEXT_PUBLIC_API_BASE_URL` loads correctly
-- [x] Frontend API response types compile
-- [x] API service validates the health response
-- [x] API service handles missing configuration
-- [x] API service handles connection failures
-- [x] API request timeout is implemented
-- [x] Health component displays the idle state
-- [x] Health component displays the loading state
-- [x] Health component displays the connected state
-- [x] Health component displays all response fields
-- [x] Health component displays the unavailable state
-- [x] Retry reconnects after FastAPI restarts
-- [x] Check again sends another successful request
-- [x] Backend receives `GET /api/health`
-- [x] Browser receives `200 OK`
-- [x] CORS allows the frontend origin
-- [x] Component remains usable after a failed request
-- [x] Browser console has no unexpected errors
-- [x] Frontend terminal has no compilation errors
-- [x] Backend terminal has no unexpected traceback
+- [x] Registration works
+- [x] Registration validation works
+- [x] Profile is created for new user
+- [x] Email confirmation works
+- [x] Password login works
+- [x] Invalid credentials produce safe feedback
+- [x] Session survives refresh
+- [x] Logout works
+- [x] Unauthenticated protected access redirects to login
+- [x] Session proxy works
+- [x] Backend secret is not exposed to browser code
 
 ---
 
-# Supabase Foundation Tests
+# Phase 2 — Learning Profile
 
-- [x] Hosted Supabase development project exists
-- [x] Repository is linked to the hosted project
-- [x] Supabase publishable key is used by the frontend
-- [x] Supabase backend secret is used only by trusted backend code
-- [x] Private environment files are ignored by Git
-- [x] Supabase CLI is installed as a project dependency
-- [x] Migration history is available through the linked project
-- [x] Linked dry-run workflow works
-- [x] Generated database types are committed
-- [x] Browser Supabase client uses generated database types
-- [x] Server Supabase client uses generated database types
-- [x] Backend trusted access is isolated from frontend code
-- [ ] Final linked migration check reports the remote database is up to date
-- [ ] Final generated database types match the hosted schema
+- [x] Learning-profile tables exist
+- [x] RLS enabled
+- [x] General preferences save
+- [x] Strong subjects save
+- [x] Weak subjects save
+- [x] Confidence levels save
+- [x] Availability saves
+- [x] Invalid availability is rejected
+- [x] Onboarding completion validates required data
+- [x] Completed onboarding permits protected application access
+- [x] Required-data changes reset completion when required
 
 ---
 
-# Profiles Foundation Tests
+# Phase 3 — Subjects and Files
 
-- [x] Profiles migration passed its dry-run preview
-- [x] Profiles migration was applied successfully
-- [x] Local and remote migration timestamps match
-- [x] `public.profiles` exists
-- [x] Row Level Security is enabled
-- [x] Own-profile policies are present
-- [x] Profile timestamp trigger is present
-- [x] New-user profile trigger is present
-- [x] Generated definitions contain `public.profiles`
-- [x] Trusted backend access can reach the profile table
-- [x] Frontend lint passes with generated definitions
-- [x] Frontend production build passes
-- [x] TypeScript validation passes
-- [x] Backend dependency check passes
-- [x] Backend tests pass
+## Subjects
 
----
+- [x] Subject creation works
+- [x] Subject editing works
+- [x] Subject deletion works
+- [x] Subject RLS works
+- [x] Missing/unowned subjects fail safely
 
-# Authentication Proxy Tests
+## Uploads
 
-- [x] Supabase Site URL is configured for `http://localhost:3000`
-- [x] Email-confirmation redirect URL is configured
-- [x] Email provider is enabled
-- [x] Email confirmation is enabled
-- [x] Authentication architecture is documented
-- [x] Next.js root proxy exists
-- [x] Supabase session utility exists
-- [x] Proxy uses publishable Supabase configuration
-- [x] Proxy uses generated database types
-- [x] Proxy validates sessions
-- [x] Proxy does not use the backend secret
-- [x] Request cookies are synchronized
-- [x] Response cookies are synchronized
-- [x] Static assets are excluded from session matching
-- [x] Repeated refreshes do not create a redirect loop
-- [x] Browser console has no unexpected authentication errors
-
----
-
-# Registration Tests
-
-- [x] Public authentication layout is responsive
-- [x] Registration route loads
-- [x] Check-email route loads
-- [x] Login route loads
-- [x] Registration form uses a Server Action
-- [x] Registration form uses action state
-- [x] Full name is validated
-- [x] Email format is validated
-- [x] Password minimum length is validated
-- [x] Password letter requirement is validated
-- [x] Password number requirement is validated
-- [x] Password confirmation is validated
-- [x] Platform-rules acceptance is validated
-- [x] Passwords are excluded from browser-visible action state
-- [x] Registration metadata uses `full_name`
-- [x] Email redirect points to `/auth/confirm`
-- [x] Invalid registration does not create a Supabase user
-- [x] Valid registration creates an Auth user
-- [x] Profile row is created automatically
-- [x] Email confirmation succeeds
-- [x] Confirmed student can log in
-- [x] Invalid credentials display a friendly error
-- [x] Student session remains after refresh
-- [x] Student can log out
-- [x] Logged-out student returns to login
-
----
-
-# Protected Route Tests
-
-- [x] Unauthenticated student cannot open the dashboard
-- [x] Unauthenticated student cannot open the profile page
-- [x] Unauthenticated student cannot open onboarding pages
-- [x] Unauthenticated student cannot open subject pages
-- [x] Authenticated student can open protected pages
-- [x] Incomplete onboarding redirects to onboarding
-- [x] Completed onboarding permits dashboard access
-- [x] Logout removes access to protected routes
-- [x] Session refresh does not produce a redirect loop
-
----
-
-# Phase 2 Learning-Profile Database Tests
-
-## Tables
-
-- [x] `public.learning_profiles` exists
-- [x] `public.learning_profile_subjects` exists
-- [x] `public.study_availability` exists
-- [x] Generated database types include all learning-profile tables
-- [x] Row Level Security is enabled on all learning-profile tables
-- [x] Students can read only their own learning-profile records
-- [x] Students can update only their own learning-profile records
-
-## General Preferences
-
-- [x] Preferred study duration saves
-- [x] Preferred study times save
-- [x] Study challenges save
-- [x] Estimated task time saves
-- [x] Preferred learning methods save
-- [x] Existing values load during onboarding
-- [x] Save and continue works
-
-## Subject Strengths and Confidence
-
-- [x] Strong subject records save
-- [x] Weak subject records save
-- [x] Confidence values save
-- [x] Confidence values are restricted to the valid range
-- [x] Replacing subject records does not create unexpected duplicates
-- [x] Existing subject records reload correctly
-
-## Study Availability
-
-- [x] Availability periods save
-- [x] ISO weekday values are validated
-- [x] Start time must be earlier than end time
-- [x] Overlapping periods are rejected
-- [x] Existing availability records reload correctly
-- [x] Replacing availability does not leave duplicate periods
-
-## Onboarding Completion
-
-- [x] Completion RPC validates required profile data
-- [x] Completion RPC requires general preferences
-- [x] Completion RPC requires study challenges
-- [x] Completion RPC requires a strong subject
-- [x] Completion RPC requires a weak subject
-- [x] Completion RPC requires study availability
-- [x] Successful completion sets `onboarding_completed`
-- [x] Successful completion sets `onboarding_completed_at`
-- [x] Successful completion sets the final onboarding step
-- [x] Required-data edits reset onboarding completion
-- [x] Required-data deletion resets onboarding completion
-- [x] Database trigger notices for missing old triggers are treated as non-errors
-
----
-
-# Phase 3 Subject Management Tests
-
-- [x] `public.subjects` exists
-- [x] Subject Row Level Security is enabled
-- [x] Student can create a subject
-- [x] Student can view owned subjects
-- [x] Student can edit an owned subject
-- [x] Student can delete an owned subject
-- [x] Student cannot read another student's subject
-- [x] Student cannot update another student's subject
-- [x] Student cannot delete another student's subject
-- [x] Empty subject state displays correctly
-- [x] Subject validation rejects invalid names
-- [x] Subject tabs display
-- [x] Subject workspace route loads
-- [x] Missing or unowned subject returns a safe not-found response
-- [x] `/files` redirects to the subject workspace
-- [x] Sidebar displays owned subjects
-
----
-
-# Phase 3 Storage Tests
-
-- [x] Private `study-materials` bucket exists
-- [x] Bucket is not public
-- [x] Storage upload policies exist
-- [x] Storage read policies exist
-- [x] Storage delete policies exist
-- [x] Storage paths begin with the authenticated user's ID
-- [x] Student can upload inside their own folder
-- [x] Student cannot upload inside another student's folder
-- [x] Student cannot read another student's object
-- [x] Student cannot delete another student's object
-- [x] Signed URLs are short-lived
-- [x] Real signed URLs are not written to documentation
-- [ ] Final two-account Storage isolation test passes
-
----
-
-# Phase 3 File Upload Tests
-
-## Accepted Files
-
-- [x] PDF is accepted
-- [x] TXT is accepted
-- [x] PPT is accepted for storage
-- [x] PPTX is accepted
-- [x] XLS is accepted
-- [x] XLSX is accepted
-- [x] JPEG is accepted for storage
-- [x] PNG is accepted for storage
-- [x] WebP is accepted for storage
-- [x] Unsupported file formats are rejected
-- [x] Files larger than 20 MB are rejected
-- [x] Only one file may be selected per upload
-- [x] Selected filename displays
-- [x] Selected file size displays
-
-## Upload Form
-
-- [x] Subject is required
-- [x] Topic is required
-- [x] File is required
-- [x] Field errors display correctly
+- [x] PDF accepted
+- [x] TXT accepted
+- [x] PPT accepted for storage
+- [x] PPTX accepted
+- [x] XLS accepted
+- [x] XLSX accepted
+- [x] JPEG accepted for storage
+- [x] PNG accepted for storage
+- [x] WebP accepted for storage
+- [x] Unsupported formats rejected
+- [x] Files over 20 MB rejected
 - [x] Upload progress displays
-- [x] Upload button disables during active operations
-- [x] Successful upload clears the form
-- [x] Successful upload creates one study-file row
-- [x] Successful upload creates one private Storage object
-- [x] Successful upload queues file processing
-- [x] Failed upload is marked `failed`
-- [x] Failed upload displays a friendly message
-- [x] No duplicate file record is created during upload
+- [x] Failed upload is recorded safely
+
+## Processing
+
+- [x] Queue RPC works
+- [x] Atomic job claim works
+- [x] `SKIP LOCKED` prevents duplicate claims
+- [x] Worker processes queued jobs
+- [x] PDF extraction works
+- [x] TXT extraction works
+- [x] PPTX extraction works
+- [x] XLSX extraction works
+- [x] XLS extraction works
+- [x] Source locators are preserved
+- [x] Failed processing is recorded
+- [x] Stale processing recovery works
+- [x] Automatic frontend status refresh works
+- [x] Preview works
+- [x] Download works
+- [x] Delete works
+- [x] Failed upload retry works
 
 ---
 
-# Phase 3 Study-File Database Tests
+# Phase 4 — AI Preparation and Vector Indexing
 
-- [x] `public.study_files` exists
-- [x] `public.file_processing_jobs` exists
-- [x] `public.study_file_contents` exists
-- [x] `public.study_file_chunks` exists
-- [x] Row Level Security is enabled on all file-processing tables
-- [x] Student can read only owned study-file rows
-- [x] Student can read only owned processing jobs
-- [x] Student can read only owned extracted content
-- [x] Student can read only owned chunks
-- [x] File is connected to an owned subject
-- [x] Processing-job row is connected to one study file
-- [x] Content row is connected to one study file
-- [x] Chunks are connected to one study file
-- [x] Chunk order begins at zero
-- [x] File and job terminal statuses remain synchronized
+- [x] AI configuration validation works
+- [x] Provider-independent generation contract works
+- [x] Provider-independent embedding contract works
+- [x] Gemini provider has offline unit tests
+- [x] Normal tests do not call live Gemini
+- [x] Deterministic text chunking works
+- [x] Chunk overlap validation works
+- [x] Embedding batches preserve ordering
+- [x] AI preparation integrates with file processing
+- [x] Vector migration exists
+- [x] pgvector enabled
+- [x] `study_file_ai_chunks` exists
+- [x] Vector dimensions validated
+- [x] Vector persistence RPC works
+- [x] HNSW vector index exists
+- [x] Vector RLS exists
+- [x] Vector indexing integrates with worker
+- [x] Controlled vector-indexing failures work
 
 ---
 
-# File-Processing Status Tests
+# Phase 5A–5C — Retrieval
 
-- [x] New reservation uses `uploading`
-- [x] Completed upload uses `queued`
-- [x] Claimed job sets file to `reading`
-- [x] Extraction completion sets file to `indexing`
-- [x] Successful persistence sets file to `ready`
-- [x] Successful persistence sets job to `completed`
-- [x] Failed processing sets file to `failed`
-- [x] Failed processing sets job to `failed`
-- [x] Failure code is saved
-- [x] Failure message is saved
-- [x] Successful retry clears previous failure information
+- [x] Query embedding uses retrieval-query task type
+- [x] Query vectors validated
+- [x] Retrieval request contracts validated
+- [x] Subject filter validated
+- [x] Study-file filter validated
+- [x] Owned vector search implemented
+- [x] Similarity threshold supported
+- [x] Match limit supported
+- [x] No-context retrieval supported
+- [x] Retrieval orchestration tested
+- [x] Unowned resources rejected
 
-Expected file-status flow:
+---
 
-```text
-uploading
-→ queued
-→ reading
-→ indexing
-→ ready
+# Phase 5D — Grounded Answer Generation
+
+- [x] Grounded prompt created
+- [x] Retrieved sources become factual context
+- [x] No-context result supported
+- [x] Source numbering validated
+- [x] Citation markers validated
+- [x] Provider failures converted to safe errors
+- [x] Grounded answer tests use fake providers
+
+---
+
+# Phase 5E — Protected RAG API
+
+- [x] `POST /api/rag/answer` registered
+- [x] Missing bearer token rejected
+- [x] Invalid token rejected
+- [x] Authenticated user derived from token
+- [x] Request cannot override `user_id`
+- [x] Subject ownership validated
+- [x] Study-file ownership validated
+- [x] Controlled upstream failures mapped safely
+- [x] No raw provider traceback returned
+- [x] No access token returned
+- [x] No raw vectors returned
+
+---
+
+# Phase 5F — Study Assistant Frontend
+
+## API Client
+
+- [x] Supabase session required
+- [x] Bearer token sent to FastAPI
+- [x] Subject filter serialized correctly
+- [x] Study-file filter serialized correctly
+- [x] Successful response validated
+- [x] No-context response validated
+- [x] Malformed response rejected
+- [x] Backend errors displayed safely
+- [x] Network errors do not expose credentials
+
+## UI
+
+- [x] `/study-assistant` protected
+- [x] Study Assistant navigation exists
+- [x] Subject options load
+- [x] Ready study files load
+- [x] Selecting file selects related subject
+- [x] Incompatible file is cleared after subject change
+- [x] Question submission works
+- [x] Loading state works
+- [x] Grounded answer renders
+- [x] Sources render
+- [x] No-context result renders
+- [x] Safe API errors render
+- [x] Responsive layout works
+
+---
+
+# Phase 5G — Conversation Database
+
+- [x] `study_conversations` exists
+- [x] `study_messages` exists
+- [x] Conversation ownership foreign key exists
+- [x] Message deletion cascades with conversation deletion
+- [x] Conversation filter ownership validated
+- [x] Conversation RLS enabled
+- [x] Message RLS enabled
+- [x] Anonymous access revoked
+- [x] Assistant messages require valid outcome
+- [x] User messages reject assistant outcomes
+- [x] Saved source metadata is limited to safe fields
+- [x] Summary maximum is 4,000 characters
+- [x] Summary count cannot be negative
+- [x] Summary-state consistency enforced
+- [x] Authenticated clients cannot update internal summary state
+- [x] Service role can perform backend summary updates
+- [x] Phase 5G migrations synchronized
+- [x] Linked database dry run reports no pending migrations
+- [x] Generated database types include conversation fields
+
+---
+
+# Phase 5G — Conversation API
+
+- [x] Conversation create route registered
+- [x] Conversation list route registered
+- [x] Conversation detail route registered
+- [x] Conversation update route registered
+- [x] Conversation delete route registered
+- [x] Conversation routes require authentication
+- [x] List returns only owned conversations
+- [x] Detail requires ownership
+- [x] Update requires ownership
+- [x] Delete requires ownership
+- [x] Missing conversation returns controlled error
+- [x] Unowned conversation returns controlled error
+- [x] Conversation client does not send raw `user_id`
+- [x] Delete client handles `204 No Content`
+
+---
+
+# Phase 5G — RAG Persistence
+
+- [x] RAG request accepts optional `conversation_id`
+- [x] RAG response requires `conversation_id`
+- [x] First question creates conversation
+- [x] Current user message saved
+- [x] Assistant answer saved
+- [x] No-context answer saved
+- [x] Existing conversation ownership checked
+- [x] Conflicting saved/requested filters rejected
+- [x] Source metadata persisted safely
+
+---
+
+# Phase 5G — Bounded Memory
+
+- [x] Memory supports only user/assistant roles
+- [x] Memory limited to 10 items
+- [x] Memory limited to 8,000 characters
+- [x] Recent messages ordered chronologically
+- [x] Current question not duplicated in prior memory
+- [x] Memory remains backend-internal
+- [x] Client cannot submit arbitrary memory
+- [x] Memory reaches grounded generation
+- [x] Memory does not reach vector retrieval
+- [x] Conversation history identified as non-evidence
+- [x] Study-material retrieval remains factual evidence
+
+---
+
+# Phase 5G — Deterministic Summary
+
+- [x] Summary does not call Gemini
+- [x] Summary does not call another AI provider
+- [x] User/assistant entries labeled
+- [x] Citation markers removed
+- [x] Individual entries bounded
+- [x] Complete summary bounded to 4,000 characters
+- [x] Newest summary entries preserved
+- [x] Output deterministic
+- [x] Summary version validated
+- [x] Cross-conversation messages rejected
+- [x] Summary uses one memory slot
+- [x] Nine messages remain with summary
+- [x] Ten messages remain without summary
+- [x] Summary refresh occurs before saving current question
+- [x] Already summarized messages are not summarized twice
+
+---
+
+# Phase 5G — Frontend Conversation API
+
+- [x] Typed conversation contracts exist
+- [x] List API works
+- [x] Detail API works
+- [x] Rename API works
+- [x] Delete API works
+- [x] Authentication required
+- [x] Error responses validated
+- [x] Malformed responses rejected
+- [x] Network errors do not expose access token
+
+---
+
+# Phase 5G — Conversation History UI
+
+- [x] Loading state implemented
+- [x] Empty state implemented
+- [x] Error state implemented
+- [x] Retry implemented
+- [x] Conversation selection implemented
+- [x] Selected conversation highlighted
+- [x] New conversation implemented
+- [x] Selected detail loads
+- [x] Saved messages load
+- [x] Saved subject filter restored
+- [x] Saved study-file filter restored
+- [x] Follow-up sends selected `conversation_id`
+- [x] Successful answer clears question input
+- [x] Conversation detail refreshes after answer
+- [x] Conversation history refreshes after answer
+- [x] Conversation requests are aborted safely when switching
+
+---
+
+# Phase 5G — Backend Regression
+
+- [x] Full pytest suite passes
+- [x] Full Ruff validation passes
+- [x] Backend compilation passes
+- [x] Focused conversation/RAG regression passes
+- [x] Migration contract tests pass
+- [x] Repository tests pass
+- [x] RAG endpoint regression passes
+
+---
+
+# Phase 5G — Frontend Regression
+
+The full frontend regression passed before the final conversation-history layout spacing adjustment.
+
+- [x] Full frontend test suite passed
+- [x] TypeScript validation passed
+- [x] ESLint passed
+- [x] Production build passed
+
+Because the Study Assistant CSS layout was adjusted afterward, perform the final post-layout validation before the commit:
+
+- [ ] Re-run `npm run lint`
+- [ ] Re-run `npx tsc --noEmit`
+- [ ] Re-run `npm run build`
+- [ ] Visually confirm history/assistant spacing on desktop
+- [ ] Visually confirm stacked mobile layout
+
+---
+
+# Phase 5G — Security
+
+- [x] Conversation ownership comes from bearer authentication
+- [x] Request cannot override user ID
+- [x] Request cannot submit memory
+- [x] Request cannot submit summary state
+- [x] Frontend does not use internal summary state
+- [x] Frontend does not directly query conversation tables
+- [x] Backend service role remains server-side
+- [x] Conversation history cannot replace retrieved evidence
+- [x] Sources exclude raw vectors
+- [x] Sources exclude complete retrieved chunks
+- [x] API errors do not expose credentials
+- [x] Network errors do not expose access tokens
+
+---
+
+# Final Documentation Checks
+
+After replacing the documentation files:
+
+- [ ] `ARCHITECTURE.md` reflects Phase 5G
+- [ ] `api-contracts.md` reflects RAG and conversation endpoints
+- [ ] `authentication.md` reflects implemented authentication
+- [ ] `database.md` includes vector and conversation tables
+- [ ] `PROJECT_FILE_MAP.md` includes Phase 4/5 files
+- [ ] `setup-guide.md` reflects current application
+- [ ] `testing-checklist.md` reflects Phase 5G
+- [ ] Mermaid code fences are paired
+- [ ] No stale Phase 4 `Planned` labels remain
+- [ ] No duplicate planned `chat_*` tables remain
+- [ ] No real secrets appear
+- [ ] `git diff --check` passes
+
+---
+
+# Final Database Checks
+
+```powershell
+npx supabase migration list --linked
+
+npx supabase db push --linked --dry-run
 ```
 
-Possible failure flow:
+Confirm:
 
-```text
-uploading
-→ failed
-```
-
-or:
-
-```text
-queued
-→ reading
-→ failed
-```
-
----
-
-# Queue and Atomic Claim Tests
-
-- [x] Queue RPC exists
-- [x] Queue RPC changes the file to `queued`
-- [x] Queue RPC creates or resets the processing job
-- [x] Queue RPC avoids duplicate active jobs
-- [x] Atomic claim RPC exists
-- [x] Atomic claim returns the processing-job ID
-- [x] Atomic claim returns the study-file ID
-- [x] Atomic claim changes the job to `processing`
-- [x] Atomic claim increments `attempt_count`
-- [x] Atomic claim changes the file to `reading`
-- [x] Atomic claim uses locking
-- [x] Atomic claim uses `SKIP LOCKED`
-- [x] Two workers cannot claim the same queued job
-- [x] Empty queue returns no claimed job
-
----
-
-# Backend Private File Access Tests
-
-- [x] Backend can retrieve a study-file row
-- [x] Backend can retrieve the connected processing job
-- [x] Backend can download an owned private Storage object
-- [x] Invalid Storage paths are rejected
-- [x] Empty Storage objects are rejected
-- [x] Oversized processing files are rejected
-- [x] Missing Storage objects return a controlled error
-- [x] Supabase request failures return a controlled error
-- [x] Backend secret remains backend-only
-- [x] Trusted Supabase request uses the configured secret key
-- [x] Secrets are not returned in API error responses
-
----
-
-# File Extraction Tests
-
-## PDF
-
-- [x] PDF extractor loads
-- [x] PDF text is extracted
-- [x] PDF page count is recorded
-- [x] PDF chunks preserve page locators
-- [x] Empty PDF text produces a controlled extraction error
-
-## TXT
-
-- [x] UTF-8 text is extracted
-- [x] TXT character count is recorded
-- [x] TXT uses a document locator
-- [x] Invalid text encoding produces a controlled error
-- [x] Empty text produces a controlled extraction error
-
-## PPTX
-
-- [x] PPTX extractor loads
-- [x] Slide text is extracted
-- [x] Table text is extracted
-- [x] Grouped-shape text is handled
-- [x] Notes are handled when available
-- [x] Slide count is recorded
-- [x] PPTX chunks preserve slide locators
-
-## XLSX
-
-- [x] XLSX extractor loads
-- [x] Workbook sheets are read
-- [x] Cell values are extracted
-- [x] Empty rows are handled
-- [x] Sheet count is recorded
-- [x] XLSX chunks preserve sheet locators
-
-## XLS
-
-- [x] Legacy XLS extractor loads
-- [x] Workbook sheets are read
-- [x] Cell values are extracted
-- [x] Sheet count is recorded
-- [x] XLS chunks preserve sheet locators
-
-## Unsupported Extraction
-
-- [x] Unsupported extractable MIME type returns a controlled error
-- [x] Image upload does not falsely report successful text extraction
-- [x] Legacy PPT does not falsely report successful text extraction
-- [x] OCR remains marked as a future feature
-
----
-
-# Processing Persistence Tests
-
-- [x] Full extracted text is stored
-- [x] Character count is stored
-- [x] Page count is stored for PDF
-- [x] Slide count is stored for PPTX
-- [x] Sheet count is stored for XLSX and XLS
-- [x] Extraction metadata is stored
-- [x] At least one chunk is required for completion
-- [x] Existing content is replaced during successful reprocessing
-- [x] Existing chunks are replaced during successful reprocessing
-- [x] Chunk order is preserved
-- [x] Successful completion sets `processed_at`
-- [x] Successful completion clears previous failures
-- [x] Partial processing results are not marked ready
-
----
-
-# Reusable File Processor Tests
-
-- [x] Processor validates the study-file row
-- [x] Processor validates the processing-job row
-- [x] Processor accepts a newly queued file
-- [x] Processor accepts a file already claimed by the worker
-- [x] Processor does not start an already claimed job twice
-- [x] Processor downloads the private object
-- [x] Processor selects the correct extractor
-- [x] Processor creates chunks
-- [x] Processor marks indexing
-- [x] Processor completes persistence
-- [x] Processor returns a typed success result
-- [x] Processor returns a controlled not-found error
-- [x] Processor returns a controlled conflict error
-- [x] Processor returns a controlled oversized-file error
-- [x] Processor returns a controlled extraction error
-- [x] Processor saves a failure state when possible
-
----
-
-# Internal Processing Endpoint Tests
-
-## Security
-
-- [x] Missing `X-Processor-Key` returns `401`
-- [x] Incorrect `X-Processor-Key` returns `403`
-- [x] Correct processor key permits access
-- [x] Processor key uses secure comparison
-- [x] Processor key is not exposed to the browser
-- [x] Processor key is ignored by Git
-- [x] Processor key is not logged
-
-## Validate Source Endpoint
-
-- [x] Endpoint is registered
-- [x] Valid source returns `200`
-- [x] Missing study file returns `404`
-- [x] Missing processing job returns `404`
-- [x] Missing Storage object returns a controlled error
-- [x] Invalid state returns `409`
-- [x] Oversized file returns `413`
-- [x] Supabase failure maps to `502`
-
-## Process Endpoint
-
-- [x] Endpoint is registered
-- [x] Successful processing returns `200`
-- [x] Response includes file ID
-- [x] Response includes job ID
-- [x] Response includes character count
-- [x] Response includes chunk count
-- [x] Response includes file-type count metadata
-- [x] Successful response reports `ready`
-- [x] Successful response reports job `completed`
-- [x] Unreadable content returns `422`
-- [x] Invalid state returns `409`
-- [x] Unexpected processing error returns `500`
-- [x] Supabase or Storage failure returns `502`
-
----
-
-# Automatic Worker Tests
-
-- [x] Worker module imports
-- [x] Worker help command works
-- [x] `--once` option exists
-- [x] `--poll-seconds` option exists
-- [x] `--recovery-interval-seconds` option exists
-- [x] `--stale-after-minutes` option exists
-- [x] `--max-attempts` option exists
-- [x] Worker validates polling configuration
-- [x] Worker validates recovery configuration
-- [x] Worker returns a no-work result for an empty queue
-- [x] Worker claims one queued job
-- [x] Worker processes a claimed file
-- [x] Worker returns a successful result
-- [x] Worker handles processor failure
-- [x] Worker saves failure state when possible
-- [x] Worker handles unexpected errors
-- [x] Worker waits when no work exists
-- [x] Worker stops gracefully
-- [x] Worker can run continuously
-- [x] Worker logs claimed and completed jobs
-
----
-
-# Stale-Job Recovery Tests
-
-- [x] Recovery RPC exists
-- [x] Recovery RPC accepts a stale threshold
-- [x] Recovery RPC accepts a maximum attempt count
-- [x] Invalid stale threshold is rejected
-- [x] Invalid maximum attempts value is rejected
-- [x] Stale processing jobs are detected
-- [x] Recoverable jobs are requeued
-- [x] Connected files return to `queued`
-- [x] Exhausted jobs are marked `failed`
-- [x] Connected exhausted files are marked `failed`
-- [x] Recovery returns requeued count
-- [x] Recovery returns failed count
-- [x] Worker calls recovery periodically
-- [x] Worker runs recovery before `--once` processing
-- [x] Recovery does not affect active recent jobs
-- [ ] Manual stale-job simulation has been completed against the hosted database
-
----
-
-# Frontend Automatic Status Refresh Tests
-
-- [x] Local file state detects `uploading`
-- [x] Local file state detects `queued`
-- [x] Local file state detects `reading`
-- [x] Local file state detects `indexing`
-- [x] Polling begins after upload is queued
-- [x] Polling uses `router.refresh()`
-- [x] Refreshed server props synchronize with local state
-- [x] Local active records are preserved until returned by the server
-- [x] File changes to `Ready` without manual browser refresh
-- [x] Preview button appears automatically
-- [x] Download button appears automatically
-- [x] Polling stops after `ready`
-- [x] Polling stops after `failed`
-- [x] Polling pauses when the browser tab is hidden
-- [x] Polling resumes when the tab becomes visible
-- [x] Status refresh does not create duplicate file records
-- [x] Frontend lint accepts the synchronization implementation
-- [x] TypeScript accepts the synchronization implementation
-- [x] Production build accepts the synchronization implementation
-
----
-
-# Preview and Download Tests
-
-- [x] Preview is unavailable before `ready`
-- [x] Download is unavailable before `ready`
-- [x] Preview action verifies authenticated ownership
-- [x] Download action verifies authenticated ownership
-- [x] Preview creates a signed URL
-- [x] Download creates a signed URL
-- [x] Signed preview opens
-- [x] Signed download starts
-- [x] Signed URLs are not stored permanently
-- [x] Signed URLs are not written to the database
-- [x] Student cannot create access for another student's file
-- [x] Missing Storage object produces a friendly error
-
----
-
-# Delete File Tests
-
-- [x] Delete control opens confirmation
-- [x] Cancel preserves the file
-- [x] Confirm removes the file
-- [x] Study-file row is deleted
-- [x] Processing-job row is removed
-- [x] Extracted-content row is removed
-- [x] Chunk rows are removed
-- [x] Private Storage object is removed
-- [x] Deleted file disappears from the interface
-- [x] Student cannot delete another student's file
-- [x] Delete failure displays a friendly message
-
----
-
-# Retry Failed Upload Tests
-
-- [x] Retry is shown only for failed files
-- [x] Retry requires the same original filename
-- [x] Selecting a different filename is rejected
-- [x] Retried file returns to an active upload state
-- [x] Retry uploads the replacement object
-- [x] Retry queues processing
-- [x] Retry restarts automatic polling
-- [x] Successful retry reaches `ready`
-- [x] Failed retry remains `failed`
-- [x] Successful retry clears old failure information
-- [x] Retry does not create duplicate study-file rows
-
----
-
-# Responsive and Usability Tests
-
-- [x] Subject page works on desktop
-- [x] Subject page works on narrow screens
-- [x] Upload form remains usable on mobile width
-- [x] File cards remain readable on mobile width
-- [x] Long filenames do not break the layout
-- [x] Status badge remains visible
-- [x] Action buttons remain usable
-- [x] Progress bar remains readable
-- [x] Empty state is understandable
-- [x] Error messages are student-friendly
-- [x] Loading controls prevent accidental duplicate actions
-
----
-
-# Phase 3 Security Tests
-
-- [x] Supabase backend secret exists only in backend configuration
-- [x] Processor internal key exists only in backend configuration
-- [x] Database password is not committed
-- [x] Supabase access token is not committed
-- [x] Local environment files are ignored
-- [x] Private Storage bucket remains private
-- [x] Browser clients use only publishable credentials
-- [x] Backend credentials do not use a `NEXT_PUBLIC_` prefix
-- [x] Row Level Security protects subject records
-- [x] Row Level Security protects file metadata
-- [x] Row Level Security protects extracted content
-- [x] Row Level Security protects chunks
-- [x] Internal routes require a processor key
-- [x] API errors do not expose secret values
-- [ ] Final Git history and staged-diff secret scan passes
-
----
-
-# Final Database Regression Tests
-
-- [ ] `npx supabase migration list --linked` succeeds
 - [ ] Local and remote migration histories match
-- [ ] `npx supabase db push --linked --dry-run` reports the remote database is up to date
-- [ ] Generated database types include `subjects`
-- [ ] Generated database types include `study_files`
-- [ ] Generated database types include `file_processing_jobs`
-- [ ] Generated database types include `study_file_contents`
-- [ ] Generated database types include `study_file_chunks`
-- [ ] Generated database types include the queue RPC
-- [ ] Generated database types include the claim RPC
-- [ ] Generated database types include the completion RPC
-- [ ] Generated database types include the failure RPC
-- [ ] Generated database types include the stale-recovery RPC
-- [ ] Two-account Row Level Security test passes
-- [ ] Two-account private Storage isolation test passes
+- [ ] Remote database is up to date
+- [ ] Generated database types match hosted schema
 
 ---
 
-# Final Backend Regression Tests
+# Final Backend Checks
 
-Run:
+```powershell
+Set-Location ".\backend"
 
-```bash
-cd ~/stsp-capstone/backend
+python -m pytest -q
 
-source .venv/bin/activate
+python -m ruff check `
+    app `
+    tests `
+    scripts
 
-python -m compileall app
-python -m pytest
+python -m compileall `
+    -q `
+    app `
+    tests `
+    scripts
+
 python -m pip check
 ```
 
-Checklist:
+Confirm:
 
-- [ ] Application compilation passes
-- [ ] All backend tests pass
-- [ ] Dependency check passes
-- [ ] No unexpected warnings require correction
-- [ ] Health route remains registered
-- [ ] Source-validation route remains registered
-- [ ] Processing route remains registered
-- [ ] Worker help command succeeds
-- [ ] Worker `--once` succeeds
-- [ ] Continuous worker starts successfully
-- [ ] Continuous worker stops gracefully
+- [ ] All commands pass after final documentation/UI changes
 
 ---
 
-# Final Frontend Regression Tests
+# Final Frontend Checks
 
-Run:
+```powershell
+Set-Location ".\frontend"
 
-```bash
-cd ~/stsp-capstone/frontend
+npm test
 
-rm -rf .next
-rm -f tsconfig.tsbuildinfo
-
-npx next typegen
-npm run lint
 npx tsc --noEmit
+
+npm run lint
+
 npm run build
 ```
 
-Checklist:
+Confirm:
 
-- [ ] Next.js route type generation passes
+- [ ] All tests pass
+- [ ] TypeScript passes
 - [ ] ESLint passes
-- [ ] TypeScript validation passes
 - [ ] Production build passes
-- [ ] Registration still works
-- [ ] Login still works
-- [ ] Logout still works
-- [ ] Protected routes still work
-- [ ] Onboarding still works
-- [ ] Profile page still works
-- [ ] Subject creation still works
-- [ ] Subject editing still works
-- [ ] Subject deletion still works
-- [ ] File upload still works
-- [ ] Automatic status refresh still works
-- [ ] Preview still works
-- [ ] Download still works
-- [ ] Delete still works
-- [ ] Retry still works
-- [ ] Browser console has no unexpected errors
 
 ---
 
-# Final End-to-End Phase 3 Test
+# Final Git Safety
 
-Start three terminals.
+From repository root:
 
-## Terminal 1 — Frontend
-
-```bash
-cd ~/stsp-capstone/frontend
-
-npm run dev
-```
-
-## Terminal 2 — FastAPI
-
-```bash
-cd ~/stsp-capstone/backend
-
-source .venv/bin/activate
-
-python -m uvicorn app.main:app \
-  --reload \
-  --host 127.0.0.1 \
-  --port 8000
-```
-
-## Terminal 3 — Worker
-
-```bash
-cd ~/stsp-capstone/backend
-
-source .venv/bin/activate
-
-python -m app.workers.file_processing_worker \
-  --poll-seconds 2 \
-  --recovery-interval-seconds 30 \
-  --stale-after-minutes 30 \
-  --max-attempts 3
-```
-
-Perform these final tests:
-
-- [ ] Sign in using a test student account
-- [ ] Create a new subject
-- [ ] Upload a PDF
-- [ ] Confirm PDF reaches `Ready` without manual refresh
-- [ ] Confirm PDF content and chunks exist
-- [ ] Preview the PDF
-- [ ] Download the PDF
-- [ ] Upload a TXT file
-- [ ] Confirm TXT reaches `Ready`
-- [ ] Upload a PPTX file
-- [ ] Confirm PPTX reaches `Ready`
-- [ ] Upload an XLSX file
-- [ ] Confirm XLSX reaches `Ready`
-- [ ] Upload an XLS file
-- [ ] Confirm XLS reaches `Ready`
-- [ ] Confirm no duplicate file rows exist
-- [ ] Delete one uploaded file
-- [ ] Confirm its database and Storage data are removed
-- [ ] Test one failed upload or processing case
-- [ ] Retry the failed file
-- [ ] Confirm retry reaches `Ready` or returns a controlled failure
-- [ ] Confirm polling stops after terminal status
-- [ ] Confirm frontend terminal has no unexpected errors
-- [ ] Confirm backend terminal has no unexpected traceback
-- [ ] Confirm worker terminal has no unexpected traceback
-
----
-
-# Final Documentation Regression Tests
-
-- [ ] `docs/ARCHITECTURE.md` reflects Phase 3
-- [ ] `docs/api-contracts.md` reflects internal processing endpoints
-- [ ] `docs/database.md` reflects Phase 2 and Phase 3 tables
-- [ ] `docs/setup-guide.md` reflects macOS and current worker commands
-- [ ] `docs/testing-checklist.md` reflects Phase 3 tests
-- [ ] `docs/PROJECT_FILE_MAP.md` lists all Phase 3 files
-- [ ] Mermaid diagrams render
-- [ ] Code fences are properly paired
-- [ ] No real secrets appear in documentation
-- [ ] No outdated Python 3.14 requirement remains
-- [ ] No implemented Phase 2 or Phase 3 component is incorrectly labeled planned
-
----
-
-# Final Git Safety Tests
-
-Run:
-
-```bash
-cd ~/stsp-capstone
-
+```powershell
 git branch --show-current
-git status --short
+
+git status --short --untracked-files=all
+
 git diff --check
+
 git diff --stat
 ```
 
 Confirm:
 
-- [ ] Current branch is `phase3/subject-file-management`
-- [ ] No unexpected files are staged
-- [ ] `backend/.env` is not tracked
-- [ ] `frontend/.env.local` is not tracked
-- [ ] `.venv` is not tracked
-- [ ] `node_modules` is not tracked
-- [ ] `.next` is not tracked
-- [ ] `.pytest_cache` is not tracked
-- [ ] `__pycache__` is not tracked
-- [ ] Supabase temporary files are not tracked
-- [ ] No secret values appear in the staged diff
-- [ ] `git diff --check` reports no errors
+- [ ] Correct feature branch
+- [ ] No unexpected files
+- [ ] `backend/.env` not tracked
+- [ ] `frontend/.env.local` not tracked
+- [ ] `.venv` not tracked
+- [ ] `node_modules` not tracked
+- [ ] `.next` not tracked
+- [ ] `.pytest_cache` not tracked
+- [ ] `__pycache__` not tracked
+- [ ] Supabase temporary files not tracked
+- [ ] No secret values in diff
+- [ ] Only intended Phase 5G files are staged
 
 ---
 
-# Phase 3 Completion Approval
-
-Phase 3 may be declared complete only after all final unchecked regression items above have passed.
-
-Completion record:
+# Phase 5G Completion Record
 
 ```text
-Phase: Phase 3 — Subject and File Management
-Branch: phase3/subject-file-management
+Phase: Phase 5G — Conversation Persistence, Memory, Summary, and History UI
+
+Branch: phase5/conversation-memory-summary
+
 Database migrations synchronized:
-Backend checks passed:
-Frontend checks passed:
-End-to-end upload test passed:
-Auto-refresh test passed:
-Stale-job recovery test passed:
+Backend tests passed:
+Backend Ruff passed:
+Backend compile passed:
+
+Frontend tests passed:
+Frontend TypeScript passed:
+Frontend lint passed:
+Frontend build passed:
+
+Conversation history browser test passed:
+Conversation switching passed:
+Conversation continuation passed:
+Responsive layout passed:
+
 Security review passed:
 Documentation review passed:
-Git review passed:
+Git scope review passed:
+
 Ready to commit:
 Ready to push:
-Ready to merge into development:
-Reviewed by:
+
 Completion date:
+Reviewed by:
 ```
 
 ---
 
 # Bug Report Template
-
-Use this format when a test fails:
 
 ```text
 Title:

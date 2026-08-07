@@ -389,6 +389,18 @@ class SupabaseAdminService:
                 f"{response.text}"
             )
 
+    async def call_rpc_json(
+        self,
+        function_name: str,
+        payload: dict[str, Any],
+    ) -> Any:
+        """Call a trusted Supabase RPC and return its JSON response."""
+
+        return await self._call_rpc_json(
+            function_name=function_name,
+            payload=payload,
+        )
+
     async def _call_rpc_json(
         self,
         function_name: str,

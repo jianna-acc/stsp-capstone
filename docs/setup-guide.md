@@ -1,48 +1,40 @@
 <!-- File: /docs/setup-guide.md -->
-<!-- Purpose: Explains how to install, configure, validate, and run the STS Capstone Project through Phase 3. -->
+<!-- Purpose: Explains how to install, configure, run, and validate STUDY AI through Phase 5G. -->
 
 # Development Setup Guide
 
-This document explains how to install, configure, validate, and run the STS Capstone Project.
+STUDY AI currently uses:
 
-The current application includes:
-
-- Next.js frontend
-- Mantine design system
-- Supabase Authentication
+- Next.js
+- TypeScript
+- Mantine
+- FastAPI
+- Python 3.12
+- Supabase Auth
 - Supabase PostgreSQL
 - Private Supabase Storage
-- Learning-profile onboarding
-- Subject management
-- Study-file uploads
-- Background document processing
-- PDF, TXT, PPTX, XLSX, and XLS extraction
-- Automatic frontend processing-status updates
-- Stale processing-job recovery
-- FastAPI health and internal processing endpoints
+- pgvector
+- Gemini generation and embeddings
+- Vitest
+- pytest
+- Ruff
 
 ---
 
-# Supported Development Environment
-
-## Required Software
+# Required Software
 
 Install:
 
 - Git
 - Visual Studio Code
-- Node.js 20.9 or newer
+- Node.js 20.9+
 - npm
-- Python 3.12 or another version supported by the locked dependencies
-- A supported web browser
-- A Supabase account
-- Access to the team's hosted Supabase development project
+- Python 3.12
+- Web browser
+- Supabase account/project access
+- Gemini API credentials for live AI execution
 
-Docker is not required for the current hosted Supabase workflow.
-
-## Verified Project Versions
-
-The project has been developed and tested with versions including:
+Verified development versions include:
 
 ```text
 Node.js: v22.15.0
@@ -51,135 +43,61 @@ Next.js: 16.2.10
 Python: 3.12
 ```
 
-Install dependencies from the committed lock files instead of manually selecting package versions.
-
 ---
 
-# Repository Setup
+# Clone Repository
 
-## Clone the Repository
-
-```bash
+```powershell
 git clone <repository-url>
-cd stsp-capstone
+Set-Location ".\stsp-capstone"
 ```
 
-For an existing local copy:
+Check:
 
-```bash
-cd ~/stsp-capstone
-
-git fetch origin
+```powershell
 git status
-```
-
-Check the current branch:
-
-```bash
 git branch --show-current
 ```
 
-Feature work should normally be completed on a feature branch rather than directly on `main`.
+Use a feature branch for development.
 
 ---
 
-# Root Repository Tools
+# Install Root Tooling
 
-The repository root contains its own npm package for shared tools such as the Supabase CLI.
-
-This package is separate from the frontend package.
-
-Install root dependencies:
-
-```bash
-cd ~/stsp-capstone
-
+```powershell
 npm install
 ```
 
-This reads:
+Verify Supabase CLI:
 
-```text
-/package.json
-/package-lock.json
-```
-
-and creates:
-
-```text
-/node_modules/
-```
-
-The generated root `node_modules` folder must not be committed.
-
-Verify the locally installed Supabase CLI:
-
-```bash
+```powershell
 npx supabase --version
 ```
-
-Display available commands:
-
-```bash
-npx supabase --help
-```
-
-Do not install the Supabase CLI globally through npm.
 
 ---
 
 # Frontend Setup
 
-## Install Frontend Dependencies
-
-```bash
-cd ~/stsp-capstone/frontend
+```powershell
+Set-Location ".\frontend"
 
 npm install
 ```
 
-This reads:
-
-```text
-frontend/package.json
-frontend/package-lock.json
-```
-
-and creates:
-
-```text
-frontend/node_modules/
-```
-
-The `node_modules` folder is local and must not be committed.
-
----
-
-# Frontend Environment Configuration
-
-Create the frontend local environment file from its safe example:
-
-```bash
-cd ~/stsp-capstone/frontend
-
-cp .env.example .env.local
-```
-
-The safe file may be committed:
-
-```text
-frontend/.env.example
-```
-
-The private local file must not be committed:
+Create:
 
 ```text
 frontend/.env.local
 ```
 
-Use the exact variable names already defined in `.env.example`.
+from:
 
-The frontend configuration includes values such as:
+```text
+frontend/.env.example
+```
+
+Important browser-safe variables:
 
 ```env
 NEXT_PUBLIC_SITE_URL=http://localhost:3000
@@ -188,188 +106,27 @@ NEXT_PUBLIC_SUPABASE_URL=
 NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=
 ```
 
-Only public browser-safe values may use the `NEXT_PUBLIC_` prefix.
-
-Never store these values in frontend variables:
-
-```text
-SUPABASE_SECRET_KEY
-PROCESSOR_INTERNAL_KEY
-Database password
-Gemini secret
-```
-
-Restart the Next.js development server whenever `.env.local` changes.
-
----
-
-# Frontend Technology Stack
-
-The approved frontend stack is:
-
-- Next.js
-- TypeScript
-- Mantine UI
-- CSS Modules
-- Global CSS variables
-- Tabler Icons
-- Motion
-- Mantine Charts or Recharts
-
-Tailwind is not the main styling system for this project.
-
-Important Mantine packages include:
-
-```text
-@mantine/core
-@mantine/hooks
-@mantine/form
-@mantine/notifications
-@mantine/modals
-@mantine/dropzone
-@mantine/dates
-@mantine/charts
-@mantine/spotlight
-@tabler/icons-react
-motion
-dayjs
-recharts
-```
-
-The provider hierarchy is:
-
-```text
-app/layout.tsx
-    ↓
-app/providers.tsx
-    ├── MantineProvider
-    ├── ModalsProvider
-    └── Notifications
-```
-
-Only one global `Notifications` component should be rendered.
-
----
-
-# Run the Frontend
-
-```bash
-cd ~/stsp-capstone/frontend
-
-npm run dev
-```
-
-Open:
-
-```text
-http://localhost:3000
-```
-
-Stop the server using:
-
-```text
-Ctrl + C
-```
-
----
-
-# Frontend Validation
-
-Run all frontend checks before committing:
-
-```bash
-cd ~/stsp-capstone/frontend
-
-rm -rf .next
-rm -f tsconfig.tsbuildinfo
-
-npx next typegen
-npm run lint
-npx tsc --noEmit
-npm run build
-```
-
-Expected results:
-
-- Route type generation succeeds
-- ESLint reports no errors
-- TypeScript reports no errors
-- The production build succeeds
-
-Do not edit files inside:
-
-```text
-frontend/.next/
-```
-
-The `.next` folder is generated automatically.
-
----
-
-# Frontend Cache Troubleshooting
-
-When Next.js reports corrupted generated data, missing generated route types, or errors such as `Unexpected end of JSON input`, stop the development server and run:
-
-```bash
-cd ~/stsp-capstone/frontend
-
-rm -rf .next
-rm -f tsconfig.tsbuildinfo
-
-npx next typegen
-npm run dev
-```
-
-Do not delete source-code folders.
+Never put backend secrets in a `NEXT_PUBLIC_` variable.
 
 ---
 
 # Backend Setup
 
-## Create the Python Virtual Environment
-
-### macOS or Linux
-
-```bash
-cd ~/stsp-capstone/backend
-
-python3 -m venv .venv
-source .venv/bin/activate
-```
-
-### Windows PowerShell
+From repository root:
 
 ```powershell
-cd backend
+Set-Location ".\backend"
 
 py -3.12 -m venv .venv
+
 .\.venv\Scripts\Activate.ps1
 ```
 
-After activation, the terminal should begin with:
+Install:
 
-```text
-(.venv)
-```
-
-The `.venv` folder is local and must not be committed.
-
----
-
-# Install Backend Dependencies
-
-With the virtual environment active:
-
-```bash
-cd ~/stsp-capstone/backend
-
+```powershell
 python -m pip install --upgrade pip
 python -m pip install -r requirements.txt
-```
-
-Verify the installed dependency graph:
-
-```bash
 python -m pip check
 ```
 
@@ -379,72 +136,26 @@ Expected:
 No broken requirements found.
 ```
 
-## Backend Dependency Files
-
-| File | Purpose |
-|---|---|
-| `requirements.in` | Lists direct dependencies selected by the team |
-| `requirements.txt` | Locks the complete tested dependency environment |
-| `.venv/` | Stores local packages and must not be committed |
-
-Phase 3 extraction dependencies include packages for:
-
-- PDF extraction
-- PowerPoint extraction
-- Modern Excel extraction
-- Legacy Excel extraction
-- FastAPI
-- HTTP requests
-- Supabase communication
-- Testing
-
-When changing backend dependencies:
-
-```text
-Edit requirements.in
-        ↓
-Install or compile the dependency set
-        ↓
-Regenerate requirements.txt
-        ↓
-Run pip check
-        ↓
-Run all backend tests
-```
-
-Do not modify `requirements.txt` without also verifying the complete environment.
-
 ---
 
-# Backend Environment Configuration
+# Backend Environment
 
-Create the private environment file:
-
-```bash
-cd ~/stsp-capstone/backend
-
-cp .env.example .env
-```
-
-The safe template may be committed:
-
-```text
-backend/.env.example
-```
-
-The real local file must not be committed:
+Create:
 
 ```text
 backend/.env
 ```
 
-Use the variable names provided by `.env.example`.
+from:
 
-Current backend configuration includes values such as:
+```text
+backend/.env.example
+```
+
+Important private settings include:
 
 ```env
 APP_NAME=STS Capstone API
-APP_VERSION=0.1.0
 ENVIRONMENT=development
 API_PREFIX=/api
 FRONTEND_URL=http://localhost:3000
@@ -454,216 +165,47 @@ SUPABASE_SECRET_KEY=
 PROCESSOR_INTERNAL_KEY=
 STUDY_MATERIALS_BUCKET=study-materials
 
-REQUEST_TIMEOUT_SECONDS=30
-MAX_PROCESSING_FILE_BYTES=20971520
-
 GEMINI_API_KEY=
+
+AI_LIVE_SMOKE_TESTS_ENABLED=false
 ```
 
-The exact values for secrets must be entered privately.
+Use the remaining AI and processing settings already documented in `.env.example`.
 
-Never:
-
-- Commit `backend/.env`
-- Paste a Supabase secret into chat
-- Store the secret in frontend code
-- Add `NEXT_PUBLIC_` to a private key
-- Display the complete `.env` file
-- Include private values in screenshots
-- Put secrets in documentation
-
-After changing backend environment values, restart FastAPI and the worker.
+Never display or commit real secret values.
 
 ---
 
-# Verify Backend Configuration
+# Hosted Supabase Workflow
 
-With the virtual environment active:
+The project uses hosted Supabase.
 
-```bash
-cd ~/stsp-capstone/backend
+Docker-based local Supabase is not required.
 
-python - <<'PY'
-from app.core.config import get_settings
+Authenticate:
 
-settings = get_settings()
-
-print(
-    settings.app_name,
-    settings.environment,
-    settings.api_prefix,
-    settings.frontend_url,
-)
-PY
-```
-
-This command intentionally prints only non-secret settings.
-
-Do not print:
-
-```text
-supabase_secret_key
-processor_internal_key
-gemini_api_key
-```
-
----
-
-# Run the FastAPI Backend
-
-```bash
-cd ~/stsp-capstone/backend
-
-source .venv/bin/activate
-
-python -m uvicorn app.main:app \
-  --reload \
-  --host 127.0.0.1 \
-  --port 8000
-```
-
-Open the health endpoint:
-
-```text
-http://127.0.0.1:8000/api/health
-```
-
-Open the API documentation:
-
-```text
-http://127.0.0.1:8000/docs
-```
-
-Open the OpenAPI specification:
-
-```text
-http://127.0.0.1:8000/openapi.json
-```
-
-Stop FastAPI using:
-
-```text
-Ctrl + C
-```
-
----
-
-# Backend Validation
-
-With the virtual environment active:
-
-```bash
-cd ~/stsp-capstone/backend
-
-python -m compileall app
-python -m pytest
-python -m pip check
-```
-
-Expected:
-
-- All application modules compile
-- All automated tests pass
-- No broken dependencies are reported
-
-List registered API routes:
-
-```bash
-python - <<'PY'
-from app.main import app
-
-for path, operations in app.openapi()["paths"].items():
-    methods = [
-        method.upper()
-        for method in operations
-        if method.lower() in {
-            "get",
-            "post",
-            "put",
-            "patch",
-            "delete",
-        }
-    ]
-
-    print(methods, path)
-PY
-```
-
-Expected Phase 3 routes include:
-
-```text
-GET  /api/health
-POST /api/internal/file-processing/{file_id}/validate-source
-POST /api/internal/file-processing/{file_id}/process
-```
-
----
-
-# Supabase Hosted-Project Workflow
-
-The project uses a hosted Supabase development project.
-
-Docker-based local Supabase services are not required.
-
-Do not use these commands for the current workflow:
-
-```text
-npx supabase start
-npx supabase stop
-npx supabase db reset
-```
-
-unless the team intentionally changes to a local Docker workflow.
-
----
-
-# Authenticate the Supabase CLI
-
-From the project root:
-
-```bash
-cd ~/stsp-capstone
+```powershell
+Set-Location ".."
 
 npx supabase login
 ```
 
-Follow the browser or token instructions provided by the CLI.
+Link if needed:
 
-Do not commit the access token.
-
----
-
-# Link the Repository to Supabase
-
-Link only when the repository is not already linked:
-
-```bash
-cd ~/stsp-capstone
-
-npx supabase link \
-  --project-ref YOUR_PROJECT_REFERENCE
+```powershell
+npx supabase link --project-ref YOUR_PROJECT_REFERENCE
 ```
 
-The linked project reference must match the team's development project.
+Check migration history:
 
-Do not paste the database password into documentation or source code.
-
----
-
-# Check Migration Status
-
-```bash
-cd ~/stsp-capstone
-
+```powershell
 npx supabase migration list --linked
 ```
 
-Check whether pending migrations exist:
+Dry-run:
 
-```bash
-npx supabase db push \
-  --linked \
-  --dry-run
+```powershell
+npx supabase db push --linked --dry-run
 ```
 
 Expected when synchronized:
@@ -674,136 +216,64 @@ Remote database is up to date.
 
 ---
 
-# Apply New Migrations
+# Applying a Migration
 
-Always perform a dry run first:
+Create:
 
-```bash
-cd ~/stsp-capstone
-
-git diff --check
-
-npx supabase db push \
-  --linked \
-  --dry-run
+```powershell
+npx supabase migration new descriptive_name
 ```
 
-Apply pending migrations:
+Validate:
 
-```bash
+```powershell
+git diff --check
+
+npx supabase db push --linked --dry-run
+```
+
+Apply:
+
+```powershell
 npx supabase db push --linked
 ```
 
-Verify afterward:
+Verify:
 
-```bash
+```powershell
 npx supabase migration list --linked
 
-npx supabase db push \
-  --linked \
-  --dry-run
+npx supabase db push --linked --dry-run
 ```
 
-Previously pushed migrations must never be edited.
-
-Use a new corrective migration when changing an applied schema.
+Never edit an already applied migration.
 
 ---
 
-# Generate Supabase Database Types
+# Generate Database Types
 
-After applying a migration:
-
-```bash
-cd ~/stsp-capstone
-
-npx supabase gen types typescript \
-  --linked \
-  --schema public \
-  > frontend/types/database.ts
+```powershell
+npx supabase gen types typescript `
+    --linked `
+    --schema public |
+    Set-Content `
+        ".\frontend\types\database.ts"
 ```
 
-Generated file:
-
-```text
-frontend/types/database.ts
-```
-
-Do not manually edit this file.
-
-Run the frontend checks after regenerating it:
-
-```bash
-cd ~/stsp-capstone/frontend
-
-npx next typegen
-npm run lint
-npx tsc --noEmit
-npm run build
-```
+Do not manually edit generated database types.
 
 ---
 
-# Implemented Supabase Resources
+# Run the Application
 
-Phase 3 uses:
-
-## Authentication
-
-```text
-auth.users
-```
-
-## Application Tables
-
-```text
-public.profiles
-public.learning_profiles
-public.learning_profile_subjects
-public.study_availability
-public.subjects
-public.study_files
-public.file_processing_jobs
-public.study_file_contents
-public.study_file_chunks
-```
-
-## Private Storage Bucket
-
-```text
-study-materials
-```
-
-## Processing Functions
-
-```text
-queue_study_file_processing
-claim_next_file_processing_job
-start_study_file_processing
-mark_study_file_indexing
-complete_study_file_processing
-fail_study_file_processing
-recover_stale_file_processing_jobs
-```
-
-More details are documented in:
-
-```text
-docs/database.md
-docs/api-contracts.md
-docs/ARCHITECTURE.md
-```
+Three processes are normally used during full development.
 
 ---
-
-# Run the Complete Application
-
-The Phase 3 application requires three running processes.
 
 ## Terminal 1 — Frontend
 
-```bash
-cd ~/stsp-capstone/frontend
+```powershell
+Set-Location ".\frontend"
 
 npm run dev
 ```
@@ -816,98 +286,52 @@ http://localhost:3000
 
 ---
 
-## Terminal 2 — FastAPI Backend
+## Terminal 2 — FastAPI
 
-```bash
-cd ~/stsp-capstone/backend
+```powershell
+Set-Location ".\backend"
 
-source .venv/bin/activate
+.\.venv\Scripts\Activate.ps1
 
-python -m uvicorn app.main:app \
-  --reload \
-  --host 127.0.0.1 \
-  --port 8000
+python -m uvicorn app.main:app `
+    --reload `
+    --host 127.0.0.1 `
+    --port 8000
 ```
 
-Confirm:
+Health:
 
 ```text
 http://127.0.0.1:8000/api/health
 ```
 
----
-
-## Terminal 3 — File-Processing Worker
-
-```bash
-cd ~/stsp-capstone/backend
-
-source .venv/bin/activate
-
-python -m app.workers.file_processing_worker \
-  --poll-seconds 2 \
-  --recovery-interval-seconds 30 \
-  --stale-after-minutes 30 \
-  --max-attempts 3
-```
-
-The worker should display a startup message indicating its polling and recovery intervals.
-
-Stop it using:
+OpenAPI:
 
 ```text
-Ctrl + C
+http://127.0.0.1:8000/docs
 ```
 
 ---
 
-# Worker Command Options
+## Terminal 3 — Processing Worker
 
-Display all worker arguments:
+```powershell
+Set-Location ".\backend"
 
-```bash
-cd ~/stsp-capstone/backend
+.\.venv\Scripts\Activate.ps1
 
-source .venv/bin/activate
-
-python -m app.workers.file_processing_worker \
-  --help
+python -m app.workers.file_processing_worker `
+    --poll-seconds 2 `
+    --recovery-interval-seconds 30 `
+    --stale-after-minutes 30 `
+    --max-attempts 3
 ```
 
-Supported options include:
-
-| Option | Purpose |
-|---|---|
-| `--once` | Recover stale work, process at most one job, and exit |
-| `--poll-seconds` | Delay when no queued job exists |
-| `--recovery-interval-seconds` | Delay between stale-job recovery checks |
-| `--stale-after-minutes` | Age before an active job is considered abandoned |
-| `--max-attempts` | Maximum processing attempts before permanent failure |
-
-Run one worker cycle:
-
-```bash
-python -m app.workers.file_processing_worker \
-  --once \
-  --stale-after-minutes 30 \
-  --max-attempts 3
-```
-
-When no queued job exists, the command should exit normally.
+The worker is required when processing new uploaded files.
 
 ---
 
-# File-Upload and Processing Test
-
-1. Start the frontend.
-2. Start FastAPI.
-3. Start the processing worker.
-4. Sign in using a test student account.
-5. Open `/subjects`.
-6. Create or select a subject.
-7. Enter a topic.
-8. Upload a supported file.
-9. Remain on the same page without refreshing manually.
+# File Processing
 
 Expected status flow:
 
@@ -919,40 +343,13 @@ Uploading
 → Ready
 ```
 
-After the file becomes ready:
-
-- Preview should appear
-- Download should appear
-- Automatic polling should stop
-- No duplicate file record should be created
-- Extracted content should exist
-- At least one chunk should exist
-
----
-
-# Supported Upload Formats
-
-The frontend accepts:
+Possible terminal failure:
 
 ```text
-PDF
-TXT
-PPT
-PPTX
-XLS
-XLSX
-JPEG
-PNG
-WebP
+Failed
 ```
 
-Maximum upload size:
-
-```text
-20 MB
-```
-
-Backend text extraction is implemented for:
+Supported text extraction:
 
 ```text
 PDF
@@ -962,7 +359,7 @@ XLSX
 XLS
 ```
 
-The following are accepted for storage but do not yet have implemented text extraction:
+Accepted storage formats also include:
 
 ```text
 PPT
@@ -971,376 +368,288 @@ PNG
 WebP
 ```
 
-OCR and legacy PPT extraction are planned for later phases.
+OCR is not currently implemented.
 
 ---
 
-# Extraction Dependencies
+# Vector Indexing
 
-| Format | Library |
-|---|---|
-| PDF | `pypdf` |
-| TXT | Python UTF-8 decoding |
-| PPTX | `python-pptx` |
-| XLSX | `openpyxl` |
-| XLS | `xlrd` |
-
-Extraction should preserve source locations:
-
-| Format | Locator |
-|---|---|
-| PDF | Page |
-| TXT | Document |
-| PPTX | Slide |
-| XLSX | Sheet |
-| XLS | Sheet |
-
----
-
-# Automatic Frontend Status Refresh
-
-`FileUploadManager` polls while at least one file has an active state:
+After extraction:
 
 ```text
-uploading
-queued
-reading
-indexing
+Extracted text
+→ AI chunks
+→ embedding batches
+→ Gemini embeddings
+→ validation
+→ study_file_ai_chunks
 ```
 
-Polling stops when every file reaches:
+Vectors use:
 
 ```text
-ready
-failed
+768 dimensions
+cosine similarity
+HNSW indexing
 ```
-
-Polling pauses when the browser tab is hidden and resumes when the tab becomes visible.
-
-A user should not need to manually refresh the page for a completed file to display `Ready`.
 
 ---
 
-# Preview and Download
+# Study Assistant
 
-Preview and download become available only when:
+Protected route:
 
 ```text
-processing_status = ready
+/study-assistant
 ```
 
-The frontend:
+The assistant can:
 
-1. Verifies the authenticated user owns the file.
-2. Creates a short-lived signed Storage URL.
-3. Opens the preview or starts the download.
-
-The private Storage bucket must never be changed to public.
+- Search all ready materials
+- Filter by subject
+- Filter by study material
+- Return grounded answers
+- Show citations
+- Return no-context results
+- Save conversations
+- Load conversation history
+- Continue saved conversations
 
 ---
 
-# Retry Failed Upload
+# Study Assistant API
 
-Only files with:
+Backend endpoint:
 
 ```text
-processing_status = failed
+POST /api/rag/answer
 ```
 
-may be retried.
+The frontend sends the Supabase access token using bearer authentication.
 
-The replacement upload must use the same original filename.
+For an existing thread it also sends:
 
-Retry should:
-
-1. Prepare the failed record for another upload.
-2. Upload the replacement object.
-3. Queue processing again.
-4. Restart automatic status polling.
-5. End in either `ready` or `failed`.
-
----
-
-# Test the Health Connection
-
-With the frontend and FastAPI running:
-
-1. Open the frontend health-check interface.
-2. Select **Check backend**.
-3. Confirm it displays **Connected**.
-4. Stop FastAPI.
-5. Check again.
-6. Confirm it displays **Unavailable**.
-7. Restart FastAPI.
-8. Select **Retry connection**.
-9. Confirm it returns to **Connected**.
-
-The frontend should use:
-
-```env
-NEXT_PUBLIC_API_BASE_URL=http://127.0.0.1:8000
-```
-
-The backend CORS origin should use:
-
-```env
-FRONTEND_URL=http://localhost:3000
-```
-
-Use `localhost:3000` consistently during browser testing.
-
----
-
-# Internal Processing Endpoint Test
-
-Internal processing endpoints require:
-
-```http
-X-Processor-Key
-```
-
-Load the key without printing it:
-
-```bash
-cd ~/stsp-capstone/backend
-
-PROCESSOR_KEY=$(
-  grep '^PROCESSOR_INTERNAL_KEY=' .env |
-  cut -d '=' -f 2-
-)
-```
-
-Validate a file source:
-
-```bash
-curl -X POST \
-  "http://127.0.0.1:8000/api/internal/file-processing/FILE_UUID/validate-source" \
-  -H "X-Processor-Key: ${PROCESSOR_KEY}"
-```
-
-Process a file:
-
-```bash
-curl -X POST \
-  "http://127.0.0.1:8000/api/internal/file-processing/FILE_UUID/process" \
-  -H "X-Processor-Key: ${PROCESSOR_KEY}"
-```
-
-Replace `FILE_UUID` with an actual study-file UUID.
-
-Never print or paste `PROCESSOR_KEY`.
-
-Normally, automatic processing should be performed by the worker instead of manually calling the endpoint.
-
----
-
-# macOS Troubleshooting
-
-## `code` Command Is Not Available
-
-Open the repository using:
-
-```bash
-cd ~/stsp-capstone
-
-open -a "Visual Studio Code" .
-```
-
-Open one file:
-
-```bash
-open -a "Visual Studio Code" \
-  docs/setup-guide.md
+```text
+conversation_id
 ```
 
 ---
 
-## Python Command Not Found
+# Conversation API
 
-Try:
+Implemented routes:
 
-```bash
-python3 --version
-```
-
-Create the environment using:
-
-```bash
-python3 -m venv .venv
-```
-
-After activation, use:
-
-```bash
-python
+```text
+POST   /api/study-conversations
+GET    /api/study-conversations
+GET    /api/study-conversations/{conversation_id}
+PATCH  /api/study-conversations/{conversation_id}
+DELETE /api/study-conversations/{conversation_id}
 ```
 
 ---
 
-## Port Already in Use
+# Frontend Validation
 
-Check port `8000`:
-
-```bash
-lsof -i :8000
-```
-
-Check port `3000`:
-
-```bash
-lsof -i :3000
-```
-
-Stop only the process you recognize.
-
----
-
-# Windows PowerShell Reference
-
-The main development instructions use macOS/Linux shell syntax.
-
-Equivalent Windows virtual-environment activation:
+Run:
 
 ```powershell
-cd backend
-.\.venv\Scripts\Activate.ps1
+Set-Location ".\frontend"
+
+npm test
 ```
 
-Copy an environment example:
+Then:
 
 ```powershell
-Copy-Item .env.example .env
+npx tsc --noEmit
 ```
 
-Clear Next.js output:
+Then:
 
 ```powershell
-Remove-Item -Recurse -Force .next
-Remove-Item -Force tsconfig.tsbuildinfo -ErrorAction SilentlyContinue
+npm run lint
 ```
 
-All application behavior and validation requirements remain the same across operating systems.
+Then:
 
----
-
-# Git Safety Checks
-
-Before committing:
-
-```bash
-cd ~/stsp-capstone
-
-git status --short
-git diff --check
-git diff --stat
+```powershell
+npm run build
 ```
 
-Confirm these are not staged or committed:
+All must pass before committing.
 
-```text
-frontend/node_modules/
-frontend/.next/
-frontend/.env.local
-backend/.venv/
-backend/.env
-node_modules/
-supabase/.temp/
-__pycache__/
-.pytest_cache/
-*.pyc
-```
+After any final CSS/layout change, rerun at least:
 
-Safe example files may be committed:
-
-```text
-frontend/.env.example
-backend/.env.example
-```
-
-Never commit:
-
-- Supabase secret keys
-- Database passwords
-- Processor internal keys
-- Supabase access tokens
-- Gemini API keys
-- Signed Storage URLs
-- Real student data
-
----
-
-# Complete Validation Before Commit
-
-## Root and Database
-
-```bash
-cd ~/stsp-capstone
-
-git diff --check
-
-npx supabase migration list --linked
-
-npx supabase db push \
-  --linked \
-  --dry-run
-```
-
-Expected:
-
-```text
-Remote database is up to date.
-```
-
-## Backend
-
-```bash
-cd ~/stsp-capstone/backend
-
-source .venv/bin/activate
-
-python -m compileall app
-python -m pytest
-python -m pip check
-```
-
-## Frontend
-
-```bash
-cd ~/stsp-capstone/frontend
-
-rm -rf .next
-rm -f tsconfig.tsbuildinfo
-
-npx next typegen
+```powershell
 npm run lint
 npx tsc --noEmit
 npm run build
 ```
 
-All checks must pass before Phase 3 is considered complete.
+---
+
+# Backend Validation
+
+```powershell
+Set-Location ".\backend"
+
+.\.venv\Scripts\Activate.ps1
+
+python -m pytest -q
+```
+
+Ruff:
+
+```powershell
+python -m ruff check `
+    app `
+    tests `
+    scripts
+```
+
+Compilation:
+
+```powershell
+python -m compileall `
+    -q `
+    app `
+    tests `
+    scripts
+```
+
+Dependency check:
+
+```powershell
+python -m pip check
+```
 
 ---
 
-# Documentation References
+# Git Validation
 
-Additional technical details are stored in:
+From repository root:
+
+```powershell
+git diff --check
+
+git status --short --untracked-files=all
+
+git diff --stat
+```
+
+Before staging, verify that no unexpected files are present.
+
+---
+
+# Secret Safety
+
+Never commit:
+
+```text
+frontend/.env.local
+backend/.env
+backend/.venv
+frontend/.next
+node_modules
+supabase/.temp
+__pycache__
+.pytest_cache
+```
+
+Never expose:
+
+- Supabase secret key
+- Database password
+- Gemini API key
+- Processor internal key
+- Access tokens
+- Signed private URLs
+- Real student information
+
+---
+
+# Phase 5G Database Resources
+
+```text
+public.study_conversations
+public.study_messages
+```
+
+Phase 5G migrations:
+
+```text
+20260806192800_create_study_conversations_and_messages.sql
+20260806200500_fix_study_message_outcome_constraint.sql
+20260806223000_add_study_conversation_summary_state.sql
+20260806234000_restrict_study_conversation_summary_updates.sql
+```
+
+---
+
+# Full Validation Before Commit
+
+From the root:
+
+```powershell
+git diff --check
+
+npx supabase migration list --linked
+
+npx supabase db push --linked --dry-run
+```
+
+Backend:
+
+```powershell
+Set-Location ".\backend"
+
+.\.venv\Scripts\Activate.ps1
+
+python -m pytest -q
+python -m ruff check app tests scripts
+python -m compileall -q app tests scripts
+python -m pip check
+```
+
+Frontend:
+
+```powershell
+Set-Location "..\frontend"
+
+npm test
+npx tsc --noEmit
+npm run lint
+npm run build
+```
+
+Return to root:
+
+```powershell
+Set-Location ".."
+
+git diff --check
+git status --short --untracked-files=all
+```
+
+Do not stage or push until every expected check passes.
+
+---
+
+# Documentation
+
+Technical references:
 
 ```text
 docs/ARCHITECTURE.md
 docs/api-contracts.md
 docs/authentication.md
 docs/database.md
-docs/git-workflow.md
 docs/PROJECT_FILE_MAP.md
 docs/testing-checklist.md
+docs/AI_PROVIDER.md
+docs/AI_PREPARATION_PIPELINE.md
+docs/AI_VECTOR_PIPELINE.md
 ```
 
-Update the relevant documents whenever:
-
-- A new table is created
-- A new migration is applied
-- An endpoint changes
-- An environment variable changes
-- A worker option changes
-- A file is added or moved
-- A major architecture connection changes
+Update documentation whenever implementation changes.
