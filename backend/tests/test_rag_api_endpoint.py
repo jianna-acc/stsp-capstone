@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from datetime import UTC, datetime
 from uuid import UUID, uuid4
 
 import pytest
@@ -20,13 +21,18 @@ from app.api.authenticated_user_dependency import (
     AuthenticatedUser,
     require_authenticated_user,
 )
-from app.api.rag_orchestration_dependency import (
-    get_rag_orchestration_service,
-)
 from app.api.router import api_router
 from app.api.routes.rag import router as rag_router
+from app.api.study_conversation_rag_dependency import (
+    get_study_conversation_rag_service,
+)
 from app.database.supabase_client import (
     get_supabase_client,
+)
+from app.schemas.study_conversation import (
+    StudyConversationResponse,
+    StudyMessageResponse,
+    StudyMessageSourceResponse,
 )
 from app.services.rag_orchestration import (
     RagOrchestrationGenerationError,
@@ -39,9 +45,16 @@ from app.services.rag_orchestration import (
 from app.services.retrieval_orchestration import (
     RetrievalOrchestrationResult,
 )
+from app.services.study_conversation_rag import (
+    StudyConversationRagResult,
+)
 
 USER_ID = UUID(
     "11111111-1111-4111-8111-111111111111"
+)
+
+CONVERSATION_ID = UUID(
+    "55555555-5555-4555-8555-555555555555"
 )
 
 FILE_ID = UUID(
@@ -202,6 +215,95 @@ class UnusedFakeSupabaseClient:
     auth = object()
 
 
+
+class FakeConversationRagServiceAdapter:
+    """Wrap an older fake RAG service with persisted chat data."""
+
+    def __init__(
+        self,
+        service: object,
+    ) -> None:
+        self._service = service
+
+    async def answer(
+        self,
+        request: RagOrchestrationRequest,
+    ) -> StudyConversationRagResult:
+        """Resolve a test conversation and wrap the RAG result."""
+
+        conversation_id = (
+            request.conversation_id
+            or CONVERSATION_ID
+        )
+
+        resolved_request = RagOrchestrationRequest(
+            user_id=request.user_id,
+            question=request.question,
+            conversation_id=conversation_id,
+            study_file_id=request.study_file_id,
+            subject_id=request.subject_id,
+            match_count=request.match_count,
+            similarity_threshold=(
+                request.similarity_threshold
+            ),
+        )
+
+        answer_method = self._service.answer
+
+        rag_result = await answer_method(
+            resolved_request,
+        )
+
+        now = datetime.now(
+            UTC,
+        )
+
+        conversation = StudyConversationResponse(
+            id=conversation_id,
+            title=resolved_request.question[:120],
+            subject_id=resolved_request.subject_id,
+            study_file_id=resolved_request.study_file_id,
+            created_at=now,
+            updated_at=now,
+            last_message_at=now,
+        )
+
+        user_message = StudyMessageResponse(
+            id=uuid4(),
+            conversation_id=conversation_id,
+            role="user",
+            content=resolved_request.question,
+            created_at=now,
+        )
+
+        message_sources = [
+            StudyMessageSourceResponse(
+                source_number=source.source_number,
+                source_name=source.source_name,
+                chunk_index=source.chunk_index,
+                similarity_score=source.similarity_score,
+            )
+            for source in rag_result.sources
+        ]
+
+        assistant_message = StudyMessageResponse(
+            id=uuid4(),
+            conversation_id=conversation_id,
+            role="assistant",
+            content=rag_result.answer,
+            outcome=rag_result.outcome.value,
+            sources=message_sources,
+            created_at=now,
+        )
+
+        return StudyConversationRagResult(
+            conversation=conversation,
+            user_message=user_message,
+            assistant_message=assistant_message,
+            rag_result=rag_result,
+        )
+
+
 def create_test_client(
     *,
     service: FakeRagService,
@@ -217,8 +319,10 @@ def create_test_client(
     )
 
     app.dependency_overrides[
-        get_rag_orchestration_service
-    ] = lambda: service
+        get_study_conversation_rag_service
+    ] = lambda: FakeConversationRagServiceAdapter(
+        service,
+    )
 
     if authenticated_user is not None:
         app.dependency_overrides[

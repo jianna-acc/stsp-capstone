@@ -1,4 +1,4 @@
-// File: /frontend/types/rag.ts
+﻿// File: /frontend/types/rag.ts
 // Purpose: Defines the public request, answer, source,
 // filter-option, and error contracts used by the frontend
 // Study Assistant.
@@ -9,6 +9,7 @@ export type RagAnswerOutcome =
 
 export interface RagAnswerRequest {
   question: string;
+  conversation_id?: string;
   study_file_id?: string;
   subject_id?: string;
   match_count?: number;
@@ -23,6 +24,7 @@ export interface RagSourceResponse {
 }
 
 export interface RagAnswerResponse {
+  conversation_id: string;
   outcome: RagAnswerOutcome;
   answer: string;
   sources: RagSourceResponse[];
@@ -32,6 +34,7 @@ export interface RagAnswerResponse {
 }
 
 export interface RagApiErrorResponse {
+  error_code?: string;
   code?: string;
   message?: string;
   detail?: unknown;

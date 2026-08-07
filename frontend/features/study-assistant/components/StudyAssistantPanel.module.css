@@ -74,3 +74,43 @@
     padding: 1rem;
   }
 }
+.transcript {
+  min-width: 0;
+}
+
+.savedMessage {
+  min-width: 0;
+}
+
+.userMessage {
+  margin-left: min(8%, 3rem);
+  background: light-dark(
+    var(--mantine-color-blue-0),
+    rgba(34, 139, 230, 0.1)
+  );
+}
+
+.assistantMessage {
+  margin-right: min(8%, 3rem);
+  background: light-dark(
+    var(--mantine-color-violet-0),
+    rgba(121, 80, 242, 0.1)
+  );
+}
+
+.messageIcon {
+  flex-shrink: 0;
+}
+
+.messageBody {
+  min-width: 0;
+  flex: 1;
+}
+
+@media (max-width: 48em) {
+  .userMessage,
+  .assistantMessage {
+    margin-right: 0;
+    margin-left: 0;
+  }
+}

@@ -9,6 +9,7 @@ from typing import Protocol, runtime_checkable
 from uuid import UUID
 
 from app.ai.grounded_answer_contracts import (
+    ConversationMemoryMessage,
     GroundedAnswerGenerationError,
     GroundedAnswerOutcome,
     GroundedAnswerRequest,
@@ -161,6 +162,11 @@ class RagOrchestrationRequest:
 
     user_id: UUID
     question: str
+    memory: tuple[
+        ConversationMemoryMessage,
+        ...,
+    ] = ()
+    conversation_id: UUID | None = None
     study_file_id: UUID | None = None
     subject_id: UUID | None = None
     match_count: int = DEFAULT_RAG_MATCH_COUNT
@@ -169,6 +175,17 @@ class RagOrchestrationRequest:
     )
 
     def __post_init__(self) -> None:
+        if (
+            self.conversation_id is not None
+            and not isinstance(
+                self.conversation_id,
+                UUID,
+            )
+        ):
+            raise RagOrchestrationValidationError(
+                "conversation_id must be a UUID or None."
+            )
+
         retrieval_request = _build_retrieval_request(
             user_id=self.user_id,
             question=self.question,
@@ -177,6 +194,21 @@ class RagOrchestrationRequest:
             match_count=self.match_count,
             similarity_threshold=self.similarity_threshold,
         )
+
+        try:
+            memory_request = GroundedAnswerRequest(
+                question=retrieval_request.question,
+                chunks=(),
+                memory=self.memory,
+            )
+        except (
+            GroundedAnswerValidationError,
+            TypeError,
+            ValueError,
+        ) as exc:
+            raise RagOrchestrationValidationError(
+                "The combined RAG memory is invalid."
+            ) from exc
 
         object.__setattr__(
             self,
@@ -188,6 +220,12 @@ class RagOrchestrationRequest:
             self,
             "question",
             retrieval_request.question,
+        )
+
+        object.__setattr__(
+            self,
+            "memory",
+            memory_request.memory,
         )
 
         object.__setattr__(
@@ -280,6 +318,15 @@ class RagOrchestrationResult:
         ):
             raise RagOrchestrationResponseError(
                 "The grounded-answer question does not "
+                "match the combined RAG request."
+            )
+
+        if (
+            self.grounded_answer.request.memory
+            != self.request.memory
+        ):
+            raise RagOrchestrationResponseError(
+                "The grounded-answer memory does not "
                 "match the combined RAG request."
             )
 
@@ -522,6 +569,7 @@ class RagOrchestrationService:
         grounded_request = GroundedAnswerRequest(
             question=request.question,
             chunks=retrieval_result.chunks,
+            memory=request.memory,
         )
 
         try:

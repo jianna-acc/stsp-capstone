@@ -12,8 +12,8 @@ from app.api.authenticated_user_dependency import (
     AuthenticatedUser,
     require_authenticated_user,
 )
-from app.api.rag_orchestration_dependency import (
-    get_rag_orchestration_service,
+from app.api.study_conversation_rag_dependency import (
+    get_study_conversation_rag_service,
 )
 from app.schemas.rag import (
     RagAnswerOutcome,
@@ -26,8 +26,17 @@ from app.services.rag_orchestration import (
     RagOrchestrationError,
     RagOrchestrationFailureCode,
     RagOrchestrationRequest,
-    RagOrchestrationResult,
-    RagOrchestrationService,
+)
+from app.services.study_conversation_errors import (
+    StudyConversationError,
+    StudyConversationNotFoundError,
+    StudyConversationPersistenceError,
+    StudyConversationResponseError,
+    StudyConversationValidationError,
+)
+from app.services.study_conversation_rag import (
+    StudyConversationRagResult,
+    StudyConversationRagService,
 )
 
 router = APIRouter(
@@ -79,6 +88,13 @@ _ERROR_RESPONSES: dict[
                 "authentication."
             ),
         },
+        status.HTTP_404_NOT_FOUND: {
+            "model": RagApiErrorResponse,
+            "description": (
+                "The requested saved conversation "
+                "was not found."
+            ),
+        },
         status.HTTP_502_BAD_GATEWAY: {
             "model": RagApiErrorResponse,
             "description": (
@@ -107,10 +123,10 @@ async def answer_study_question(
             require_authenticated_user,
         ),
     ],
-    rag_service: Annotated[
-        RagOrchestrationService,
+    conversation_rag_service: Annotated[
+        StudyConversationRagService,
         Depends(
-            get_rag_orchestration_service,
+            get_study_conversation_rag_service,
         ),
     ],
 ) -> RagAnswerResponse | JSONResponse:
@@ -120,6 +136,7 @@ async def answer_study_question(
         orchestration_request = RagOrchestrationRequest(
             user_id=authenticated_user.user_id,
             question=payload.question,
+            conversation_id=payload.conversation_id,
             study_file_id=payload.study_file_id,
             subject_id=payload.subject_id,
             match_count=payload.match_count,
@@ -128,12 +145,16 @@ async def answer_study_question(
             ),
         )
 
-        result = await rag_service.answer(
+        result = await conversation_rag_service.answer(
             orchestration_request,
         )
 
         return _build_answer_response(
             result,
+        )
+    except StudyConversationError as exc:
+        return _build_conversation_error_response(
+            exc,
         )
     except RagOrchestrationError as exc:
         return _build_controlled_error_response(
@@ -144,9 +165,11 @@ async def answer_study_question(
 
 
 def _build_answer_response(
-    result: RagOrchestrationResult,
+    result: StudyConversationRagResult,
 ) -> RagAnswerResponse:
-    """Convert the internal result into a safe public response."""
+    """Convert the persisted RAG result into a safe response."""
+
+    rag_result = result.rag_result
 
     sources = tuple(
         RagSourceResponse(
@@ -155,18 +178,94 @@ def _build_answer_response(
             chunk_index=source.chunk_index,
             similarity_score=source.similarity_score,
         )
-        for source in result.sources
+        for source in rag_result.sources
     )
 
     return RagAnswerResponse(
+        conversation_id=result.conversation.id,
         outcome=RagAnswerOutcome(
-            result.outcome.value,
+            rag_result.outcome.value,
         ),
-        answer=result.answer,
+        answer=rag_result.answer,
         sources=sources,
-        retrieved_count=result.retrieved_count,
-        source_count=result.source_count,
-        context_available=result.context_available,
+        retrieved_count=rag_result.retrieved_count,
+        source_count=rag_result.source_count,
+        context_available=rag_result.context_available,
+    )
+
+
+def _build_conversation_error_response(
+    error: StudyConversationError,
+) -> JSONResponse:
+    """Convert a conversation failure into a safe RAG error."""
+
+    if isinstance(
+        error,
+        StudyConversationValidationError,
+    ):
+        status_code = status.HTTP_400_BAD_REQUEST
+        error_code = (
+            "STUDY_CONVERSATION_VALIDATION_FAILED"
+        )
+        message = (
+            "The saved-conversation request is invalid."
+        )
+    elif isinstance(
+        error,
+        StudyConversationNotFoundError,
+    ):
+        status_code = status.HTTP_404_NOT_FOUND
+        error_code = "STUDY_CONVERSATION_NOT_FOUND"
+        message = (
+            "The requested conversation was not found."
+        )
+    elif isinstance(
+        error,
+        StudyConversationPersistenceError,
+    ):
+        status_code = (
+            status.HTTP_503_SERVICE_UNAVAILABLE
+        )
+        error_code = (
+            "STUDY_CONVERSATION_PERSISTENCE_FAILED"
+        )
+        message = (
+            "Conversation storage is temporarily unavailable."
+        )
+    elif isinstance(
+        error,
+        StudyConversationResponseError,
+    ):
+        status_code = (
+            status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
+        error_code = (
+            "STUDY_CONVERSATION_RESPONSE_FAILED"
+        )
+        message = (
+            "The conversation response could not be completed."
+        )
+    else:
+        status_code = (
+            status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
+        error_code = (
+            "STUDY_CONVERSATION_RESPONSE_FAILED"
+        )
+        message = (
+            "The conversation response could not be completed."
+        )
+
+    error_body = RagApiErrorResponse(
+        error_code=error_code,
+        message=message,
+    )
+
+    return JSONResponse(
+        status_code=status_code,
+        content=error_body.model_dump(
+            mode="json",
+        ),
     )
 
 

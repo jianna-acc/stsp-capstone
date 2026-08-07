@@ -33,6 +33,8 @@ import {
 } from "./api";
 
 const ANSWER_RESPONSE = {
+  conversation_id:
+    "conversation-id",
   outcome: "answered",
   answer:
     "Photosynthesis converts light energy into chemical energy. [Source 1]",
@@ -150,6 +152,8 @@ describe(
             {
               question:
                 "Explain photosynthesis.",
+              conversation_id:
+                "conversation-id",
               subject_id:
                 "subject-id",
               study_file_id:
@@ -212,6 +216,8 @@ describe(
         ).toEqual({
           question:
             "Explain photosynthesis.",
+          conversation_id:
+            "conversation-id",
           subject_id: "subject-id",
           study_file_id: "file-id",
         });

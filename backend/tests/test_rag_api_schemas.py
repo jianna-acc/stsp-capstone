@@ -152,6 +152,9 @@ def test_answered_response_is_valid() -> None:
     source = make_source()
 
     response = RagAnswerResponse(
+        conversation_id=(
+            "55555555-5555-4555-8555-555555555555"
+        ),
         outcome=RagAnswerOutcome.ANSWERED,
         answer=(
             "Photosynthesis converts light energy "
@@ -175,6 +178,9 @@ def test_answered_response_is_valid() -> None:
 
 def test_no_context_response_is_valid() -> None:
     response = RagAnswerResponse(
+        conversation_id=(
+            "55555555-5555-4555-8555-555555555555"
+        ),
         outcome=RagAnswerOutcome.NO_CONTEXT,
         answer=(
             "I could not find enough relevant information "

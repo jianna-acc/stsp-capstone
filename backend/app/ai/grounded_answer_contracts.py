@@ -15,6 +15,9 @@ NO_CONTEXT_ANSWER = (
     "study materials to answer this question."
 )
 
+MAX_CONVERSATION_MEMORY_MESSAGES = 10
+MAX_CONVERSATION_MEMORY_CHARACTERS = 8_000
+
 
 class GroundedAnswerFailureCode(StrEnum):
     """Stable failure codes for grounded-answer generation."""
@@ -35,6 +38,13 @@ class GroundedAnswerOutcome(StrEnum):
 
     ANSWERED = "answered"
     NO_CONTEXT = "no_context"
+
+
+class ConversationMemoryRole(StrEnum):
+    """Allowed roles preserved as bounded conversation memory."""
+
+    USER = "user"
+    ASSISTANT = "assistant"
 
 
 class GroundedAnswerError(RuntimeError):
@@ -104,11 +114,54 @@ class GroundedAnswerResponseError(
 
 
 @dataclass(frozen=True, slots=True)
+class ConversationMemoryMessage:
+    """One bounded prior message supplied as conversation context."""
+
+    role: ConversationMemoryRole
+    content: str
+
+    def __post_init__(self) -> None:
+        try:
+            role = ConversationMemoryRole(
+                self.role,
+            )
+        except (
+            TypeError,
+            ValueError,
+        ) as exc:
+            raise GroundedAnswerValidationError(
+                "Conversation memory role is invalid."
+            ) from exc
+
+        content = _validated_text(
+            self.content,
+            field_name="conversation memory content",
+            error_type=GroundedAnswerValidationError,
+        )
+
+        object.__setattr__(
+            self,
+            "role",
+            role,
+        )
+
+        object.__setattr__(
+            self,
+            "content",
+            content,
+        )
+
+
+@dataclass(frozen=True, slots=True)
 class GroundedAnswerRequest:
     """Validated question and retrieved study context."""
 
     question: str
     chunks: tuple[RetrievedStudyChunk, ...]
+    memory: tuple[
+        ConversationMemoryMessage,
+        ...,
+    ] = ()
 
     def __post_init__(self) -> None:
         question = _validated_text(
@@ -166,6 +219,66 @@ class GroundedAnswerRequest:
                     "descending similarity score."
                 )
 
+        if (
+            isinstance(
+                self.memory,
+                (
+                    str,
+                    bytes,
+                ),
+            )
+            or not isinstance(
+                self.memory,
+                Sequence,
+            )
+        ):
+            raise GroundedAnswerValidationError(
+                "memory must be a sequence."
+            )
+
+        memory = tuple(
+            self.memory,
+        )
+
+        if not all(
+            isinstance(
+                message,
+                ConversationMemoryMessage,
+            )
+            for message in memory
+        ):
+            raise GroundedAnswerValidationError(
+                "Every memory item must be a "
+                "ConversationMemoryMessage."
+            )
+
+        if (
+            len(
+                memory,
+            )
+            > MAX_CONVERSATION_MEMORY_MESSAGES
+        ):
+            raise GroundedAnswerValidationError(
+                "Conversation memory exceeds the "
+                "message limit."
+            )
+
+        memory_character_count = sum(
+            len(
+                message.content,
+            )
+            for message in memory
+        )
+
+        if (
+            memory_character_count
+            > MAX_CONVERSATION_MEMORY_CHARACTERS
+        ):
+            raise GroundedAnswerValidationError(
+                "Conversation memory exceeds the "
+                "character limit."
+            )
+
         object.__setattr__(
             self,
             "question",
@@ -176,6 +289,12 @@ class GroundedAnswerRequest:
             self,
             "chunks",
             chunks,
+        )
+
+        object.__setattr__(
+            self,
+            "memory",
+            memory,
         )
 
     @property

@@ -1,35 +1,25 @@
 <!-- File: /docs/PROJECT_FILE_MAP.md -->
-<!-- Purpose: Provides the master list of important project files, owners, purposes, statuses, and system connections. -->
+<!-- Purpose: Master map of important project files, purposes, owners, statuses, and system connections. -->
 
-# STS Capstone Project File Map
+# STS Capstone — STUDY AI Project File Map
 
-This document is the central reference for the files and folders used in the STS Capstone Project.
+This document is the central reference for important project files.
 
-Update this document whenever:
-
-1. A new important file is created.
-2. A file is renamed, moved, or removed.
-3. A file begins using another service or module.
-4. File ownership changes.
-5. An API, database table, shared type, or environment variable changes.
-6. A planned file becomes implemented.
-7. A new migration or database function is introduced.
-8. A new background worker or processing service is introduced.
+Update it whenever files, APIs, migrations, owners, or major system connections change.
 
 ---
 
-# File Status
+# Status Definitions
 
 | Status | Meaning |
 |---|---|
-| Planned | Expected in a future phase but not created |
-| Created | Exists but may not be independently tested |
-| In Progress | Currently being developed |
-| Ready | Works independently and passed direct checks |
-| Integrated | Works with the rest of the application |
-| Generated | Automatically created by a framework or tool |
-| Local Only | Exists only on the developer's computer and must not be committed |
-| Deprecated | Removed, replaced, or no longer used |
+| Planned | Future work |
+| Created | Exists but not fully validated |
+| Ready | Independently validated |
+| Integrated | Connected and validated with the application |
+| Generated | Tool-generated |
+| Local Only | Must not be committed |
+| Deprecated | Replaced or removed |
 
 ---
 
@@ -37,11 +27,13 @@ Update this document whenever:
 
 | Phase | Scope | Status |
 |---|---|---|
-| Phase 1 | Project foundation, Next.js, Mantine, FastAPI health API, Supabase foundation, and authentication foundation | Integrated |
-| Phase 2 | Registration, login, protected routes, profile, learning-profile onboarding, and availability | Integrated |
-| Phase 3 | Subjects, private file uploads, processing queue, document extraction, automatic worker, live status refresh, and recovery | Integrated |
-| Phase 4 | Embeddings, retrieval, RAG, AI questions, and generated study materials | Planned |
-| Later phases | Reviewers, flashcards, quizzes, study plans, analytics, and deployment | Planned |
+| Phase 1 | Foundation and authentication | Integrated |
+| Phase 2 | Learning-profile onboarding | Integrated |
+| Phase 3 | Subjects and study-material processing | Integrated |
+| Phase 4 | AI provider, preparation, embeddings, vectors, retrieval | Integrated |
+| Phase 5A–5F | RAG and Study Assistant | Integrated |
+| Phase 5G | Saved conversations, memory, summaries, history UI | In Progress — finalization |
+| Later | Reviewers, flashcards, quizzes, planning, analytics | Planned |
 
 ---
 
@@ -49,764 +41,359 @@ Update this document whenever:
 
 | Member | Main Responsibility |
 |---|---|
-| Member 1 | Technical lead, repository, authentication, integration, and deployment |
-| Member 2 | Design system, application shell, dashboard, and shared UI |
-| Member 3 | FastAPI backend, file processing, retrieval, and AI services |
-| Member 4 | Supabase database, security, reviewers, and quizzes |
-| Member 5 | Testing, documentation, tasks, study plans, and calendar |
-
-Ownership identifies the primary maintainer. Shared files may require review from multiple members.
+| Member 1 | Technical lead, repository, authentication, integration |
+| Member 2 | Design system and frontend UI |
+| Member 3 | FastAPI, file processing, retrieval, AI |
+| Member 4 | Supabase database and security |
+| Member 5 | Testing and documentation |
 
 ---
 
-# Root Files and Folders
+# Root
 
-| Path | Status | Owner | Purpose | Connected To |
+| Path | Status | Owner | Purpose | Connections |
 |---|---|---|---|---|
-| `/.gitignore` | Integrated | Member 1 | Excludes secrets, dependencies, build output, caches, virtual environments, and Supabase temporary files | Entire repository |
-| `/README.md` | Integrated | Member 1 | Provides the project overview and documentation links | `/docs/`, `/frontend/`, `/backend/`, `/supabase/` |
-| `/package.json` | Ready | Member 1 | Defines repository-level tools such as the Supabase CLI | Root npm tooling |
-| `/package-lock.json` | Ready | Member 1 | Locks repository-level npm dependencies | Root `package.json` |
-| `/node_modules/` | Local Only | Each member | Stores root development dependencies | Recreated with `npm install` |
-| `/frontend/` | Integrated | Members 1 and 2 | Contains the Next.js and Mantine frontend | Browser, Supabase, FastAPI |
-| `/backend/` | Integrated | Member 3 | Contains FastAPI, extraction services, and processing worker | Supabase, Storage, future Gemini |
-| `/supabase/` | Integrated | Member 4 | Contains CLI configuration and database migrations | Hosted Supabase project |
-| `/docs/` | Integrated | Members 1 and 5 | Contains shared technical documentation | Entire repository |
+| `/.gitignore` | Integrated | Member 1 | Ignores secrets and generated files | Entire repository |
+| `/README.md` | Integrated | Member 1 | Project overview | `/docs` |
+| `/package.json` | Ready | Member 1 | Root tooling | Supabase CLI |
+| `/package-lock.json` | Ready | Member 1 | Root dependency lock | npm |
+| `/frontend` | Integrated | Members 1–2 | Next.js application | Supabase, FastAPI |
+| `/backend` | Integrated | Member 3 | FastAPI and AI | Supabase, Gemini |
+| `/supabase` | Integrated | Member 4 | Migrations and CLI | Hosted Supabase |
+| `/docs` | Integrated | Members 1–5 | Technical documentation | Entire project |
 
 ---
 
-# Documentation Files
+# Documentation
 
-| Path | Status | Owner | Purpose | Connected To |
+| Path | Status | Owner | Purpose | Connections |
 |---|---|---|---|---|
-| `/docs/PROJECT_FILE_MAP.md` | Integrated | Member 1 | Master reference for files, owners, purposes, statuses, and connections | Entire repository |
-| `/docs/ARCHITECTURE.md` | Integrated | Member 1 | Documents implemented and planned system architecture using Mermaid | Frontend, backend, Supabase, worker, future AI |
-| `/docs/setup-guide.md` | Integrated | Member 5 | Explains installation, environment setup, validation, API startup, and worker startup | Entire development workflow |
-| `/docs/api-contracts.md` | Integrated | Member 3 | Documents health, internal processing, worker, and database RPC contracts | FastAPI, Supabase, frontend |
-| `/docs/database.md` | Integrated | Member 4 | Documents implemented tables, Storage, RLS, triggers, statuses, and RPCs | Supabase and processing services |
-| `/docs/authentication.md` | Integrated | Member 5 | Documents registration, login, sessions, protected routes, and authentication security | Supabase Auth and frontend |
-| `/docs/git-workflow.md` | Integrated | Member 1 | Documents branches, commits, pull requests, merges, and reviews | GitHub repository |
-| `/docs/testing-checklist.md` | Integrated | Member 5 | Tracks automated, manual, security, and regression tests | Entire application |
+| `/docs/ARCHITECTURE.md` | Integrated | Member 1 | System architecture | Entire project |
+| `/docs/PROJECT_FILE_MAP.md` | Integrated | Member 1 | Master file map | Entire project |
+| `/docs/api-contracts.md` | Integrated | Member 3 | API/RPC contracts | Frontend, backend, Supabase |
+| `/docs/authentication.md` | Integrated | Member 5 | Authentication architecture | Supabase Auth |
+| `/docs/database.md` | Integrated | Member 4 | Database architecture | Supabase |
+| `/docs/setup-guide.md` | Integrated | Member 5 | Development setup | Entire project |
+| `/docs/testing-checklist.md` | Integrated | Member 5 | Validation status | Entire project |
+| `/docs/AI_PROVIDER.md` | Integrated | Member 3 | AI provider design | Gemini |
+| `/docs/AI_PREPARATION_PIPELINE.md` | Integrated | Member 3 | AI chunk preparation | File processing |
+| `/docs/AI_VECTOR_PIPELINE.md` | Integrated | Members 3,5 | Vector indexing | Gemini, pgvector |
+| `/docs/AI_RETRIEVAL_DESIGN.md` | Integrated | Members 3–5 | Retrieval design | Vector search |
+| `/docs/AI_QUERY_EMBEDDING.md` | Integrated | Member 3 | Query embedding | Retrieval |
+| `/docs/AI_RAG_API_ENDPOINT.md` | Integrated | Member 3 | RAG endpoint | FastAPI, frontend |
 
 ---
 
-# Frontend Foundation and Configuration
+# Frontend Foundation
 
-| Path | Status | Owner | Purpose | Connected To |
+| Path | Status | Owner | Purpose | Connections |
 |---|---|---|---|---|
-| `/frontend/package.json` | Integrated | Member 1 | Defines frontend dependencies and scripts | npm and Next.js |
-| `/frontend/package-lock.json` | Integrated | Member 1 | Locks exact frontend dependencies | `package.json` |
-| `/frontend/tsconfig.json` | Integrated | Member 1 | Configures TypeScript and the `@/*` alias | All TypeScript files |
-| `/frontend/eslint.config.mjs` | Integrated | Member 1 | Configures ESLint | `npm run lint` |
-| `/frontend/next-env.d.ts` | Generated | Next.js | Provides Next.js TypeScript declarations | TypeScript compiler |
-| `/frontend/next.config.ts` | Integrated | Member 1 | Configures Next.js | Development server and build |
-| `/frontend/postcss.config.cjs` | Integrated | Member 2 | Enables Mantine-compatible PostCSS processing | CSS and CSS Modules |
-| `/frontend/.env.example` | Ready | Member 1 | Documents browser-safe environment variables | `.env.local`, Supabase, FastAPI |
-| `/frontend/.env.local` | Local Only | Each member | Stores local public configuration | Next.js runtime |
-| `/frontend/.gitignore` | Integrated | Member 1 | Excludes frontend environment and generated files | Frontend workspace |
-| `/frontend/node_modules/` | Local Only | Each member | Stores frontend dependencies | Recreated with `npm install` |
-| `/frontend/.next/` | Local Only | Next.js | Stores development and production build output | Recreated automatically |
-| `/frontend/tsconfig.tsbuildinfo` | Local Only | TypeScript | Stores incremental compiler data | Recreated automatically |
-| `/frontend/public/` | Integrated | Member 2 | Stores public static assets | Frontend pages |
-| `/frontend/favicon.ico` | Generated | Next.js | Provides the browser icon when present | Application metadata |
+| `/frontend/package.json` | Integrated | Member 1 | Frontend dependencies/scripts | Next.js |
+| `/frontend/package-lock.json` | Integrated | Member 1 | Dependency lock | npm |
+| `/frontend/tsconfig.json` | Integrated | Member 1 | TypeScript configuration | Frontend |
+| `/frontend/eslint.config.mjs` | Integrated | Member 1 | ESLint configuration | Frontend |
+| `/frontend/app/layout.tsx` | Integrated | Member 1 | Root layout | Providers |
+| `/frontend/app/providers.tsx` | Integrated | Member 2 | Mantine providers | Entire UI |
+| `/frontend/app/globals.css` | Integrated | Member 2 | Global styles | Entire UI |
+| `/frontend/theme/theme.ts` | Integrated | Member 2 | Mantine theme | Providers |
+| `/frontend/theme/colors.ts` | Integrated | Member 2 | Color tokens | Theme |
+| `/frontend/theme/components.ts` | Integrated | Member 2 | Component defaults | Theme |
 
 ---
 
-# Frontend Application and Design-System Files
+# Supabase Frontend Clients
 
-| Path | Status | Owner | Purpose | Connected To |
+| Path | Status | Owner | Purpose | Connections |
 |---|---|---|---|---|
-| `/frontend/app/layout.tsx` | Integrated | Member 1 | Loads global styles, metadata, fonts, color scheme, and providers | All frontend routes |
-| `/frontend/app/providers.tsx` | Integrated | Member 2 | Provides Mantine theme, modals, and notifications | Root layout |
-| `/frontend/app/globals.css` | Integrated | Member 2 | Defines global variables and browser defaults | Root layout |
-| `/frontend/app/page.tsx` | Integrated | Member 2 | Provides the application entry or foundation page | Shared UI components |
-| `/frontend/theme/colors.ts` | Integrated | Member 2 | Defines application color tokens | Mantine theme |
-| `/frontend/theme/components.ts` | Integrated | Member 2 | Defines shared Mantine component defaults | Mantine theme |
-| `/frontend/theme/theme.ts` | Integrated | Member 2 | Combines colors, typography, spacing, radii, and component defaults | `providers.tsx` |
-| `/frontend/components/foundation/MantineFoundationCheck.tsx` | Integrated | Member 2 | Provides design-system validation controls | Mantine, health check |
-| `/frontend/components/foundation/MantineFoundationCheck.module.css` | Integrated | Member 2 | Styles the foundation component | `MantineFoundationCheck.tsx` |
-| `/frontend/components/foundation/BackendHealthCheck.tsx` | Integrated | Member 1 | Displays health connection, loading, error, and retry states | Frontend API service |
-| `/frontend/components/foundation/BackendHealthCheck.module.css` | Integrated | Member 2 | Styles the backend-health interface | `BackendHealthCheck.tsx` |
+| `/frontend/lib/supabase/config.ts` | Integrated | Member 1 | Safe Supabase config | Browser/server clients |
+| `/frontend/lib/supabase/client.ts` | Integrated | Member 1 | Browser client | Client Components |
+| `/frontend/lib/supabase/server.ts` | Integrated | Member 1 | Server client | Server Components |
+| `/frontend/lib/supabase/proxy.ts` | Integrated | Member 1 | Session refresh | Proxy |
+| `/frontend/proxy.ts` | Integrated | Member 1 | Root session proxy | Supabase Auth |
+| `/frontend/types/database.ts` | Generated | Supabase CLI | Schema types | Frontend Supabase clients |
 
 ---
 
-# Frontend FastAPI Integration Files
+# Authentication
 
-| Path | Status | Owner | Purpose | Connected To |
+| Path | Status | Owner | Purpose | Connections |
 |---|---|---|---|---|
-| `/frontend/types/api.ts` | Integrated | Member 1 | Defines typed FastAPI health responses | API service and health component |
-| `/frontend/services/api.ts` | Integrated | Member 1 | Builds URLs, validates health responses, applies timeouts, and handles request failures | FastAPI `/api/health` |
-| `/frontend/components/foundation/BackendHealthCheck.tsx` | Integrated | Member 1 | Consumes the health API service | `services/api.ts` |
+| `/frontend/features/auth/types.ts` | Integrated | Member 1 | Auth types | Forms/actions |
+| `/frontend/features/auth/validation.ts` | Integrated | Member 1 | Auth validation | Server Actions |
+| `/frontend/features/auth/actions/register.ts` | Integrated | Member 1 | Registration | Supabase Auth |
+| `/frontend/features/auth/components/RegisterForm.tsx` | Integrated | Member 1 | Registration form | Register action |
+| `/frontend/features/auth/components/LoginForm.tsx` | Integrated | Member 1 | Login form | Supabase Auth |
+| `/frontend/app/(auth)/register/page.tsx` | Integrated | Member 1 | Registration page | Auth |
+| `/frontend/app/(auth)/login/page.tsx` | Integrated | Member 1 | Login page | Auth |
+| `/frontend/app/auth/confirm/route.ts` | Integrated | Member 1 | Confirmation callback | Supabase Auth |
 
 ---
 
-# Supabase Frontend Client Files
+# Learning Profile
 
-| Path | Status | Owner | Purpose | Connected To |
+| Path | Status | Owner | Purpose | Connections |
 |---|---|---|---|---|
-| `/frontend/lib/supabase/config.ts` | Integrated | Member 1 | Validates browser-safe Supabase configuration | Browser and server clients |
-| `/frontend/lib/supabase/client.ts` | Integrated | Member 1 | Creates the browser Supabase client | Client Components |
-| `/frontend/lib/supabase/server.ts` | Integrated | Member 1 | Creates the cookie-aware server Supabase client | Server Components and Actions |
-| `/frontend/lib/supabase/proxy.ts` | Integrated | Member 1 | Refreshes authentication sessions and synchronizes cookies | Root proxy and Supabase Auth |
-| `/frontend/proxy.ts` | Integrated | Member 1 | Runs session refresh for matched requests | `lib/supabase/proxy.ts` |
-| `/frontend/types/database.ts` | Generated | Supabase CLI | Contains generated TypeScript definitions for the hosted public schema | All typed Supabase clients and features |
-
-`frontend/types/database.ts` must be regenerated after approved schema changes and must not be edited manually.
+| `/frontend/features/learning-profile/types.ts` | Integrated | Member 2 | Profile types | Onboarding |
+| `/frontend/features/learning-profile/validation.ts` | Integrated | Member 2 | Input validation | Mutations |
+| `/frontend/features/learning-profile/server/queries.ts` | Integrated | Member 2 | Load profile | Supabase |
+| `/frontend/features/learning-profile/server/mutations.ts` | Integrated | Member 2 | Save profile | Supabase RPC |
+| `/frontend/features/learning-profile/server/guards.ts` | Integrated | Member 2 | Onboarding guards | Protected routes |
+| `/frontend/app/(protected)/onboarding` | Integrated | Member 2 | Onboarding flow | Learning-profile feature |
+| `/frontend/app/(protected)/profile/page.tsx` | Integrated | Member 2 | Profile display | Learning profile |
 
 ---
 
-# Authentication Feature Files
+# Subjects and Files
 
-| Path | Status | Owner | Purpose | Connected To |
+| Path | Status | Owner | Purpose | Connections |
 |---|---|---|---|---|
-| `/frontend/features/auth/types.ts` | Integrated | Member 1 | Defines authentication action and form types | Auth validation and components |
-| `/frontend/features/auth/validation.ts` | Integrated | Member 1 | Validates registration and login inputs | Auth Server Actions |
-| `/frontend/features/auth/actions/register.ts` | Integrated | Member 1 | Creates Supabase Auth users and redirects to confirmation flow | Supabase Auth |
-| `/frontend/features/auth/components/RegisterForm.tsx` | Integrated | Member 1 | Displays and submits the registration form | Registration action |
-| `/frontend/features/auth/components/LoginForm.tsx` | Integrated | Member 1 | Displays and submits the login form | Supabase Auth |
-| `/frontend/app/(auth)/layout.tsx` | Integrated | Member 2 | Provides the public authentication layout | Registration and login pages |
-| `/frontend/app/(auth)/register/page.tsx` | Integrated | Member 1 | Displays student registration | Register form |
-| `/frontend/app/(auth)/register/check-email/page.tsx` | Integrated | Member 1 | Displays registration confirmation instructions | Supabase email confirmation |
-| `/frontend/app/(auth)/login/page.tsx` | Integrated | Member 1 | Displays student login | Login form |
-| `/frontend/app/auth/confirm/route.ts` | Integrated | Member 1 | Exchanges the email-confirmation code and creates a session | Supabase Auth |
-| `/frontend/app/(protected)/dashboard/page.tsx` | Integrated | Members 1 and 2 | Provides the protected dashboard | Auth guards and onboarding state |
-
-Authentication filenames may differ slightly when actions are split into separate modules. The feature directory remains the source of truth.
+| `/frontend/features/subjects/types.ts` | Integrated | Members 1,2 | Subject types | Subject feature |
+| `/frontend/features/subjects/queries.ts` | Integrated | Members 1,2 | Load subjects | Supabase |
+| `/frontend/features/subjects/actions.ts` | Integrated | Members 1,2 | Subject CRUD | Supabase |
+| `/frontend/app/(protected)/subjects/page.tsx` | Integrated | Members 1,2 | Subject management | Subject feature |
+| `/frontend/app/(protected)/subjects/[subjectId]/page.tsx` | Integrated | Members 1,2 | Subject workspace | Files |
+| `/frontend/features/files/types.ts` | Integrated | Members 1,3 | File types | File feature |
+| `/frontend/features/files/constants.ts` | Integrated | Members 1,3 | File limits/statuses | Upload UI |
+| `/frontend/features/files/queries.ts` | Integrated | Members 1,3 | Load files | Supabase |
+| `/frontend/features/files/actions.ts` | Integrated | Members 1,3 | File operations | Database, Storage |
+| `/frontend/features/files/upload.ts` | Integrated | Member 3 | TUS upload | Supabase Storage |
+| `/frontend/features/files/components/FileUploadManager.tsx` | Integrated | Members 2,3 | File management UI | File actions |
+| `/frontend/features/files/components/FilePreviewModal.tsx` | Integrated | Member 2 | File preview | Signed URLs |
 
 ---
 
-# Phase 2 Learning-Profile Feature Files
+# Study Assistant Frontend
 
-| Path | Status | Owner | Purpose | Connected To |
+| Path | Status | Owner | Purpose | Connections |
 |---|---|---|---|---|
-| `/frontend/features/learning-profile/constants.ts` | Integrated | Member 2 | Defines questionnaire options and onboarding steps | Validation and forms |
-| `/frontend/features/learning-profile/types.ts` | Integrated | Member 2 | Defines learning-profile inputs and snapshots | Queries, mutations, forms |
-| `/frontend/features/learning-profile/validation.ts` | Integrated | Member 2 | Validates profile, preference, subject, and availability inputs | Server mutations |
-| `/frontend/features/learning-profile/progress.ts` | Integrated | Member 2 | Calculates onboarding progress | Onboarding shell |
-| `/frontend/features/learning-profile/routing.ts` | Integrated | Member 2 | Maps onboarding steps to routes | Onboarding entry |
-| `/frontend/features/learning-profile/display.ts` | Integrated | Member 2 | Formats stored learning-profile values | Dashboard and profile |
-| `/frontend/features/learning-profile/server/auth.ts` | Integrated | Member 2 | Retrieves the authenticated user ID | Queries and mutations |
-| `/frontend/features/learning-profile/server/queries.ts` | Integrated | Member 2 | Loads the complete onboarding snapshot | Onboarding, dashboard, profile |
-| `/frontend/features/learning-profile/server/mutations.ts` | Integrated | Member 2 | Saves profile sections and calls onboarding RPCs | Supabase |
-| `/frontend/features/learning-profile/server/guards.ts` | Integrated | Member 2 | Protects pages requiring completed onboarding | Dashboard and profile |
-| `/frontend/app/(protected)/onboarding/` | Integrated | Member 2 | Contains the six-step onboarding flow | Learning-profile feature |
-| `/frontend/app/(protected)/profile/page.tsx` | Integrated | Member 2 | Displays the completed learning profile | Queries and onboarding routes |
+| `/frontend/app/(protected)/study-assistant/page.tsx` | Integrated | Frontend | Protected Study Assistant page | Workspace |
+| `/frontend/features/study-assistant/api.ts` | Integrated | Frontend | Authenticated RAG API client | `/api/rag/answer` |
+| `/frontend/features/study-assistant/conversations-api.ts` | Integrated | Frontend | Saved conversation API client | `/api/study-conversations` |
+| `/frontend/features/study-assistant/server/options.ts` | Integrated | Frontend | Load subjects/ready files | Supabase |
+| `/frontend/features/study-assistant/components/StudyAssistantPanel.tsx` | Integrated | Frontend | Question form, answer UI, transcript | RAG client |
+| `/frontend/features/study-assistant/components/StudyAssistantPanel.module.css` | Integrated | Frontend | Panel/transcript styling | Study Assistant panel |
+| `/frontend/features/study-assistant/components/ConversationHistoryPanel.tsx` | Integrated | Frontend | Saved history UI | Workspace |
+| `/frontend/features/study-assistant/components/ConversationHistoryPanel.module.css` | Integrated | Frontend | History styling | History panel |
+| `/frontend/features/study-assistant/components/StudyAssistantWorkspace.tsx` | Integrated | Frontend | History/detail orchestration | Both API clients |
+| `/frontend/features/study-assistant/components/StudyAssistantWorkspace.module.css` | Integrated | Frontend | Two-column responsive layout | Workspace |
+| `/frontend/types/rag.ts` | Integrated | Frontend | RAG contracts | API/client/UI |
+| `/frontend/types/study-conversation.ts` | Integrated | Frontend | Conversation contracts | Conversation API |
 
 ---
 
-# Phase 3 Subject Feature Files
+# Study Assistant Frontend Tests
 
-| Path | Status | Owner | Purpose | Connected To |
-|---|---|---|---|---|
-| `/frontend/features/subjects/types.ts` | Integrated | Members 1 and 2 | Defines subject summaries and input types | Queries, actions, components |
-| `/frontend/features/subjects/queries.ts` | Integrated | Members 1 and 2 | Loads authenticated student subjects | Supabase `subjects` table |
-| `/frontend/features/subjects/actions.ts` | Integrated | Members 1 and 2 | Creates, updates, and deletes owned subjects | Supabase and RLS |
-| `/frontend/features/subjects/components/SubjectTabs.tsx` | Integrated | Member 2 | Displays navigation tabs for student subjects | Subject workspace routes |
-| `/frontend/features/subjects/components/` | Integrated | Member 2 | Contains subject forms, cards, dialogs, and shared UI | Subject actions and queries |
-| `/frontend/app/(protected)/subjects/page.tsx` | Integrated | Members 1 and 2 | Displays subject management and empty states | Subject actions and queries |
-| `/frontend/app/(protected)/subjects/[subjectId]/page.tsx` | Integrated | Members 1 and 2 | Displays one subject workspace and its uploaded materials | Subject and file queries |
-| `/frontend/app/(protected)/files/page.tsx` | Integrated | Member 1 | Redirects legacy file navigation to the subject workspace | `/subjects` |
-| `/frontend/components/` | Integrated | Member 2 | Contains the protected application shell and shared navigation when present | Dashboard and subjects |
+| Path | Status | Purpose |
+|---|---|---|
+| `/frontend/features/study-assistant/api.test.ts` | Ready | RAG API tests |
+| `/frontend/features/study-assistant/conversations-api.test.ts` | Ready | Conversation API tests |
+| `/frontend/features/study-assistant/server/options.test.ts` | Ready | Filter loader tests |
+| `/frontend/features/study-assistant/components/StudyAssistantPanel.test.tsx` | Ready | Panel and continuation tests |
+| `/frontend/features/study-assistant/components/ConversationHistoryPanel.test.tsx` | Ready | History-state tests |
+| `/frontend/features/study-assistant/components/StudyAssistantWorkspace.test.tsx` | Ready | Switching/refresh tests |
 
 ---
 
-# Phase 3 File Feature Files
+# Backend Foundation
 
-| Path | Status | Owner | Purpose | Connected To |
+| Path | Status | Owner | Purpose | Connections |
 |---|---|---|---|---|
-| `/frontend/features/files/types.ts` | Integrated | Members 1 and 3 | Defines study-file summaries and action results | File actions and UI |
-| `/frontend/features/files/constants.ts` | Integrated | Members 1 and 3 | Defines MIME types, upload limits, and processing-status metadata | Dropzone and status badges |
-| `/frontend/features/files/queries.ts` | Integrated | Members 1 and 3 | Loads authenticated study-file records | Supabase `study_files` |
-| `/frontend/features/files/actions.ts` | Integrated | Members 1 and 3 | Reserves, completes, fails, retries, signs, and deletes files | Supabase database and Storage |
-| `/frontend/features/files/upload.ts` | Integrated | Member 3 | Uploads private files through Supabase TUS | Private `study-materials` bucket |
-| `/frontend/features/files/components/FileUploadManager.tsx` | Integrated | Members 2 and 3 | Provides upload, progress, retry, preview, download, delete, status display, and polling | File actions, queries, Storage |
-| `/frontend/features/files/components/FileUploadManager.module.css` | Integrated | Member 2 | Styles the file-management interface | `FileUploadManager.tsx` |
-| `/frontend/features/files/components/FilePreviewModal.tsx` | Integrated | Member 2 | Displays supported file previews through signed URLs | File access action |
-| `/frontend/features/files/components/` | Integrated | Members 2 and 3 | Contains file-management UI components | File actions and types |
-
-`FileUploadManager.tsx` currently owns active local polling for its live file state. The separate `FileStatusAutoRefresh.tsx` component may remain available for other pages but is not required on the subject workspace when manager-level polling is active.
+| `/backend/app/main.py` | Integrated | Member 3 | FastAPI app | Router/config |
+| `/backend/app/api/router.py` | Integrated | Member 3 | Main API router | Routes |
+| `/backend/app/api/health.py` | Integrated | Member 3 | Health endpoint | FastAPI |
+| `/backend/app/core/config.py` | Integrated | Member 3 | Typed settings | Backend |
+| `/backend/app/core/security.py` | Integrated | Member 3 | Processor security | Internal endpoints |
+| `/backend/app/services/supabase_admin.py` | Integrated | Member 3 | Trusted Supabase operations | Database/Storage |
 
 ---
 
-# Backend Dependency and Environment Files
+# File Processing Backend
 
-| Path | Status | Owner | Purpose | Connected To |
+| Path | Status | Owner | Purpose | Connections |
 |---|---|---|---|---|
-| `/backend/README.md` | Ready | Member 3 | Documents backend responsibilities | Backend source |
-| `/backend/requirements.in` | Integrated | Member 3 | Lists intentional direct Python dependencies | FastAPI, extraction, tests |
-| `/backend/requirements.txt` | Integrated | Member 3 | Locks the tested Python environment | `.venv` |
-| `/backend/.venv/` | Local Only | Each member | Contains the local Python environment | Recreated using `requirements.txt` |
-| `/backend/.env.example` | Integrated | Member 3 | Documents safe backend environment-variable names | `config.py` |
-| `/backend/.env` | Local Only | Each member | Stores private credentials and configuration | Backend runtime |
-| `/backend/app/core/config.py` | Integrated | Member 3 | Loads typed backend settings | FastAPI, Supabase admin, worker |
-| `/backend/app/core/security.py` | Integrated | Member 3 | Validates the internal processor key using secure comparison | Internal processing endpoints |
-
-Private values stored in `backend/.env` include the Supabase secret and processor internal key. They must not be committed or exposed to the frontend.
+| `/backend/app/services/file_extraction.py` | Integrated | Member 3 | Document extraction | Processor |
+| `/backend/app/services/file_processor.py` | Integrated | Member 3 | Processing orchestration | Extraction, AI, Supabase |
+| `/backend/app/workers/file_processing_worker.py` | Integrated | Member 3 | Background processing | Queue, processor |
+| `/backend/app/api/routes/file_processing.py` | Integrated | Member 3 | Internal processing API | Processor |
 
 ---
 
-# Backend Application Package Structure
+# AI Provider and Preparation
 
-| Path | Status | Owner | Purpose | Connected To |
+| Path | Status | Owner | Purpose | Connections |
 |---|---|---|---|---|
-| `/backend/app/__init__.py` | Ready | Member 3 | Marks the backend application as a Python package | Backend imports |
-| `/backend/app/main.py` | Integrated | Member 3 | Creates FastAPI, CORS, and the main router | Config and API router |
-| `/backend/app/api/__init__.py` | Ready | Member 3 | Marks the API folder as a Python package | API imports |
-| `/backend/app/api/router.py` | Integrated | Member 3 | Combines health and processing routers | FastAPI application |
-| `/backend/app/api/health.py` | Integrated | Member 3 | Provides `GET /api/health` | Health schema and config |
-| `/backend/app/api/routes/__init__.py` | Ready | Member 3 | Marks route modules as a package | API router |
-| `/backend/app/api/routes/file_processing.py` | Integrated | Member 3 | Provides protected source-validation and processing endpoints | Security and processor service |
-| `/backend/app/core/__init__.py` | Ready | Member 3 | Marks core utilities as a package | Config and security |
-| `/backend/app/schemas/__init__.py` | Ready | Member 3 | Marks schemas as a package | Pydantic models |
-| `/backend/app/schemas/health.py` | Integrated | Member 3 | Defines the health response schema | Health endpoint |
-| `/backend/app/schemas/file_processing.py` | Integrated | Member 3 | Defines source-validation and processing response schemas | Processing endpoints |
-| `/backend/app/services/__init__.py` | Ready | Member 3 | Marks services as a package | Processor services |
-| `/backend/app/workers/__init__.py` | Ready | Member 3 | Marks workers as a package | Worker module |
-| `/backend/tests/__init__.py` | Ready | Member 5 | Marks backend tests as a package | pytest |
+| `/backend/app/ai/contracts.py` | Integrated | Member 3 | AI provider contracts | AI services |
+| `/backend/app/ai/errors.py` | Integrated | Member 3 | AI exceptions | Provider/services |
+| `/backend/app/ai/providers/gemini.py` | Integrated | Member 3 | Gemini implementation | Gemini API |
+| `/backend/app/ai/chunking.py` | Integrated | Member 3 | Chunk contracts | Chunker |
+| `/backend/app/ai/text_chunker.py` | Integrated | Member 3 | Deterministic chunking | Preparer |
+| `/backend/app/ai/embedding_batcher.py` | Integrated | Member 3 | Embedding batches | Preparer |
+| `/backend/app/ai/preparation.py` | Integrated | Member 3 | Preparation result | File processor |
+| `/backend/app/services/study_material_preparer.py` | Integrated | Member 3 | AI preparation | Chunking |
+| `/backend/app/services/study_material_embedder.py` | Integrated | Member 3 | Embedding execution | Gemini |
+| `/backend/app/services/study_material_vector_indexer.py` | Integrated | Member 3 | Vector persistence orchestration | Supabase |
+| `/backend/app/ai/vector_persistence.py` | Integrated | Member 3 | Vector payload validation | Vector indexer |
 
 ---
 
-# Backend File-Processing Services
+# Retrieval and RAG
 
-| Path | Status | Owner | Purpose | Connected To |
+| Path | Status | Owner | Purpose | Connections |
 |---|---|---|---|---|
-| `/backend/app/services/supabase_admin.py` | Integrated | Member 3 | Provides trusted PostgREST, RPC, and private Storage access | Supabase database and Storage |
-| `/backend/app/services/file_extraction.py` | Integrated | Member 3 | Extracts text and source metadata from PDF, TXT, PPTX, XLSX, and XLS | File processor |
-| `/backend/app/services/file_processor.py` | Integrated | Member 3 | Validates, downloads, extracts, chunks, persists, and finalizes study files | Supabase admin and extraction |
-| `/backend/app/workers/file_processing_worker.py` | Integrated | Member 3 | Recovers stale jobs, atomically claims queued work, and processes files continuously | Supabase admin and file processor |
-| `/backend/app/services/gemini.py` | Planned | Member 3 | Will provide the AI-provider wrapper | Future retrieval and generation modules |
+| `/backend/app/services/query_embedding.py` | Integrated | Member 3 | Query vectors | Gemini |
+| `/backend/app/ai/retrieval_contracts.py` | Integrated | Member 3 | Retrieval contracts | Retrieval |
+| `/backend/app/ai/retrieval_persistence.py` | Integrated | Member 3 | Vector RPC access | Supabase |
+| `/backend/app/services/retrieval_orchestration.py` | Integrated | Member 3 | Query-to-results flow | Query embedding |
+| `/backend/app/services/rag_orchestration.py` | Integrated | Member 3 | Retrieval + answer flow | Grounded generation |
+| `/backend/app/api/routes/rag.py` | Integrated | Member 3 | `POST /api/rag/answer` | RAG service |
+| `/backend/app/schemas/rag.py` | Integrated | Member 3 | Public RAG contracts | API/frontend |
 
 ---
 
-# Backend Tests
+# Phase 5G Backend
 
-| Path | Status | Owner | Purpose | Connected To |
+| Path | Status | Owner | Purpose | Connections |
 |---|---|---|---|---|
-| `/backend/tests/test_health.py` | Ready | Member 5 | Tests the health response and CORS | FastAPI application |
-| `/backend/tests/test_file_processor.py` | Ready | Members 3 and 5 | Tests queued and claimed processing, validation, extraction, persistence, and failure behavior | File processor |
-| `/backend/tests/test_file_processing_worker.py` | Ready | Members 3 and 5 | Tests empty queues, success, failure, recovery, and worker configuration | Worker and fake admin service |
-| `/backend/tests/` | Integrated | Members 3 and 5 | Contains all backend automated tests | pytest |
+| `/backend/app/repositories/study_conversation_repository.py` | Integrated | Member 3 | Conversation persistence | Supabase |
+| `/backend/app/schemas/study_conversation.py` | Integrated | Member 3 | Conversation/message contracts | Routes/services |
+| `/backend/app/services/study_conversation_errors.py` | Integrated | Member 3 | Controlled errors | Conversation services |
+| `/backend/app/services/study_conversation_service.py` | Integrated | Member 3 | Conversation CRUD | Repository |
+| `/backend/app/services/study_conversation_memory.py` | Integrated | Member 3 | Bounded memory | Conversation RAG |
+| `/backend/app/services/study_conversation_summary.py` | Integrated | Member 3 | Deterministic summaries | Conversation RAG |
+| `/backend/app/services/study_conversation_rag.py` | Integrated | Member 3 | Persisted RAG flow | RAG/repository |
+| `/backend/app/api/routes/study_conversations.py` | Integrated | Member 3 | Conversation endpoints | Conversation service |
+| `/backend/app/api/study_conversation_dependency.py` | Integrated | Member 3 | CRUD dependencies | Repository |
+| `/backend/app/api/study_conversation_rag_dependency.py` | Integrated | Member 3 | Conversation RAG dependency | RAG services |
 
 ---
 
-# Hosted Supabase Files
+# Phase 5G Migrations
 
-| Path | Status | Owner | Purpose | Connected To |
-|---|---|---|---|---|
-| `/supabase/README.md` | Ready | Member 4 | Documents the hosted Supabase workflow | CLI and migrations |
-| `/supabase/config.toml` | Integrated | Member 4 | Stores repository Supabase CLI configuration | Hosted project |
-| `/supabase/migrations/` | Integrated | Member 4 | Stores timestamped database, Storage, RLS, trigger, and RPC changes | Hosted Supabase database |
-| `/supabase/.temp/` | Local Only | Supabase CLI | Stores local linked-project metadata | Supabase CLI |
-| `/supabase/seed.sql` | Planned | Member 4 | May contain safe development seed data later | Future test workflow |
-| `/supabase/policies/` | Planned | Member 4 | May contain supporting policy documentation later | Database and Storage policies |
-
-The current workflow uses hosted Supabase. Docker-based local Supabase services are not required.
+| Path | Status | Purpose |
+|---|---|---|
+| `/supabase/migrations/20260806192800_create_study_conversations_and_messages.sql` | Integrated | Conversations/messages |
+| `/supabase/migrations/20260806200500_fix_study_message_outcome_constraint.sql` | Integrated | Assistant outcome constraint |
+| `/supabase/migrations/20260806223000_add_study_conversation_summary_state.sql` | Integrated | Summary state |
+| `/supabase/migrations/20260806234000_restrict_study_conversation_summary_updates.sql` | Integrated | Summary security |
 
 ---
 
-# Known Phase 1 and Phase 2 Migrations
+# Important Supabase Resources
 
-| Path | Status | Owner | Purpose | Connected To |
-|---|---|---|---|---|
-| `/supabase/migrations/*_create_profiles*.sql` | Integrated | Member 4 | Creates profiles, ownership policies, timestamps, and new-user trigger | Supabase Auth |
-| `/supabase/migrations/20260728070745_create_learning_profile_foundation.sql` | Integrated | Member 4 | Creates learning-profile tables and completion validation | Phase 2 onboarding |
-| `/supabase/migrations/20260728074910_create_learning_profile_data_functions.sql` | Integrated | Member 4 | Creates replacement functions and onboarding-reset triggers | Learning-profile mutations |
-| `/supabase/migrations/*_fix_replace_study_availability.sql` | Integrated | Member 4 | Corrects recurring availability JSON parsing | Study-availability RPC |
+```text
+auth.users
 
-Wildcard entries are used when the exact timestamp varies between repository copies. The committed migration filename is the source of truth.
+public.profiles
+public.learning_profiles
+public.learning_profile_subjects
+public.study_availability
 
----
+public.subjects
+public.study_files
+public.file_processing_jobs
+public.study_file_contents
+public.study_file_chunks
+public.study_file_ai_chunks
 
-# Phase 3 Subject and File Migrations
+public.study_conversations
+public.study_messages
 
-| Path | Status | Owner | Purpose | Connected To |
-|---|---|---|---|---|
-| `/supabase/migrations/20260729053314_create_subject_file_foundation.sql` | Integrated | Member 4 | Creates subjects, study-file metadata, private Storage bucket, RLS, policies, and initial statuses | Frontend subject and file features |
-| `/supabase/migrations/*_add_powerpoint_file_support.sql` | Integrated | Member 4 | Adds PowerPoint MIME support where required | File upload validation |
-| `/supabase/migrations/*_add_excel_file_support.sql` | Integrated | Member 4 | Adds Excel MIME support where required | File upload validation |
-| `/supabase/migrations/20260731055238_create_file_processing_foundation.sql` | Integrated | Member 4 | Creates jobs, extracted contents, chunks, processing statuses, and persistence functions | Backend processor |
-| `/supabase/migrations/*_queue_study_file_processing*.sql` | Integrated | Member 4 | Creates or updates the queue RPC | Upload completion action |
-| `/supabase/migrations/*_claim_next_file_processing_job*.sql` | Integrated | Member 4 | Creates the atomic worker claim RPC using locking and `SKIP LOCKED` | Processing worker |
-| `/supabase/migrations/*_recover_stale_file_processing_jobs.sql` | Integrated | Member 4 | Creates stale-job recovery and retry-limit behavior | Processing worker recovery |
-
-Previously applied migrations must never be edited. Corrections require a new timestamped migration.
-
----
-
-# Implemented Supabase Database Resources
-
-| Resource | Status | Owner | Purpose | Connected To |
-|---|---|---|---|---|
-| `auth.users` | Integrated | Supabase | Stores authenticated student accounts | Profiles and sessions |
-| `public.profiles` | Integrated | Member 4 | Stores student profile and onboarding state | Auth and onboarding |
-| `public.learning_profiles` | Integrated | Member 4 | Stores general learning preferences | Phase 2 |
-| `public.learning_profile_subjects` | Integrated | Member 4 | Stores strong and weak subjects with confidence | Phase 2 |
-| `public.study_availability` | Integrated | Member 4 | Stores recurring weekly study periods | Phase 2 |
-| `public.subjects` | Integrated | Member 4 | Stores academic subject workspaces | Phase 3 |
-| `public.study_files` | Integrated | Member 4 | Stores upload metadata and file processing state | File manager and worker |
-| `public.file_processing_jobs` | Integrated | Member 4 | Stores queue and worker processing state | Worker |
-| `public.study_file_contents` | Integrated | Member 4 | Stores complete extracted text and metadata | File processor |
-| `public.study_file_chunks` | Integrated | Member 4 | Stores ordered source-aware chunks | Future retrieval |
-| `storage.objects` | Integrated | Supabase | Stores private uploaded objects | `study-materials` bucket |
-| `study-materials` bucket | Integrated | Member 4 | Stores private student study files | Upload, preview, download, processor |
-
----
-
-# Implemented Processing RPCs
-
-| Function | Status | Owner | Purpose | Connected To |
-|---|---|---|---|---|
-| `queue_study_file_processing` | Integrated | Member 4 | Queues an uploaded file and creates or resets its job | Upload completion |
-| `claim_next_file_processing_job` | Integrated | Member 4 | Atomically claims the next queued job | Worker |
-| `start_study_file_processing` | Integrated | Member 4 | Starts processing for a queued file | Reusable processor |
-| `mark_study_file_indexing` | Integrated | Member 4 | Changes an active file to indexing | File processor |
-| `complete_study_file_processing` | Integrated | Member 4 | Stores full content and chunks and marks the file ready | File processor |
-| `fail_study_file_processing` | Integrated | Member 4 | Saves synchronized failure state | Processor and worker |
-| `recover_stale_file_processing_jobs` | Integrated | Member 4 | Requeues abandoned work or permanently fails exhausted jobs | Worker recovery |
-| `complete_learning_profile_onboarding` | Integrated | Member 4 | Validates required onboarding data before completion | Phase 2 |
+storage bucket: study-materials
+```
 
 ---
 
 # Environment Variables
 
-## Frontend Browser-Safe Variables
-
-| Variable | File | Purpose |
-|---|---|---|
-| `NEXT_PUBLIC_SITE_URL` | `frontend/.env.local` | Builds local application and confirmation URLs |
-| `NEXT_PUBLIC_API_BASE_URL` | `frontend/.env.local` | Connects the frontend to FastAPI |
-| `NEXT_PUBLIC_SUPABASE_URL` | `frontend/.env.local` | Connects browser-safe Supabase clients |
-| `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | `frontend/.env.local` | Provides the public Supabase credential |
-
-Only browser-safe values may use `NEXT_PUBLIC_`.
-
-## Backend Private Variables
-
-| Variable | File | Purpose |
-|---|---|---|
-| `APP_NAME` | `backend/.env` | FastAPI application name |
-| `APP_VERSION` | `backend/.env` | Backend version |
-| `ENVIRONMENT` | `backend/.env` | Runtime environment |
-| `API_PREFIX` | `backend/.env` | API route prefix |
-| `FRONTEND_URL` | `backend/.env` | Allowed CORS origin |
-| `SUPABASE_URL` | `backend/.env` | Hosted Supabase project URL |
-| `SUPABASE_SECRET_KEY` | `backend/.env` | Trusted backend-only Supabase credential |
-| `PROCESSOR_INTERNAL_KEY` | `backend/.env` | Protects internal processing endpoints |
-| `STUDY_MATERIALS_BUCKET` | `backend/.env` | Selects the private Storage bucket |
-| `REQUEST_TIMEOUT_SECONDS` | `backend/.env` | Controls outbound-request timeout |
-| `MAX_PROCESSING_FILE_BYTES` | `backend/.env` | Controls backend processing-size limit |
-| `GEMINI_API_KEY` | `backend/.env` | Reserved for later AI integration |
-
-Real values must never appear in Git, documentation, screenshots, frontend code, or logs.
-
----
-
-# Generated and Local-Only Files
-
-| Path | Status | Purpose |
-|---|---|---|
-| `/frontend/.next/` | Local Only | Next.js generated output |
-| `/frontend/node_modules/` | Local Only | Frontend npm dependencies |
-| `/frontend/tsconfig.tsbuildinfo` | Local Only | TypeScript build cache |
-| `/backend/.venv/` | Local Only | Python virtual environment |
-| `/backend/.env` | Local Only | Private backend configuration |
-| `/frontend/.env.local` | Local Only | Local public frontend configuration |
-| `/backend/**/__pycache__/` | Local Only | Python bytecode cache |
-| `/backend/.pytest_cache/` | Local Only | pytest cache |
-| `/node_modules/` | Local Only | Root npm tooling |
-| `/supabase/.temp/` | Local Only | Supabase linked-project metadata |
-| `/frontend/types/database.ts` | Generated | Supabase public-schema TypeScript definitions |
-| `/frontend/next-env.d.ts` | Generated | Next.js TypeScript declarations |
-
----
-
-# Planned Phase 4 Files
-
-The exact Phase 4 structure must be finalized before implementation.
-
-| Path | Status | Owner | Purpose | Connected To |
-|---|---|---|---|---|
-| `/backend/app/services/embeddings.py` | Planned | Member 3 | Generates document embeddings | Gemini or approved embedding provider |
-| `/backend/app/services/retrieval.py` | Planned | Member 3 | Retrieves relevant study-file chunks | `study_file_chunks` |
-| `/backend/app/services/gemini.py` | Planned | Member 3 | Provides AI model access | Gemini API |
-| `/backend/app/api/routes/retrieval.py` | Planned | Member 3 | Provides retrieval or source-grounded AI endpoints | Retrieval service |
-| `/frontend/features/chat/` | Planned | Members 2 and 3 | Provides the student AI assistant | Retrieval API |
-| `/frontend/features/reviewers/` | Planned | Members 2 and 4 | Provides reviewer generation and display | AI services |
-| `/frontend/features/flashcards/` | Planned | Members 2 and 4 | Provides flashcard generation and practice | AI services |
-| `/supabase/migrations/*_create_embeddings*.sql` | Planned | Member 4 | Adds vector storage and retrieval support | Future RAG pipeline |
-
-Do not create these files until the Phase 4 architecture and database contracts are approved.
-
----
-
-# New File Entry Template
-
-| Path | Status | Owner | Purpose | Connected To |
-|---|---|---|---|---|
-| `/path/to/file` | Created | Member # | Explain what the file does | List modules, services, tables, or endpoints |
-
----
-
-# File Header Rules
-
-Every manually created source file must begin with its filepath when the format supports comments.
-
-## TypeScript and TSX
-
-```typescript
-// File: /frontend/path/to/file.ts
-// Purpose: Explain the file's responsibility.
-```
-
-## JavaScript
-
-```javascript
-// File: /frontend/path/to/file.js
-// Purpose: Explain the file's responsibility.
-```
-
-## Python
-
-```python
-# File: /backend/path/to/file.py
-# Purpose: Explain the file's responsibility.
-```
-
-## CSS
-
-```css
-/* File: /frontend/path/to/file.css */
-/* Purpose: Explain the file's responsibility. */
-```
-
-## Markdown
-
-```markdown
-<!-- File: /docs/path/to/file.md -->
-<!-- Purpose: Explain the file's responsibility. -->
-```
-
-## SQL
-
-```sql
--- File: /supabase/migrations/timestamp_description.sql
--- Purpose: Explain the migration.
-```
-
-## Environment Examples
-
-```env
-# File: /backend/.env.example
-# Purpose: Documents safe environment-variable names.
-```
-
-## JSON Exception
-
-Strict JSON files do not support comments.
-
-Do not add filepath comments to:
-
-- `package.json`
-- `package-lock.json`
-- `tsconfig.json`
-
-Document those files in this master map instead.
-
----
-
-# Connection Documentation Rules
-
-For every important file, record:
-
-- What imports or uses it
-- What it imports or calls
-- Which API endpoint it provides or consumes
-- Which database table or Storage bucket it accesses
-- Which environment variables it requires
-- Which team member owns it
-- Whether it is implemented, generated, local only, or planned
-
----
-
-# Shared File Change Rules
-
-Coordinate with the team before making major changes to:
+## Frontend
 
 ```text
-/.gitignore
-/frontend/package.json
-/frontend/package-lock.json
-/frontend/app/layout.tsx
-/frontend/app/providers.tsx
-/frontend/theme/theme.ts
-/frontend/types/database.ts
-/backend/app/main.py
-/backend/app/core/config.py
-/backend/requirements.in
-/backend/requirements.txt
-/supabase/migrations/
-/docs/PROJECT_FILE_MAP.md
-/docs/ARCHITECTURE.md
-/docs/database.md
-/docs/api-contracts.md
+NEXT_PUBLIC_SITE_URL
+NEXT_PUBLIC_API_BASE_URL
+NEXT_PUBLIC_SUPABASE_URL
+NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY
 ```
 
-Generated database types should be regenerated rather than manually edited.
+## Backend
 
-Previously pushed migrations must never be edited.
+Important private values include:
+
+```text
+SUPABASE_URL
+SUPABASE_SECRET_KEY
+PROCESSOR_INTERNAL_KEY
+GEMINI_API_KEY
+```
+
+Real private values must never be committed.
 
 ---
 
-# File-Map Verification Commands
+# Local-Only Files
 
-List frontend file-management files:
+```text
+frontend/.env.local
+frontend/.next
+frontend/node_modules
 
-```bash
-cd ~/stsp-capstone
+backend/.env
+backend/.venv
+backend/**/__pycache__
+backend/.pytest_cache
 
-find frontend/features/files \
-  -type f \
-  | sort
+node_modules
+supabase/.temp
 ```
 
-List subject files:
-
-```bash
-find frontend/features/subjects \
-  -type f \
-  | sort
-```
-
-List backend processing files:
-
-```bash
-find backend/app/services \
-  backend/app/workers \
-  backend/app/api/routes \
-  backend/tests \
-  -type f \
-  | sort
-```
-
-List migrations:
-
-```bash
-ls -1 supabase/migrations
-```
-
-Validate documentation formatting:
-
-```bash
-git diff --check
-```
-
-Confirm that all paths in this document are updated whenever files are renamed, added, or removed.
 ---
 
-## Phase 4B — AI Provider Foundation
+# File Header Rule
 
-| File | Purpose | Owner | System connections |
-|---|---|---|---|
-| `backend/.env.example` | Documents safe AI provider environment-variable names and defaults without storing credentials. | Backend / AI | `Settings`, local `.env`, Gemini provider |
-| `backend/app/core/config.py` | Loads and validates AI provider, model, dimension, timeout, generation, and live-test settings. | Backend / AI | `.env`, `GeminiProvider`, smoke-test scripts |
-| `backend/app/ai/__init__.py` | Exposes shared AI contracts and controlled exception types. | Backend / AI | Backend services, providers, tests |
-| `backend/app/ai/contracts.py` | Defines generation and embedding requests, results, task types, and asynchronous provider protocols. | Backend / AI | Future RAG services, `GeminiProvider`, tests |
-| `backend/app/ai/errors.py` | Defines controlled configuration, request, and response exceptions for AI providers. | Backend / AI | `GeminiProvider`, future API error handling |
-| `backend/app/ai/providers/__init__.py` | Exposes concrete AI provider implementations. | Backend / AI | Provider imports, backend services |
-| `backend/app/ai/providers/gemini.py` | Implements asynchronous Gemini generation and embedding operations behind shared interfaces. | Backend / AI | Google Gen AI SDK, `Settings`, AI contracts |
-| `backend/app/ai/smoke/__init__.py` | Marks the package containing explicitly controlled live AI smoke tests. | Backend / AI | Embedding and generation smoke scripts |
-| `backend/app/ai/smoke/embedding.py` | Runs guarded live document and query embedding connectivity tests without printing vectors or credentials. | Backend / AI | `GeminiProvider`, Gemini Embedding 2, private `.env` |
-| `backend/app/ai/smoke/generation.py` | Runs a guarded live generation connectivity test using a fixed non-sensitive marker. | Backend / AI | `GeminiProvider`, Gemini 3.6 Flash, private `.env` |
-| `backend/tests/test_ai_config.py` | Tests AI settings, safe defaults, normalization, and validation without external requests. | Backend / QA | `Settings` |
-| `backend/tests/test_ai_contracts.py` | Tests provider-independent AI contracts, validation, protocols, and exception hierarchy. | Backend / QA | `app.ai.contracts`, `app.ai.errors` |
-| `backend/tests/test_gemini_provider.py` | Tests Gemini request construction, response parsing, errors, timeout handling, and cleanup using fake clients. | Backend / QA | `GeminiProvider`, Google Gen AI SDK types |
-| `docs/AI_PROVIDER.md` | Documents the AI provider architecture, configuration, safety controls, and smoke-test workflow. | Documentation / AI | All Phase 4B AI files |
-| `docs/PROJECT_FILE_MAP.md` | Maintains the master inventory of project files, purposes, owners, and connections. | Documentation | Entire repository |
-| `docs/ARCHITECTURE.md` | Shows how the AI provider layer connects to backend services, configuration, Gemini models, and tests. | Documentation / Architecture | Backend, AI provider, Gemini API |
+Manually created source files must include their filepath when the format supports comments.
 
-### Phase 4B System Connections
+TypeScript:
 
-- Backend services depend on the provider-independent interfaces in `contracts.py`.
-- `GeminiProvider` implements both `GenerationProvider` and `EmbeddingProvider`.
-- `GeminiProvider` reads model and request settings through `Settings`.
-- The Google Gen AI SDK is isolated inside the concrete Gemini provider.
-- Offline tests inject fake clients and never contact Gemini.
-- Live smoke tests require an API key, an enabled environment flag, and explicit command-line confirmation.
-- Future chunking, retrieval, RAG, citation, and assistant services will call the shared provider interfaces rather than the SDK directly.
+```typescript
+// File: /frontend/path/file.ts
+```
 
-## Phase 4C — Offline AI Preparation Pipeline
+Python:
 
-| File | Purpose | Owner | Main connections |
-|---|---|---|---|
-| `backend/.env.example` | Documents chunking and embedding-batch environment settings. | Backend / DevOps | `app/core/config.py` |
-| `backend/app/core/config.py` | Validates chunk target, overlap, minimum size, batch size, and maximum chunks. | Backend | `.env`, AI preparation services |
-| `backend/app/ai/chunking.py` | Defines chunking requests, chunks, results, and embedding batches. | AI Backend | `text_chunker.py`, `embedding_batcher.py`, `preparation.py` |
-| `backend/app/ai/text_chunker.py` | Normalizes and divides extracted text into deterministic overlapping chunks. | AI Backend | `ChunkingRequest`, `ChunkingResult`, application settings |
-| `backend/app/ai/embedding_batcher.py` | Converts ordered chunks into bounded batches and embedding requests. | AI Backend | `EmbeddingBatch`, `EmbeddingRequest` |
-| `backend/app/ai/preparation.py` | Defines the complete validated offline preparation result. | AI Backend | Chunk results, batches, embedding requests |
-| `backend/app/ai/errors.py` | Adds the controlled `AIChunkingError`. | AI Backend | Text chunker, file processor |
-| `backend/app/ai/__init__.py` | Exports the Phase 4C preparation contracts and implementations. | AI Backend | Backend services and tests |
-| `backend/app/services/study_material_preparer.py` | Coordinates chunking and embedding-request preparation without provider calls. | Backend / AI | Text chunker, embedding batch preparer |
-| `backend/app/services/file_processor.py` | Runs offline preparation after extraction while preserving existing source-aware persistence. | Backend | Extractor, preparer, Supabase admin service |
-| `backend/tests/test_chunking_config.py` | Tests chunking-setting defaults, limits, and relationships. | Backend QA | `Settings` |
-| `backend/tests/test_chunking_contracts.py` | Tests chunk requests, results, offsets, keys, and batches. | Backend QA | `app.ai.chunking` |
-| `backend/tests/test_text_chunker.py` | Tests normalization, boundaries, overlap, limits, and deterministic offsets. | Backend QA | `TextChunker` |
-| `backend/tests/test_embedding_batcher.py` | Tests batch sizes, ordering, indexes, and retrieval-document requests. | Backend QA | `EmbeddingBatchPreparer` |
-| `backend/tests/test_study_material_preparer.py` | Tests complete offline text-to-request preparation. | Backend QA | `StudyMaterialPreparer` |
-| `backend/tests/test_file_processor_preparation.py` | Tests file-processor preparation integration and controlled failure handling. | Backend QA | `FileProcessorService` |
-| `backend/tests/test_file_processor.py` | Extends processor fixtures with Phase 4C configuration. | Backend QA | `FileProcessorService` |
-| `backend/tests/test_file_extraction.py` | Extends extraction/processor fixtures with Phase 4C configuration. | Backend QA | Extractor and file processor |
-| `docs/AI_PREPARATION_PIPELINE.md` | Documents Phase 4C behavior, boundaries, configuration, and failure handling. | Documentation | AI preparation implementation |
-| `docs/ARCHITECTURE.md` | Adds the Phase 4C Mermaid architecture and sequence flow. | Architecture | File processor, preparation pipeline, persistence |
-| `docs/PROJECT_FILE_MAP.md` | Records Phase 4C file ownership and system connections. | Documentation | Entire repository |
+```python
+# File: /backend/path/file.py
+```
 
-<!-- PHASE 4D VECTOR FILE MAP START -->
-# Phase 4D AI Vector Indexing Files
+CSS:
 
-| Path | Status | Owner | Purpose | Connected To |
-|---|---|---|---|---|
-| `/docs/AI_VECTOR_PIPELINE.md` | Integrated | Member 3 and Member 5 | Documents the implemented Gemini embedding and Supabase vector-indexing pipeline | File processor, Gemini provider, pgvector migration, tests, and live smoke script |
-| `/backend/app/ai/vector_persistence.py` | Integrated | Member 3 | Validates AI chunks, embeddings, metadata, and trusted RPC serialization | `StudyMaterialChunk`, `StudyMaterialVectorIndexer`, and `SupabaseAdminService` |
-| `/backend/app/services/study_material_embedder.py` | Integrated | Member 3 | Executes prepared embedding batches and validates provider vectors | `StudyMaterialPreparation`, Gemini provider, and vector indexer |
-| `/backend/app/services/study_material_vector_indexer.py` | Integrated | Member 3 | Orchestrates embedding, validated payload creation, and vector persistence | Study-material embedder, vector-persistence contracts, Supabase admin service, and file processor |
-| `/backend/app/services/file_processor.py` | Integrated | Member 3 | Runs AI preparation and vector indexing between extraction and final processing completion | Extractors, preparer, vector indexer, Supabase admin service, and worker |
-| `/backend/app/services/supabase_admin.py` | Integrated | Member 3 and Member 4 | Calls trusted processing and vector-persistence RPC functions | Hosted Supabase PostgreSQL, Storage, processing functions, and `replace_study_file_ai_chunks` |
-| `/backend/app/workers/file_processing_worker.py` | Integrated | Member 3 | Constructs and executes the production file processor, embedder, and vector indexer | File-processing queue, Gemini, Supabase, and stale-job recovery |
-| `/backend/scripts/smoke_live_file_vector_pipeline.py` | Ready | Member 3 and Member 5 | Runs one explicitly enabled live file-to-vector smoke test | Private backend settings, Gemini API, Supabase Storage, and vector RPC |
-| `/backend/tests/test_ai_vector_migration.py` | Ready | Member 5 | Verifies the vector migration's schema, RLS, index, and RPC contracts offline | Phase 4D pgvector migration |
-| `/backend/tests/test_vector_persistence.py` | Ready | Member 5 | Tests AI chunk and embedding validation and RPC serialization | `vector_persistence.py` |
-| `/backend/tests/test_supabase_ai_chunk_persistence.py` | Ready | Member 5 | Tests mocked trusted vector RPC calls and stored-count validation | `SupabaseAdminService.persist_ai_chunks()` |
-| `/backend/tests/test_study_material_embedder.py` | Ready | Member 5 | Tests embedding execution and vector validation using stub providers | `StudyMaterialEmbedder` |
-| `/backend/tests/test_study_material_vector_indexer.py` | Ready | Member 5 | Tests embed-and-persist orchestration without external calls | `StudyMaterialVectorIndexer` |
-| `/backend/tests/test_file_processor_vector_indexing.py` | Ready | Member 5 | Tests processing order and controlled vector failure codes | `FileProcessorService` and injected vector indexer |
-| `/supabase/migrations/20260803020921_create_ai_chunk_vector_foundation.sql` | Integrated | Member 4 | Enables pgvector, creates AI chunk storage and HNSW indexing, configures RLS, and creates the trusted persistence RPC | `study_files`, `file_processing_jobs`, `study_file_ai_chunks`, service role, and backend persistence |
-<!-- PHASE 4D VECTOR FILE MAP END -->
+```css
+/* File: /frontend/path/file.css */
+```
 
-<!-- PHASE 5A RETRIEVAL DESIGN FILE MAP START -->
-## Phase 5A Retrieval Design Files
+Markdown:
 
-| Path | Status | Owner | Purpose | Connected To |
-|---|---|---|---|---|
-| `/docs/AI_RETRIEVAL_DESIGN.md` | Designed | Member 3, Member 4, and Member 5 | Defines the vector-search RPC contract, authorization rules, filters, scoring, returned metadata, and planned tests | `study_file_ai_chunks`, `study_files`, Gemini query embeddings, Supabase service role, and future retrieval services |
-<!-- PHASE 5A RETRIEVAL DESIGN FILE MAP END -->
+```markdown
+<!-- File: /docs/file.md -->
+```
 
-<!-- PHASE 5B QUERY EMBEDDING FILE MAP START -->
-## Phase 5B - Query Embedding Service
+SQL:
 
-| File | Purpose | Owner | System connections |
-|---|---|---|---|
-| `backend/app/services/query_embedding.py` | Creates and validates one `retrieval_query` embedding. | Backend / AI | Uses Gemini and feeds Phase 5C retrieval. |
-| `backend/app/services/__init__.py` | Exports the query-embedding service contract. | Backend | Provides consistent service imports. |
-| `backend/app/api/query_embedding_dependency.py` | Creates and safely closes the service for future FastAPI routes. | Backend / API | Uses FastAPI dependency injection and typed settings. |
-| `backend/scripts/smoke_live_query_embedding.py` | Runs one guarded live Gemini query-embedding test. | Backend / AI | Controlled by `AI_LIVE_SMOKE_TESTS_ENABLED`. |
-| `backend/tests/test_query_embedding.py` | Tests query normalization and vector validation. | Backend / QA | Uses fake providers without external calls. |
-| `backend/tests/test_query_embedding_integration.py` | Tests failure codes, exports, and resource cleanup. | Backend / QA | Covers service and dependency integration. |
-| `backend/tests/test_live_query_embedding_smoke_script.py` | Tests smoke-test safety, cleanup, and redacted output. | Backend / QA | Does not call Gemini. |
-| `docs/AI_QUERY_EMBEDDING.md` | Documents Phase 5B and its Phase 5C handoff. | Documentation | Connects query embedding to vector retrieval. |
-<!-- PHASE 5B QUERY EMBEDDING FILE MAP END -->
+```sql
+-- File: /supabase/migrations/timestamp_name.sql
+```
 
-<!-- PHASE 5C RETRIEVAL ORCHESTRATION FILE MAP START -->
-## Phase 5C - Retrieval Orchestration
+Strict JSON files are exempt because JSON does not support comments.
 
-| File | Purpose | Owner | System connections |
-|---|---|---|---|
-| `backend/app/ai/retrieval_contracts.py` | Defines validated retrieval requests, chunks, results, outcomes, and failure codes. | Backend / AI | Matches the Phase 5A retrieval RPC contract. |
-| `backend/app/ai/retrieval_persistence.py` | Calls and validates the protected Supabase vector-search RPC. | Backend / AI | Uses `SupabaseAdminService` and returns retrieval contracts. |
-| `backend/app/api/retrieval_orchestration_dependency.py` | Constructs retrieval orchestration for future protected API routes. | Backend / API | Connects settings, query embedding, Supabase persistence, and orchestration. |
-| `backend/app/services/retrieval_orchestration.py` | Converts a question into an embedding and retrieves matching study chunks. | Backend / AI | Connects Phase 5B query embedding to Phase 5A vector search. |
-| `backend/app/services/supabase_admin.py` | Exposes the existing trusted JSON RPC helper. | Backend | Keeps the Supabase secret key backend-only. |
-| `backend/app/services/__init__.py` | Exports the public Phase 5C orchestration service types. | Backend | Provides consistent application imports. |
-| `backend/scripts/smoke_live_retrieval_orchestration.py` | Runs one guarded live Gemini-plus-Supabase retrieval workflow. | Backend / AI | Uses a real indexed study-file owner and the retrieval RPC. |
-| `backend/tests/test_retrieval_contracts.py` | Tests request, chunk, result, filter, and no-context validation. | Backend / QA | Uses only local test data. |
-| `backend/tests/test_retrieval_persistence.py` | Tests Supabase RPC parameters, response handling, and failures. | Backend / QA | Uses fake trusted RPC clients. |
-| `backend/tests/test_retrieval_orchestration.py` | Tests the complete embedding-to-retrieval workflow. | Backend / QA | Uses fake embedding and retrieval services. |
-| `backend/tests/test_retrieval_orchestration_dependency.py` | Tests service exports and FastAPI dependency wiring. | Backend / QA | Verifies application integration without external calls. |
-| `backend/tests/test_live_retrieval_orchestration_smoke_script.py` | Tests live-smoke configuration, safety, and output. | Backend / QA | Does not call Gemini or Supabase. |
-| `docs/AI_RETRIEVAL_ORCHESTRATION.md` | Documents Phase 5C architecture, contracts, testing, security, and handoff. | Documentation | Connects Phase 5C to Phase 5A, Phase 5B, and Phase 5D. |
-<!-- PHASE 5C RETRIEVAL ORCHESTRATION FILE MAP END -->
+---
 
-<!-- PHASE 5D GROUNDED ANSWER FILE MAP START -->
-## Phase 5D - Grounded Answer Generation
+# Update Rule
 
-| File | Purpose | Owner | System connections |
-|---|---|---|---|
-| `backend/app/ai/grounded_answer_contracts.py` | Defines grounded-answer requests, outcomes, source references, results, and stable errors. | Backend / AI | Uses retrieved chunks from Phase 5C. |
-| `backend/app/ai/grounded_prompt.py` | Builds bounded prompts from untrusted retrieved study-material data. | Backend / AI | Converts Phase 5C chunks into Gemini generation input. |
-| `backend/app/api/grounded_answer_generation_dependency.py` | Constructs and closes the configured grounded-answer generation service. | Backend / API | Connects settings, Gemini, and the Phase 5D service. |
-| `backend/app/services/grounded_answer_generation.py` | Generates, validates, cites, and returns grounded answers. | Backend / AI | Connects the prompt builder to the existing generation provider. |
-| `backend/app/services/__init__.py` | Exports the Phase 5D grounded-answer service. | Backend | Provides consistent imports for later routes and orchestration. |
-| `backend/scripts/smoke_live_grounded_answer_generation.py` | Runs one guarded live retrieval-and-generation workflow. | Backend / AI | Connects Gemini query embedding, Supabase retrieval, and Gemini generation. |
-| `backend/tests/test_grounded_answer_contracts.py` | Tests request, result, outcome, error, and source-reference contracts. | Backend / QA | Uses local retrieved-chunk fixtures. |
-| `backend/tests/test_grounded_prompt.py` | Tests prompt limits, normalization, source numbering, and security boundaries. | Backend / QA | Uses local study-context fixtures. |
-| `backend/tests/test_grounded_answer_generation.py` | Tests generation, citation validation, retry behavior, fallback references, failures, and cleanup. | Backend / QA | Uses fake generation providers. |
-| `backend/tests/test_grounded_answer_generation_dependency.py` | Tests dependency construction, exports, generation, and cleanup. | Backend / QA | Uses a fake Gemini provider. |
-| `backend/tests/test_live_grounded_answer_smoke_script.py` | Tests disabled behavior, safe output, controlled failures, and fake end-to-end execution. | Backend / QA | Makes no live Gemini or Supabase request. |
-| `docs/AI_GROUNDED_ANSWER_GENERATION.md` | Documents Phase 5D contracts, prompt construction, generation, citations, testing, and security. | Documentation | Connects Phase 5C retrieval to later API integration. |
-<!-- PHASE 5D GROUNDED ANSWER FILE MAP END -->
+Update this map whenever:
 
-<!-- PHASE 5E RAG API FILE MAP START -->
-## Phase 5E - Protected RAG API Endpoint
-
-| File | Purpose | Owner | System connections |
-|---|---|---|---|
-| `backend/app/api/authenticated_user_dependency.py` | Validates Supabase bearer tokens and returns a safe authenticated-user UUID. | Backend / Security | Connects FastAPI authentication to Supabase Auth. |
-| `backend/app/api/rag_orchestration_dependency.py` | Assembles retrieval and grounded-generation services into one RAG service. | Backend / API | Connects Phase 5C retrieval and Phase 5D generation. |
-| `backend/app/api/router.py` | Registers the protected RAG router. | Backend / API | Connects `/rag/answer` to the main API router. |
-| `backend/app/api/routes/rag.py` | Implements the protected `POST /api/rag/answer` endpoint and safe error mapping. | Backend / API | Connects authentication, RAG orchestration, and public response schemas. |
-| `backend/app/api/validation_error_handler.py` | Removes rejected input values from HTTP `422` validation responses. | Backend / Security | Registered globally in the FastAPI application. |
-| `backend/app/main.py` | Registers the safe validation handler while preserving the existing application configuration. | Backend / API | Connects application startup, routers, middleware, and exception handling. |
-| `backend/app/schemas/rag.py` | Defines public RAG request, answer, source, outcome, and error schemas. | Backend / API | Defines the protected endpoint's public contract. |
-| `backend/app/services/rag_orchestration.py` | Runs authenticated retrieval and grounded-answer generation as one validated operation. | Backend / AI | Connects Phase 5C and Phase 5D using the authenticated user UUID. |
-| `backend/scripts/smoke_live_rag_api_endpoint.py` | Runs one guarded authenticated live request through the protected endpoint. | Backend / AI | Connects Supabase Auth, FastAPI, retrieval, and grounded generation. |
-| `backend/tests/test_authenticated_user_dependency.py` | Tests bearer authentication, Supabase responses, safe errors, and token exclusion. | Backend / QA | Uses fake Supabase Auth responses. |
-| `backend/tests/test_live_rag_api_smoke_script.py` | Tests live-script guards, configuration, response validation, and safe output. | Backend / QA | Makes no live external requests. |
-| `backend/tests/test_rag_api_auth_integration.py` | Tests token-to-user ownership binding and authentication boundaries. | Backend / QA | Uses the real auth dependency with a fake Supabase client. |
-| `backend/tests/test_rag_api_contract.py` | Tests method restrictions, schema validation, defaults, OpenAPI, and safe `422` responses. | Backend / QA | Validates the public API contract. |
-| `backend/tests/test_rag_api_endpoint.py` | Tests answered, no-context, protected, and controlled-error endpoint responses. | Backend / QA | Uses isolated FastAPI applications and fake RAG services. |
-| `backend/tests/test_rag_api_schemas.py` | Tests public request, response, source, and error-schema consistency. | Backend / QA | Uses local Pydantic validation only. |
-| `backend/tests/test_rag_orchestration.py` | Tests combined retrieval and grounded-generation behavior and failures. | Backend / QA | Uses fake retrieval and generation services. |
-| `backend/tests/test_rag_orchestration_dependency.py` | Tests combined dependency metadata and service wiring. | Backend / QA | Uses fake child services. |
-| `docs/AI_RAG_API_ENDPOINT.md` | Documents the endpoint, authentication, API contract, security, testing, and live validation. | Documentation | Provides the Phase 5E handoff for frontend integration. |
-<!-- PHASE 5E RAG API FILE MAP END -->
-
-## Phase 5F — Study Assistant Frontend Files
-
-| File | Purpose | Owner | Main Connections |
-|---|---|---|---|
-| `frontend/app/(protected)/study-assistant/page.tsx` | Defines the protected Study Assistant page and loads its filter options on the server. | Frontend | Protected layout, server option loader, Study Assistant panel |
-| `frontend/features/navigation/components/ProtectedAppShell.tsx` | Adds the Study Assistant entry to the authenticated application navigation. | Frontend | Protected routes, sidebar, mobile navigation |
-| `frontend/features/study-assistant/api.ts` | Sends authenticated and typed requests to `POST /api/rag/answer`. | Frontend | Browser Supabase session, FastAPI RAG endpoint |
-| `frontend/features/study-assistant/api.test.ts` | Tests token handling, request payloads, response validation, and safe errors. | Frontend | Study Assistant API client, mocked browser session and fetch |
-| `frontend/features/study-assistant/components/StudyAssistantPanel.tsx` | Implements the question form, filters, loading state, grounded answers, source cards, no-context state, and safe errors. | Frontend | Mantine, typed API client, RAG types |
-| `frontend/features/study-assistant/components/StudyAssistantPanel.module.css` | Provides responsive Study Assistant page and source-card styling. | Frontend | Study Assistant panel |
-| `frontend/features/study-assistant/components/StudyAssistantPanel.test.tsx` | Tests questions, subject and file filters, answers, source display, no-context results, and API errors. | Frontend | Vitest, Testing Library, Mantine |
-| `frontend/features/study-assistant/server/options.ts` | Loads authenticated subjects and ready study files without exposing user identifiers. | Frontend | Server Supabase client, subjects, study files |
-| `frontend/features/study-assistant/server/options.test.ts` | Tests safe server-side option loading and authentication fallback behavior. | Frontend | Mocked Supabase server client |
-| `frontend/types/rag.ts` | Defines request, response, source, error, and filter-option types for the Study Assistant. | Shared frontend | Study Assistant client, server loader, UI |
-| `frontend/tests/setup.ts` | Configures the jsdom test environment and required Mantine browser API mocks. | Frontend testing | Vitest, Testing Library, Mantine portals |
-| `frontend/tests/test-environment.test.ts` | Confirms that the frontend unit-test environment is operating correctly. | Frontend testing | Vitest, jsdom |
-| `frontend/vitest.config.mts` | Configures frontend unit and component testing. | Frontend testing | Vitest, React, jsdom, TypeScript paths |
-| `frontend/package.json` | Adds frontend test commands and test dependencies. | Frontend | npm, Vitest, Testing Library |
-| `frontend/package-lock.json` | Locks the versions of the frontend testing dependencies. | Frontend | npm |
-| `backend/app/core/config.py` | Configures the Gemini grounded-answer output allowance, including the updated 1024-token default. | Backend | Gemini provider, grounded-answer dependency |
-
-### Study Assistant component connections
-
-```mermaid
-flowchart TD
-    Page["study-assistant/page.tsx"]
-    Options["server/options.ts"]
-    Panel["StudyAssistantPanel.tsx"]
-    Types["types/rag.ts"]
-    Client["study-assistant/api.ts"]
-    Session["Supabase Browser Session"]
-    Endpoint["FastAPI /api/rag/answer"]
-
-    Page --> Options
-    Page --> Panel
-    Options --> Types
-    Panel --> Types
-    Panel --> Client
-    Client --> Types
-    Client --> Session
-    Client --> Endpoint
+- A file is created
+- A file is deleted
+- A file is renamed
+- Ownership changes
+- An API changes
+- A database migration is added
+- A system connection changes
+- A development phase becomes implemented

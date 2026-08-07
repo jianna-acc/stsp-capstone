@@ -1,0 +1,80 @@
+﻿/* File: /frontend/features/study-assistant/components/StudyAssistantWorkspace.module.css */
+/* Purpose: Styles the responsive Study Assistant conversation workspace. */
+
+.page {
+  min-height: 100%;
+  width: 100%;
+}
+
+.container {
+  width: 100%;
+  max-width: none;
+  padding-inline: 2rem;
+}
+
+.workspace {
+  display: grid;
+  grid-template-columns:
+    minmax(18rem, 20rem)
+    minmax(0, 1fr);
+
+  align-items: start;
+
+  /*
+   * Keeps the conversation history visually separate
+   * from the main Study Assistant workspace.
+   */
+  column-gap: clamp(
+    2rem,
+    3vw,
+    3.5rem
+  );
+}
+
+.historyColumn {
+  min-width: 0;
+  position: sticky;
+  top: 1.5rem;
+  align-self: start;
+}
+
+.assistantColumn {
+  min-width: 0;
+}
+
+/*
+ * Tablet / smaller desktop:
+ * keep both columns but reduce the spacing slightly.
+ */
+@media (max-width: 75em) {
+  .container {
+    padding-inline: 1.5rem;
+  }
+
+  .workspace {
+    grid-template-columns:
+      minmax(16rem, 18rem)
+      minmax(0, 1fr);
+
+    column-gap: 2rem;
+  }
+}
+
+/*
+ * Mobile / narrow tablet:
+ * place conversation history above the assistant.
+ */
+@media (max-width: 62em) {
+  .container {
+    padding-inline: 1rem;
+  }
+
+  .workspace {
+    grid-template-columns: 1fr;
+    row-gap: 1.5rem;
+  }
+
+  .historyColumn {
+    position: static;
+  }
+}

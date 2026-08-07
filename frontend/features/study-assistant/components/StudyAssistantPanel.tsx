@@ -25,8 +25,10 @@ import {
   IconBook2,
   IconBulb,
   IconFileText,
+  IconRefresh,
   IconSend,
   IconSparkles,
+  IconUser,
 } from "@tabler/icons-react";
 import {
   type FormEvent,
@@ -43,11 +45,29 @@ import type {
   RagAnswerResponse,
   StudyAssistantFilterOptions,
 } from "@/types/rag";
+import type {
+  StudyConversationDetailResponse,
+} from "@/types/study-conversation";
 
 import classes from "./StudyAssistantPanel.module.css";
 
+export type SelectedConversationStatus =
+  | "idle"
+  | "loading"
+  | "ready"
+  | "error";
+
 interface StudyAssistantPanelProps {
   filterOptions: StudyAssistantFilterOptions;
+  conversationDetail?:
+    StudyConversationDetailResponse | null;
+  conversationStatus?:
+    SelectedConversationStatus;
+  conversationError?: string | null;
+  onRetryConversation?: () => void;
+  onAnswerCompleted?: (
+    result: RagAnswerResponse,
+  ) => void;
 }
 
 type AssistantState =
@@ -87,6 +107,11 @@ function formatSimilarityScore(
 
 export function StudyAssistantPanel({
   filterOptions,
+  conversationDetail = null,
+  conversationStatus = "idle",
+  conversationError = null,
+  onRetryConversation,
+  onAnswerCompleted,
 }: StudyAssistantPanelProps) {
   const [question, setQuestion] =
     useState("");
@@ -94,12 +119,20 @@ export function StudyAssistantPanel({
   const [
     selectedSubjectId,
     setSelectedSubjectId,
-  ] = useState<string | null>(null);
+  ] = useState<string | null>(
+    conversationDetail
+      ?.conversation.subject_id ??
+      null,
+  );
 
   const [
     selectedStudyFileId,
     setSelectedStudyFileId,
-  ] = useState<string | null>(null);
+  ] = useState<string | null>(
+    conversationDetail
+      ?.conversation.study_file_id ??
+      null,
+  );
 
   const [state, setState] =
     useState<AssistantState>({
@@ -119,6 +152,19 @@ export function StudyAssistantPanel({
 
   const isLoading =
     state.status === "loading";
+
+  const conversationInteractionBlocked =
+    conversationStatus === "loading" ||
+    conversationStatus === "error";
+
+  const isInteractionDisabled =
+    isLoading ||
+    conversationInteractionBlocked;
+
+  const activeConversationId =
+    conversationDetail
+      ?.conversation.id ??
+      null;
 
   const subjectSelectData =
     filterOptions.subjects.map(
@@ -241,6 +287,13 @@ export function StudyAssistantPanel({
             question:
               normalizedQuestion,
 
+            ...(activeConversationId
+              ? {
+                  conversation_id:
+                    activeConversationId,
+                }
+              : {}),
+
             ...(selectedSubjectId
               ? {
                   subject_id:
@@ -261,10 +314,16 @@ export function StudyAssistantPanel({
           },
         );
 
+      setQuestion("");
+
       setState({
         status: "success",
         result,
       });
+
+      onAnswerCompleted?.(
+        result,
+      );
     } catch (error) {
       if (
         error instanceof DOMException &&
@@ -350,6 +409,272 @@ export function StudyAssistantPanel({
               </div>
             </Group>
           </header>
+
+          {conversationStatus ===
+            "loading" && (
+            <Paper
+              component="section"
+              withBorder
+              radius="lg"
+              p="xl"
+              className={
+                classes.resultCard
+              }
+              aria-live="polite"
+            >
+              <Group
+                align="flex-start"
+                wrap="nowrap"
+              >
+                <ThemeIcon
+                  variant="light"
+                  color="violet"
+                  radius="md"
+                >
+                  <IconBook2
+                    size={20}
+                  />
+                </ThemeIcon>
+
+                <div>
+                  <Text fw={700}>
+                    Loading saved conversation
+                  </Text>
+
+                  <Text
+                    size="sm"
+                    c="dimmed"
+                    mt={4}
+                  >
+                    Retrieving the saved
+                    messages and material
+                    filters.
+                  </Text>
+                </div>
+              </Group>
+            </Paper>
+          )}
+
+          {conversationStatus ===
+            "error" && (
+            <Alert
+              color="red"
+              variant="light"
+              title="Conversation unavailable"
+              icon={
+                <IconAlertCircle
+                  size={19}
+                />
+              }
+              aria-live="assertive"
+            >
+              <Stack gap="sm">
+                <Text size="sm">
+                  {conversationError ??
+                    "The selected conversation could not be loaded."}
+                </Text>
+
+                {onRetryConversation && (
+                  <Button
+                    variant="subtle"
+                    color="red"
+                    size="compact-sm"
+                    leftSection={
+                      <IconRefresh
+                        size={16}
+                      />
+                    }
+                    onClick={
+                      onRetryConversation
+                    }
+                  >
+                    Retry conversation
+                  </Button>
+                )}
+              </Stack>
+            </Alert>
+          )}
+
+          {conversationStatus ===
+            "ready" &&
+            conversationDetail && (
+            <Paper
+              component="section"
+              withBorder
+              radius="lg"
+              p={{
+                base: "md",
+                sm: "xl",
+              }}
+              className={
+                classes.resultCard
+              }
+              aria-label="Saved conversation messages"
+            >
+              <Stack gap="lg">
+                <div>
+                  <Text
+                    fw={750}
+                    size="lg"
+                  >
+                    {
+                      conversationDetail
+                        .conversation.title
+                    }
+                  </Text>
+
+                  <Text
+                    size="sm"
+                    c="dimmed"
+                  >
+                    {
+                      conversationDetail
+                        .messages.length
+                    }{" "}
+                    saved message
+                    {conversationDetail
+                      .messages.length ===
+                    1
+                      ? ""
+                      : "s"}
+                  </Text>
+                </div>
+
+                {conversationDetail
+                  .messages.length ===
+                0 ? (
+                  <Text
+                    size="sm"
+                    c="dimmed"
+                  >
+                    This conversation does not
+                    contain any saved messages
+                    yet.
+                  </Text>
+                ) : (
+                  <Stack
+                    gap="sm"
+                    className={
+                      classes.transcript
+                    }
+                  >
+                    {conversationDetail.messages.map(
+                      (message) => (
+                        <Paper
+                          key={message.id}
+                          withBorder
+                          radius="md"
+                          p="md"
+                          className={[
+                            classes.savedMessage,
+                            message.role ===
+                            "user"
+                              ? classes.userMessage
+                              : classes.assistantMessage,
+                          ].join(" ")}
+                        >
+                          <Group
+                            align="flex-start"
+                            wrap="nowrap"
+                            gap="sm"
+                          >
+                            <ThemeIcon
+                              variant="light"
+                              color={
+                                message.role ===
+                                "user"
+                                  ? "blue"
+                                  : "violet"
+                              }
+                              radius="xl"
+                              className={
+                                classes.messageIcon
+                              }
+                            >
+                              {message.role ===
+                              "user" ? (
+                                <IconUser
+                                  size={17}
+                                />
+                              ) : (
+                                <IconSparkles
+                                  size={17}
+                                />
+                              )}
+                            </ThemeIcon>
+
+                            <div
+                              className={
+                                classes.messageBody
+                              }
+                            >
+                              <Text
+                                size="xs"
+                                fw={700}
+                                c="dimmed"
+                                tt="uppercase"
+                              >
+                                {message.role ===
+                                "user"
+                                  ? "You"
+                                  : "Study Assistant"}
+                              </Text>
+
+                              <Text
+                                mt={4}
+                                className={
+                                  classes.answer
+                                }
+                              >
+                                {
+                                  message.content
+                                }
+                              </Text>
+
+                              {message.sources
+                                .length >
+                                0 && (
+                                <Group
+                                  gap="xs"
+                                  mt="sm"
+                                >
+                                  {message.sources.map(
+                                    (source) => (
+                                      <Badge
+                                        key={[
+                                          message.id,
+                                          source.source_number,
+                                          source.source_name,
+                                          source.chunk_index,
+                                        ].join(
+                                          "-",
+                                        )}
+                                        variant="light"
+                                        color="violet"
+                                      >
+                                        Source{" "}
+                                        {
+                                          source.source_number
+                                        }
+                                        :{" "}
+                                        {
+                                          source.source_name
+                                        }
+                                      </Badge>
+                                    ),
+                                  )}
+                                </Group>
+                              )}
+                            </div>
+                          </Group>
+                        </Paper>
+                      ),
+                    )}
+                  </Stack>
+                )}
+              </Stack>
+            </Paper>
+          )}
 
           <Paper
             component="section"
@@ -450,7 +775,7 @@ export function StudyAssistantPanel({
                       searchable
                       clearable
                       disabled={
-                        isLoading ||
+                        isInteractionDisabled ||
                         subjectSelectData
                           .length === 0
                       }
@@ -472,7 +797,7 @@ export function StudyAssistantPanel({
                       searchable
                       clearable
                       disabled={
-                        isLoading ||
+                        isInteractionDisabled ||
                         studyFileSelectData
                           .length === 0
                       }
@@ -501,7 +826,9 @@ export function StudyAssistantPanel({
                         .value,
                     );
                   }}
-                  disabled={isLoading}
+                  disabled={
+                    isInteractionDisabled
+                  }
                   autosize
                   minRows={5}
                   maxRows={10}
@@ -524,7 +851,7 @@ export function StudyAssistantPanel({
                     type="submit"
                     loading={isLoading}
                     disabled={
-                      isLoading ||
+                      isInteractionDisabled ||
                       !question.trim()
                     }
                     leftSection={

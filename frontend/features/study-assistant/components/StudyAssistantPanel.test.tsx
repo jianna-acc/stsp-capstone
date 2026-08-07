@@ -106,6 +106,9 @@ StudyAssistantFilterOptions = {
 };
 
 const ANSWER_RESPONSE = {
+  conversation_id:
+    "conversation-id",
+
   outcome: "answered" as const,
 
   answer:
@@ -352,11 +355,110 @@ describe(
     );
 
     it(
+      "continues a selected saved conversation",
+      async () => {
+        const user =
+          userEvent.setup();
+
+        const onAnswerCompleted =
+          vi.fn();
+
+        render(
+          <MantineProvider>
+            <StudyAssistantPanel
+              filterOptions={
+                FILTER_OPTIONS
+              }
+              conversationStatus="ready"
+              conversationDetail={{
+                conversation: {
+                  id:
+                    "conversation-id",
+                  title:
+                    "Biology review",
+                  subject_id:
+                    "biology-subject",
+                  study_file_id:
+                    "biology-file",
+                  created_at:
+                    "2026-08-06T10:00:00Z",
+                  updated_at:
+                    "2026-08-06T10:05:00Z",
+                  last_message_at:
+                    "2026-08-06T10:05:00Z",
+                },
+                messages: [],
+              }}
+              onAnswerCompleted={
+                onAnswerCompleted
+              }
+            />
+          </MantineProvider>,
+        );
+
+        await user.type(
+          getQuestionInput(),
+          "What happens next?",
+        );
+
+        await user.click(
+          screen.getByRole(
+            "button",
+            {
+              name:
+                "Ask Study Assistant",
+            },
+          ),
+        );
+
+        await waitFor(() => {
+          expect(
+            apiMocks
+              .askStudyAssistant,
+          ).toHaveBeenCalledWith(
+            {
+              question:
+                "What happens next?",
+
+              conversation_id:
+                "conversation-id",
+
+              subject_id:
+                "biology-subject",
+
+              study_file_id:
+                "biology-file",
+            },
+            {
+              signal:
+                expect.any(
+                  AbortSignal,
+                ),
+            },
+          );
+        });
+
+        expect(
+          onAnswerCompleted,
+        ).toHaveBeenCalledWith(
+          ANSWER_RESPONSE,
+        );
+
+        expect(
+          getQuestionInput(),
+        ).toHaveValue("");
+      },
+    );
+
+    it(
       "displays a normal no-context result",
       async () => {
         apiMocks
           .askStudyAssistant
           .mockResolvedValue({
+            conversation_id:
+              "conversation-id",
+
             outcome:
               "no_context",
 

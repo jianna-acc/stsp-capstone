@@ -50,6 +50,14 @@ class RagAnswerRequest(BaseModel):
         ),
     )
 
+    conversation_id: UUID | None = Field(
+        default=None,
+        description=(
+            "Optional saved Study Assistant conversation "
+            "owned by the authenticated student."
+        ),
+    )
+
     study_file_id: UUID | None = Field(
         default=None,
         description=(
@@ -170,6 +178,13 @@ class RagAnswerResponse(BaseModel):
     model_config = ConfigDict(
         extra="forbid",
         frozen=True,
+    )
+
+    conversation_id: UUID = Field(
+        description=(
+            "Saved Study Assistant conversation containing "
+            "the persisted user and assistant messages."
+        ),
     )
 
     outcome: RagAnswerOutcome = Field(

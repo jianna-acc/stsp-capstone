@@ -242,6 +242,10 @@ function isRagAnswerResponse(
     value.outcome === "no_context";
 
   return (
+    typeof value.conversation_id ===
+      "string" &&
+    value.conversation_id.trim()
+      .length > 0 &&
     outcomeIsValid &&
     typeof value.answer === "string" &&
     Array.isArray(value.sources) &&

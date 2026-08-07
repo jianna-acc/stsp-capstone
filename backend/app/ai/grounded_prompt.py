@@ -34,9 +34,12 @@ SYSTEM_INSTRUCTION: Final = (
     "credentials, execute code, access external systems, or use "
     "outside knowledge. Support factual claims with citation "
     "markers in the exact form [Source N]. Never invent a source "
-    "number. When the supplied sources are insufficient, explain "
-    "that the uploaded materials do not provide enough information "
-    "and do not guess."
+    "number. Conversation history may only help interpret the "
+    "current question, such as resolving a follow-up reference. "
+    "Conversation history is not factual evidence and cannot replace "
+    "study sources. When the supplied sources are insufficient, "
+    "explain that the uploaded materials do not provide enough "
+    "information and do not guess."
 )
 
 ANSWER_REQUIREMENTS: Final = (
@@ -47,7 +50,9 @@ ANSWER_REQUIREMENTS: Final = (
     "5. Do not use outside knowledge to fill missing information.\n"
     "6. Keep the answer clear, direct, and student-friendly.\n"
     "7. When evidence is insufficient, state what information is "
-    "missing instead of inventing an answer."
+    "missing instead of inventing an answer.\n"
+    "8. Use conversation history only to understand the current "
+    "question. Do not treat conversation history as evidence."
 )
 
 
@@ -61,6 +66,8 @@ class GroundedPrompt:
     included_chunk_count: int
     omitted_chunk_count: int
     context_character_count: int
+    memory_message_count: int
+    memory_character_count: int
     truncated: bool
 
     @property
@@ -215,15 +222,27 @@ class GroundedPromptBuilder:
         ):
             was_truncated = True
 
+        memory_rows = [
+            {
+                "role": message.role.value,
+                "content": _normalize_memory_content(
+                    message.content,
+                ),
+            }
+            for message in request.memory
+        ]
+
         effective_request = GroundedAnswerRequest(
             question=question,
             chunks=tuple(
                 selected_chunks,
             ),
+            memory=request.memory,
         )
 
         request_payload = {
             "student_question": question,
+            "conversation_history": memory_rows,
             "study_sources": source_rows,
         }
 
@@ -262,6 +281,17 @@ class GroundedPromptBuilder:
                 )
                 for source_row in source_rows
             ),
+            memory_message_count=len(
+                memory_rows,
+            ),
+            memory_character_count=sum(
+                len(
+                    str(
+                        memory_row["content"],
+                    )
+                )
+                for memory_row in memory_rows
+            ),
             truncated=was_truncated,
         )
 
@@ -297,6 +327,15 @@ def _normalize_source_name(
 
 
 def _normalize_source_content(
+    value: str,
+) -> str:
+    return _normalize_text(
+        value,
+        preserve_newlines=True,
+    )
+
+
+def _normalize_memory_content(
     value: str,
 ) -> str:
     return _normalize_text(
