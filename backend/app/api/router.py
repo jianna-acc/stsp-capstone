@@ -8,6 +8,7 @@ from app.api.health import (
 )
 from app.api.routes import (
     rag,
+    reviewers,
     study_conversations,
 )
 from app.api.routes.file_processing import (
@@ -30,4 +31,8 @@ api_router.include_router(
 
 api_router.include_router(
     study_conversations.router,
+)
+
+api_router.include_router(
+    reviewers.router,
 )

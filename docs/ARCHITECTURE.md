@@ -27,9 +27,15 @@ The system currently includes:
 - Saved Study Assistant conversations
 - Bounded conversation memory
 - Deterministic conversation summaries
+- Reviewer generation from a subject or study file
+- Structured reviewer content with topics, key points, and definitions
+- Reviewer source tracking
+- Saved reviewer persistence
+- Protected FastAPI reviewer API
 
-Future phases may add reviewers, flashcards, quizzes, study planning, scheduling, analytics, and deployment improvements.
+The application now also includes a protected Reviewer frontend for generating structured reviewers from a whole subject or one ready study material.
 
+Future phases may add reviewer regeneration, scalable multi-pass generation for very large materials, flashcards, quizzes, study planning, scheduling, analytics, and deployment improvements.
 ---
 
 # Phase Status
@@ -41,8 +47,10 @@ Future phases may add reviewers, flashcards, quizzes, study planning, scheduling
 | Phase 3 | Subjects, uploads, extraction, processing worker | Implemented |
 | Phase 4 | AI provider, chunking, embeddings, vector persistence, retrieval | Implemented |
 | Phase 5A–5F | Retrieval orchestration, grounded RAG API, Study Assistant | Implemented |
-| Phase 5G | Saved conversations, memory, summaries, conversation history UI | In Progress — finalization |
-| Later phases | Reviewers, flashcards, quizzes, study plans, analytics, deployment | Planned |
+| Phase 5G | Saved conversations, memory, summaries, conversation history UI | Implemented |
+| Phase 6A | Reviewer backend foundation, persistence, generation, sources, protected API | Implemented |
+| Phase 6B | Reviewer frontend, authenticated generation UI, structured result display | Implemented |
+| Later phases | Reviewer history/regeneration, scalable multi-pass generation, flashcards, quizzes, study plans, analytics, deployment | Planned |
 
 ---
 
@@ -59,6 +67,7 @@ flowchart LR
         FILE_UI["Study Materials"]
         ASSISTANT["Study Assistant"]
         HISTORY["Saved Conversations"]
+        REVIEWERS_UI["Reviewer Workspace"]
 
         SUPABASE_CLIENT["Supabase Clients"]
         API_CLIENT["FastAPI Clients"]
@@ -81,6 +90,11 @@ flowchart LR
         CONVERSATION["Conversation Service"]
         MEMORY["Bounded Memory"]
         SUMMARY["Deterministic Summary"]
+        REVIEWER_API["Reviewer API"]
+        REVIEWER_ORCHESTRATION["Reviewer Orchestration"]
+        REVIEWER_SOURCE["Reviewer Source Loader"]
+        REVIEWER_GENERATION["Reviewer Generation"]
+        REVIEWER_SERVICE["Reviewer Persistence Service"]
     end
 
     subgraph SUPABASE["Supabase"]
@@ -98,6 +112,7 @@ flowchart LR
     STUDENT --> SUBJECT_UI
     STUDENT --> FILE_UI
     STUDENT --> ASSISTANT
+    STUDENT --> REVIEWERS_UI
 
     AUTH_UI --> SUPABASE_CLIENT
     ONBOARDING --> SUPABASE_CLIENT
@@ -110,6 +125,7 @@ flowchart LR
 
     ASSISTANT --> HISTORY
     ASSISTANT --> API_CLIENT
+    REVIEWERS_UI --> API_CLIENT
 
     API_CLIENT --> API
     API --> AUTH_DEP
@@ -134,6 +150,15 @@ flowchart LR
     RAG --> GEMINI
 
     CONVERSATION --> DATABASE
+    API --> REVIEWER_API
+    REVIEWER_API --> REVIEWER_ORCHESTRATION
+    REVIEWER_ORCHESTRATION --> REVIEWER_SOURCE
+    REVIEWER_ORCHESTRATION --> REVIEWER_GENERATION
+    REVIEWER_ORCHESTRATION --> REVIEWER_SERVICE
+
+    REVIEWER_SOURCE --> DATABASE
+    REVIEWER_GENERATION --> GEMINI
+    REVIEWER_SERVICE --> DATABASE
 ```
 
 ---
@@ -553,6 +578,64 @@ The Study Assistant supports:
 
 ---
 
+# Reviewer Frontend
+
+The protected Reviewer workspace is available at:
+
+```text
+/reviewers
+```
+
+The frontend follows the same authenticated FastAPI-client pattern used by the Study Assistant.
+
+```mermaid
+flowchart LR
+    PAGE["/reviewers"]
+    WORKSPACE["ReviewerWorkspace"]
+
+    FORM["ReviewerGenerationForm"]
+    RESULT["ReviewerResult"]
+
+    OPTIONS["Reviewer Filter Options"]
+    API_CLIENT["Reviewer API Client"]
+
+    SUPABASE["Supabase"]
+    REVIEWER_API["POST /api/reviewers/generate"]
+
+    PAGE --> WORKSPACE
+
+    WORKSPACE --> FORM
+    WORKSPACE --> RESULT
+
+    PAGE --> OPTIONS
+    OPTIONS --> SUPABASE
+
+    FORM --> API_CLIENT
+    API_CLIENT --> REVIEWER_API
+
+    REVIEWER_API --> RESULT
+```
+
+The Reviewer frontend supports:
+
+- Whole-subject reviewer generation
+- Single-study-material reviewer generation
+- `short`, `medium`, and `long` reviewer lengths
+- Authenticated subject loading
+- Ready study-material filtering
+- Loading and safe error states
+- Structured overview display
+- Topic summaries
+- Key points
+- Important definitions
+- Grounded source references
+
+Only study files that have completed processing and are in the `ready` state are available for file-scope generation.
+
+Generated reviewers are persisted by the backend before being returned to the frontend.
+
+Saved-reviewer history, reopening, deletion controls, and regeneration remain deferred to the next Reviewer phase.
+
 # Phase 5G Conversation Persistence
 
 Implemented tables:
@@ -720,6 +803,7 @@ public.study_file_ai_chunks
 
 public.study_conversations
 public.study_messages
+public.reviewers
 ```
 
 Private Storage:
@@ -789,13 +873,182 @@ Corrections require a new timestamped migration.
 20260806234000_restrict_study_conversation_summary_updates.sql
 ```
 
+````
+# Phase 6A Migrations
+
+```text
+20260807230500_create_reviewers.sql
+20260808053929_create_reviewers_foundation.sql
+```
+
+This migration creates the owned `reviewers` table, reviewer scope and length constraints, ownership validation, timestamps, indexes, and Row Level Security policies.
+
+---
+
+# Phase 6A Reviewer Backend
+
+Phase 6A introduces the backend foundation for generated study reviewers.
+
+A reviewer can currently be generated from:
+
+- One ready study file
+- All ready study files within one subject
+
+Reviewer generation does not use similarity-based RAG retrieval. It loads the processed source-aware chunks in deterministic file and chunk order so that the reviewer can represent the selected material broadly rather than only answering a similarity-based question.
+
+```mermaid
+flowchart LR
+    REQUEST["Authenticated Reviewer Request"]
+
+    API["Reviewer API"]
+    ORCHESTRATION["Reviewer Orchestration"]
+
+    SOURCE["Reviewer Source Loader"]
+    GENERATION["Reviewer Generation"]
+    PERSISTENCE["Reviewer Service"]
+
+    FILES[("study_files")]
+    CHUNKS[("study_file_chunks")]
+    REVIEWERS[("reviewers")]
+
+    GEMINI["Gemini Generation Provider"]
+
+    REQUEST --> API
+    API --> ORCHESTRATION
+
+    ORCHESTRATION --> SOURCE
+    SOURCE --> FILES
+    SOURCE --> CHUNKS
+
+    ORCHESTRATION --> GENERATION
+    GENERATION --> GEMINI
+
+    ORCHESTRATION --> PERSISTENCE
+    PERSISTENCE --> REVIEWERS
+```
+
+Generated reviewer content is structured as:
+
+```text
+overview
+topics
+  title
+  summary
+  key_points
+  definitions
+```
+
+Saved reviewer metadata includes:
+
+```text
+scope_type
+subject_id
+study_file_id
+reviewer_length
+sources
+generation_model
+generation_count
+generated_at
+```
+
+Reviewer sources preserve the originating study file, chunk index, and available locator metadata.
+
+Current protected endpoints are:
+
+```text
+POST   /api/reviewers/generate
+GET    /api/reviewers
+GET    /api/reviewers/{reviewer_id}
+DELETE /api/reviewers/{reviewer_id}
+```
+
+The authenticated user's identity comes from the validated bearer token. Reviewer requests cannot choose a trusted `user_id`.
+
+Reviewer insert and generation operations are performed through the trusted backend. Browser clients do not receive direct insert or update access to reviewer records.
+
+Phase 6A did not include a student-facing reviewer workspace. That workspace is now implemented in Phase 6B.
+
+The following capabilities remain deferred:
+
+- Saved reviewer history and reopening
+- Reviewer deletion controls in the frontend
+- Reviewer regeneration
+- Multi-pass generation for source collections that exceed the current bounded prompt size
+- Quiz generation
+
+# Phase 6B Reviewer Frontend
+
+Phase 6B connects the Phase 6A Reviewer backend to the protected Next.js application.
+
+Implemented frontend route:
+
+```text
+/reviewers
+```
+
+The Reviewer workspace provides:
+
+```text
+ReviewerWorkspace
+├── ReviewerGenerationForm
+└── ReviewerResult
+```
+
+Generation options include:
+
+```text
+Scope:
+- Whole subject
+- Single study material
+
+Length:
+- Short
+- Medium
+- Long
+```
+
+The frontend loads authenticated subjects and only study files with:
+
+```text
+processing_status = ready
+```
+
+The browser sends reviewer-generation requests through the authenticated Reviewer API client using the student's Supabase access token.
+
+Live integration verified:
+
+- Single study material + Medium reviewer
+- Whole subject + Medium reviewer
+- Whole subject + Short reviewer
+- Multi-file subject generation
+- Reviewer persistence
+- Structured overview rendering
+- Topic/key-point rendering
+- Important-term rendering
+- Source-location rendering
+
+During live integration, short whole-subject generation exposed an output truncation issue. The Short generation output budget was increased from 2,048 to 4,096 tokens so the provider has enough room to complete valid structured JSON while the prompt still requests concise content.
+
+Reviewer response validation still remains strict, and malformed provider output continues to receive only one controlled repair attempt.
+
+Phase 6B intentionally does not yet include:
+
+- Saved reviewer history UI
+- Opening previously saved reviewers
+- Reviewer deletion controls in the frontend
+- Reviewer regeneration
+- Multi-pass generation for very large materials
+- Quiz generation
+
 ---
 
 # Planned Future Features
 
 Future phases may introduce:
 
-- Reviewer generation
+- Saved reviewer history and reopening
+- Reviewer regeneration
+- Scalable multi-pass reviewer generation for very large materials
 - Flashcards
 - Quizzes
 - Academic tasks

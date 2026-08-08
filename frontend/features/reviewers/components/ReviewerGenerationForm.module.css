@@ -1,0 +1,17 @@
+/* File: /frontend/features/reviewers/components/ReviewerGenerationForm.module.css */
+/* Purpose: Styles the reviewer generation form and request status cards. */
+
+.formCard {
+  background: light-dark(
+    rgba(255, 255, 255, 0.92),
+    rgba(37, 38, 43, 0.92)
+  );
+  backdrop-filter: blur(8px);
+}
+
+.statusCard {
+  background: light-dark(
+    var(--mantine-color-violet-0),
+    rgba(121, 80, 242, 0.08)
+  );
+}

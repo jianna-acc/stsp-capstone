@@ -34,7 +34,8 @@ Supabase provides:
 | Saved conversations | Implemented |
 | Conversation messages | Implemented |
 | Conversation summary state | Implemented |
-| Reviewer/flashcard/quiz tables | Planned |
+| Reviewer table | Implemented |
+| Flashcard/quiz tables | Planned |
 | Tasks/study plans | Planned |
 
 ---
@@ -502,6 +503,39 @@ Changes require a new migration.
 
 ---
 
+# Saved Reviewers
+
+`public.reviewers` stores generated study reviewers owned by authenticated students.
+
+Important columns:
+
+| Column | Purpose |
+|---|---|
+| `id` | Reviewer UUID |
+| `user_id` | Authenticated owner |
+| `subject_id` | Subject used for generation |
+| `study_file_id` | Optional file when using file scope |
+| `scope_type` | `subject` or `file` |
+| `title` | Saved reviewer title |
+| `reviewer_length` | `short`, `medium`, or `long` |
+| `content` | Structured reviewer JSON |
+| `sources` | Source-file and chunk metadata |
+| `generation_model` | AI model used |
+| `generation_count` | Number of generations for the saved reviewer |
+| `generated_at` | Latest generation timestamp |
+| `created_at` | Creation timestamp |
+| `updated_at` | Latest record update |
+
+Reviewer `content` is stored as a JSON object containing:
+
+```text
+overview
+topics
+  title
+  summary
+  key_points
+  definitions
+
 # File Deletion Behavior
 
 Deleting a study file must remove or invalidate:
@@ -534,6 +568,16 @@ Deleting a conversation removes its connected messages through cascade behavior.
 
 ---
 
+# Phase 6A Migration
+
+| Migration | Purpose |
+|---|---|
+| `20260807230500_create_reviewers.sql` | Retained no-op migration entry matching remote migration history |
+| `20260808053929_create_reviewers_foundation.sql` | Creates reviewer table, ownership/scope validation, indexes, timestamps, triggers, privileges, and RLS |
+```
+
+---
+
 # Remaining Planned Tables
 
 Future phases may add:
@@ -542,7 +586,6 @@ Future phases may add:
 academic_tasks
 study_plans
 study_sessions
-reviewers
 flashcard_sets
 flashcards
 quizzes

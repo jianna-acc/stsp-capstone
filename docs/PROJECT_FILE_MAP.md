@@ -32,8 +32,10 @@ Update it whenever files, APIs, migrations, owners, or major system connections 
 | Phase 3 | Subjects and study-material processing | Integrated |
 | Phase 4 | AI provider, preparation, embeddings, vectors, retrieval | Integrated |
 | Phase 5A–5F | RAG and Study Assistant | Integrated |
-| Phase 5G | Saved conversations, memory, summaries, history UI | In Progress — finalization |
-| Later | Reviewers, flashcards, quizzes, planning, analytics | Planned |
+| Phase 5G | Saved conversations, memory, summaries, history UI | Integrated |
+| Phase 6A | Reviewer backend foundation | Integrated |
+| Phase 6B | Reviewer generation frontend and result display | Integrated |
+| Later | Reviewer history/regeneration, scalable multi-pass generation, flashcards, quizzes, planning, analytics | Planned |
 
 ---
 
@@ -267,6 +269,25 @@ Update it whenever files, APIs, migrations, owners, or major system connections 
 
 ---
 
+# Phase 6A Reviewer Backend
+
+| Path | Status | Owner | Purpose | Connections |
+|---|---|---|---|---|
+| `/backend/app/ai/reviewer_prompt.py` | Integrated | Member 3 | Builds bounded reviewer-generation prompts | Reviewer generation, Gemini |
+| `/backend/app/schemas/reviewer.py` | Integrated | Member 3 | Reviewer API and persistence contracts | Routes, services, repository |
+| `/backend/app/repositories/reviewer_repository.py` | Integrated | Member 3 | Reviewer persistence and ownership filtering | Supabase |
+| `/backend/app/services/reviewer_errors.py` | Integrated | Member 3 | Controlled reviewer-domain errors | Reviewer services, API |
+| `/backend/app/services/reviewer_source_loader.py` | Integrated | Member 3 | Loads ordered source-aware chunks for file/subject scope | Study files, chunks |
+| `/backend/app/services/reviewer_generation.py` | Integrated | Member 3 | Structured Gemini reviewer generation, strict response validation, bounded repair, and reviewer-length output budgets | Gemini provider |
+| `/backend/app/services/reviewer_service.py` | Integrated | Member 3 | Reviewer save/list/get/delete operations | Reviewer repository |
+| `/backend/app/services/reviewer_orchestration.py` | Integrated | Member 3 | Coordinates source loading, generation, and persistence | Reviewer services |
+| `/backend/app/api/reviewer_dependency.py` | Integrated | Member 3 | Reviewer persistence dependency | Repository, Supabase client |
+| `/backend/app/api/reviewer_orchestration_dependency.py` | Integrated | Member 3 | Reviewer generation dependency assembly | Gemini, source loader, service |
+| `/backend/app/api/routes/reviewers.py` | Integrated | Member 3 | Protected reviewer API endpoints | Reviewer orchestration/service |
+| `/backend/app/services/supabase_admin.py` | Integrated | Member 3 | Trusted ready-file and source-chunk reads | Reviewer source loader |
+
+---
+
 # Phase 5G Migrations
 
 | Path | Status | Purpose |
@@ -277,6 +298,58 @@ Update it whenever files, APIs, migrations, owners, or major system connections 
 | `/supabase/migrations/20260806234000_restrict_study_conversation_summary_updates.sql` | Integrated | Summary security |
 
 ---
+
+# Phase 6A Migration
+
+| Path | Status | Purpose |
+|---|---|---|
+| `/supabase/migrations/20260807230500_create_reviewers.sql` | Integrated | Retained no-op migration entry matching remote migration history |
+| `/supabase/migrations/20260808053929_create_reviewers_foundation.sql` | Integrated | Reviewer table, ownership/scope validation, indexes, triggers, privileges, and RLS |
+
+---
+
+# Phase 6A Reviewer Tests
+
+| Path | Status | Purpose |
+|---|---|---|
+| `/backend/tests/test_reviewer_migration.py` | Ready | Reviewer migration contract |
+| `/backend/tests/test_reviewer_schemas.py` | Ready | Reviewer schema validation |
+| `/backend/tests/test_reviewer_repository.py` | Ready | Reviewer persistence behavior |
+| `/backend/tests/test_reviewer_service.py` | Ready | Reviewer service behavior |
+| `/backend/tests/test_reviewer_source_loader.py` | Ready | File/subject source loading |
+| `/backend/tests/test_reviewer_source_admin.py` | Ready | Trusted Supabase source queries |
+| `/backend/tests/test_reviewer_prompt.py` | Ready | Prompt construction and limits |
+| `/backend/tests/test_reviewer_generation.py` | Ready | Structured AI generation and repair |
+| `/backend/tests/test_reviewer_orchestration.py` | Ready | End-to-end reviewer service orchestration |
+| `/backend/tests/test_reviewer_api_endpoint.py` | Ready | Authenticated reviewer API contract |
+
+---
+
+# Phase 6B Reviewer Frontend
+
+| Path | Status | Owner | Purpose | Connections |
+|---|---|---|---|---|
+| `/frontend/app/(protected)/reviewers/page.tsx` | Integrated | Frontend | Protected Reviewer page | Reviewer workspace, filter options |
+| `/frontend/features/reviewers/types.ts` | Integrated | Frontend | Reviewer request, response, source, and option contracts | Reviewer API/UI |
+| `/frontend/features/reviewers/api.ts` | Integrated | Frontend | Authenticated reviewer-generation API client | `POST /api/reviewers/generate` |
+| `/frontend/features/reviewers/server/options.ts` | Integrated | Frontend | Loads authenticated subjects and ready study files | Supabase |
+| `/frontend/features/reviewers/components/ReviewerGenerationForm.tsx` | Integrated | Frontend | Reviewer scope, subject/file, and length controls | Reviewer API client |
+| `/frontend/features/reviewers/components/ReviewerGenerationForm.module.css` | Integrated | Frontend | Reviewer generation-form styling | Generation form |
+| `/frontend/features/reviewers/components/ReviewerResult.tsx` | Integrated | Frontend | Displays generated overview, topics, key points, definitions, and sources | Reviewer response |
+| `/frontend/features/reviewers/components/ReviewerResult.module.css` | Integrated | Frontend | Reviewer content/result styling | Reviewer result |
+| `/frontend/features/reviewers/components/ReviewerWorkspace.tsx` | Integrated | Frontend | Coordinates generation form and generated result | Reviewer page |
+| `/frontend/features/reviewers/components/ReviewerWorkspace.module.css` | Integrated | Frontend | Reviewer page layout | Reviewer workspace |
+| `/frontend/features/navigation/components/ProtectedAppShell.tsx` | Integrated | Frontend | Adds Reviewers to authenticated navigation | `/reviewers` |
+
+# Phase 6B Reviewer Frontend Tests
+
+| Path | Status | Purpose |
+|---|---|---|
+| `/frontend/features/reviewers/api.test.ts` | Ready | Authenticated generation API tests |
+| `/frontend/features/reviewers/server/options.test.ts` | Ready | Subject and ready-file option loading |
+| `/frontend/features/reviewers/components/ReviewerGenerationForm.test.tsx` | Ready | Scope, material, length, generation, and error-state tests |
+| `/frontend/features/reviewers/components/ReviewerResult.test.tsx` | Ready | Overview, topics, definitions, and source rendering |
+| `/frontend/features/reviewers/components/ReviewerWorkspace.test.tsx` | Ready | Workspace generation/result integration |
 
 # Important Supabase Resources
 
@@ -297,6 +370,7 @@ public.study_file_ai_chunks
 
 public.study_conversations
 public.study_messages
+public.reviewers
 
 storage bucket: study-materials
 ```

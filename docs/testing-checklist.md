@@ -379,6 +379,183 @@ Because the Study Assistant CSS layout was adjusted afterward, perform the final
 
 ---
 
+# Phase 6A — Reviewer Backend Foundation
+
+## Database and Security
+
+- [x] Effective `reviewers` foundation migration created and applied
+- [x] `public.reviewers` verified remotely with 14 columns
+- [x] Reviewer table verified with 2 RLS policies
+- [x] Reviewer table verified with 2 application triggers
+- [x] Local and remote migration histories include `20260808053929`
+- [x] Reviewer ownership references authenticated users
+- [x] Reviewer subject/file scope constraints are enforced
+- [x] Reviewer RLS policies are defined
+- [x] Browser clients cannot directly insert or update reviewer records
+
+## Reviewer Source Loading
+
+- [x] File-scope reviewer loads one owned ready study file
+- [x] Subject-scope reviewer loads owned ready files for the subject
+- [x] Reviewer generation uses `study_file_chunks`
+- [x] Source chunks are ordered deterministically
+- [x] Missing or incomplete chunk sequences fail safely
+- [x] Reviewer sources preserve file/chunk locator metadata
+
+## Reviewer Generation
+
+- [x] Reviewer supports `short`, `medium`, and `long`
+- [x] Generated content includes overview, topics, key points, and definitions
+- [x] Generation is grounded only in supplied study material
+- [x] Study-material text is treated as untrusted prompt content
+- [x] Malformed model output receives one controlled repair attempt
+- [x] Reviewer generation uses reviewer-specific output-token budgets
+- [x] Oversized source collections fail safely instead of silently dropping content
+
+## Reviewer Persistence
+
+- [x] Generated reviewers can be saved
+- [x] Saved reviewers can be listed
+- [x] One owned reviewer can be retrieved
+- [x] One owned reviewer can be deleted
+- [x] Reviewer operations remain scoped to the authenticated user
+
+## Reviewer API
+
+- [x] `POST /api/reviewers/generate` registered
+- [x] `GET /api/reviewers` registered
+- [x] `GET /api/reviewers/{reviewer_id}` registered
+- [x] `DELETE /api/reviewers/{reviewer_id}` registered
+- [x] Reviewer API does not accept trusted `user_id`
+- [x] Controlled reviewer errors use safe public responses
+- [x] Successful delete returns `204 No Content`
+
+## Reviewer Automated Validation
+
+- [x] Reviewer migration tests pass
+- [x] Reviewer schema tests pass
+- [x] Reviewer repository tests pass
+- [x] Reviewer service tests pass
+- [x] Reviewer source-loader tests pass
+- [x] Reviewer Supabase-admin tests pass
+- [x] Reviewer prompt tests pass
+- [x] Reviewer generation tests pass
+- [x] Reviewer orchestration tests pass
+- [x] Reviewer API endpoint tests pass
+- [x] Focused reviewer regression passes
+- [x] Reviewer Ruff validation passes
+- [x] Reviewer application modules compile successfully
+- [x] `git diff --check` passes
+
+## Deferred Beyond Phase 6A
+
+- [x] Reviewer frontend UI — implemented in Phase 6B
+- [ ] Reviewer saved-history and reopening UI
+- [ ] Reviewer regeneration
+- [ ] Multi-pass generation for very large source collections
+- [ ] Quiz generation
+
+---
+
+# Phase 6B — Reviewer Frontend
+
+## Reviewer API Client
+
+- [x] Authenticated Supabase session required
+- [x] Bearer token sent to Reviewer FastAPI endpoint
+- [x] Reviewer request serialized correctly
+- [x] File-scope request supported
+- [x] Subject-scope request supported
+- [x] Successful reviewer response validated
+- [x] Malformed successful response rejected
+- [x] Inconsistent scope response rejected
+- [x] Controlled backend errors displayed safely
+- [x] Network errors do not expose access tokens
+
+## Reviewer Filter Options
+
+- [x] Authenticated subjects load
+- [x] Ready study files load
+- [x] Study files remain scoped to authenticated user
+- [x] Only `processing_status = ready` files are selectable
+- [x] Filter-loading failures disable generation safely
+
+## Reviewer Generation UI
+
+- [x] `/reviewers` protected route exists
+- [x] Reviewer navigation entry exists
+- [x] Whole-subject scope supported
+- [x] Single-study-material scope supported
+- [x] Subject selection required
+- [x] File selection required for file scope
+- [x] File options filter by selected subject
+- [x] Changing subject clears incompatible selected file
+- [x] Short reviewer selectable
+- [x] Medium reviewer selectable
+- [x] Long reviewer selectable
+- [x] Loading state displayed
+- [x] Safe API error state displayed
+- [x] Successful generation state displayed
+
+## Reviewer Result UI
+
+- [x] Reviewer title renders
+- [x] Scope badge renders
+- [x] Length badge renders
+- [x] Overview renders
+- [x] Topic summaries render
+- [x] Key points render
+- [x] Definitions render when available
+- [x] Source files render
+- [x] Source locator labels render
+- [x] Missing locator label uses safe section fallback
+
+## Live Integration
+
+- [x] Single study material + Medium generation succeeded
+- [x] Whole subject + Medium generation succeeded
+- [x] Whole subject generation combined 3 ready files
+- [x] Whole subject + Short generation succeeded after output-budget fix
+- [x] Generated reviewer persisted successfully
+- [x] Generated reviewer displayed successfully
+- [x] Final Short whole-subject request returned `201 Created`
+- [x] Final Short whole-subject request produced valid JSON on first generation attempt
+
+## Reviewer Generation Robustness
+
+- [x] Malformed AI JSON detected
+- [x] One bounded repair attempt retained
+- [x] Short reviewer output budget increased from 2,048 to 4,096 tokens
+- [x] Short prompt remains concise despite larger maximum output budget
+- [x] Medium output budget remains 4,096 tokens
+- [x] Long output budget remains 6,144 tokens
+
+## Phase 6B Automated Validation
+
+- [x] Reviewer API tests: 7 passed
+- [x] Reviewer option-loader tests: 3 passed
+- [x] Reviewer generation-form tests: 6 passed
+- [x] Reviewer result tests: 4 passed
+- [x] Reviewer workspace tests: 2 passed
+- [x] Full frontend suite: 54 passed
+- [x] Full backend suite: 700 passed
+- [x] Backend Ruff validation passes
+- [x] Backend compilation passes
+- [x] Frontend TypeScript validation passes
+- [x] Frontend production build passes
+- [x] Frontend ESLint has 0 errors
+- [x] Existing unrelated subject-page ESLint warning remains documented
+- [x] `git diff --check` passes
+
+## Deferred Beyond Phase 6B
+
+- [ ] Saved reviewer history UI
+- [ ] Open previously saved reviewer
+- [ ] Reviewer deletion UI
+- [ ] Reviewer regeneration
+- [ ] Multi-pass generation for source collections above the single-pass limit
+- [ ] Quiz generation
+
 # Final Documentation Checks
 
 After replacing the documentation files:
@@ -395,6 +572,15 @@ After replacing the documentation files:
 - [ ] No duplicate planned `chat_*` tables remain
 - [ ] No real secrets appear
 - [ ] `git diff --check` passes
+- [x] `ARCHITECTURE.md` reflects Phase 6A reviewer backend
+- [x] `PROJECT_FILE_MAP.md` includes Phase 6A files
+- [x] `api-contracts.md` includes reviewer endpoints
+- [x] `database.md` includes the implemented `reviewers` table
+- [x] `testing-checklist.md` includes Phase 6A validation
+- [x] `ARCHITECTURE.md` reflects Phase 6B Reviewer frontend
+- [x] `PROJECT_FILE_MAP.md` includes Phase 6B Reviewer frontend files
+- [x] `testing-checklist.md` includes Phase 6B automated and live validation
+- [x] Reviewer API contracts remain current
 
 ---
 

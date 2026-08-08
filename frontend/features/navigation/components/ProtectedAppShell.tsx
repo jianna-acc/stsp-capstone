@@ -19,6 +19,7 @@ import {
 } from "@mantine/core";
 import { useDisclosure } from "@mantine/hooks";
 import {
+  IconBook2,
   IconBooks,
   IconLayoutDashboard,
   IconLogout,
@@ -32,6 +33,7 @@ import type { ReactNode } from "react";
 import { logoutAction } from "@/features/auth/actions/logout";
 
 import classes from "./ProtectedAppShell.module.css";
+
 
 interface ProtectedAppShellProps {
   children: ReactNode;
@@ -56,6 +58,13 @@ const NAVIGATION_ITEMS = [
     description: "Ask from your materials",
     href: "/study-assistant",
     icon: IconSparkles,
+  },
+  {
+    label: "Reviewers",
+    description:
+      "Generate study reviewers",
+    href: "/reviewers",
+    icon: IconBook2,
   },
 ] as const;
 
