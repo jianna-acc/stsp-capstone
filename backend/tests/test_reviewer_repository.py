@@ -334,7 +334,43 @@ def test_create_reviewer_saves_owned_payload() -> None:
         "reviewer_length"
     ] == "medium"
 
+    select_operations = [
+        value
+        for operation, value in query.operations
+        if operation == "select"
+    ]
 
+    assert len(
+        select_operations,
+    ) == 1
+
+    selected_columns = select_operations[
+        0
+    ]
+
+    assert isinstance(
+        selected_columns,
+        str,
+    )
+
+    assert "id" in selected_columns
+    assert "subject_id" in selected_columns
+    assert "study_file_id" in selected_columns
+    assert "content" in selected_columns
+    assert "sources" in selected_columns
+    assert "generation_count" in selected_columns
+
+    assert "user_id" not in selected_columns
+
+    assert [
+        operation
+        for operation, _ in query.operations
+    ][
+        :2
+    ] == [
+        "insert",
+        "select",
+    ]
 def test_list_reviewers_filters_by_owner() -> None:
     """Reviewer lists must always filter by user ID."""
 
@@ -498,6 +534,23 @@ def test_delete_reviewer_filters_owner() -> None:
             ),
         ),
     ) in query.operations
+
+    assert (
+        "select",
+        "id",
+    ) in query.operations
+
+    operation_names = [
+        operation
+        for operation, _ in query.operations
+    ]
+
+    assert operation_names[
+        :2
+    ] == [
+        "delete",
+        "select",
+    ]
 
 
 def test_invalid_database_row_is_rejected() -> None:

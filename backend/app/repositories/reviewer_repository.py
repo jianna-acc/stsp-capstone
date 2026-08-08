@@ -180,6 +180,9 @@ class ReviewerRepository:
             )
             .insert(
                 payload,
+            )
+            .select(
+                _REVIEWER_COLUMNS,
             ),
             operation="create the reviewer",
         )
@@ -314,6 +317,9 @@ class ReviewerRepository:
                 "reviewers",
             )
             .delete()
+            .select(
+                "id",
+            )
             .eq(
                 "id",
                 str(
