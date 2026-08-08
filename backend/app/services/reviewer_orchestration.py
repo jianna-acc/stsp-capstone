@@ -5,6 +5,7 @@
 from __future__ import annotations
 
 from collections.abc import Sequence
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Protocol
 from uuid import UUID
@@ -81,6 +82,28 @@ class ReviewerPersistenceServiceProtocol(
     ) -> ReviewerResponse:
         """Save one generated reviewer."""
 
+    def get_reviewer(
+        self,
+        *,
+        user_id: UUID,
+        reviewer_id: UUID,
+    ) -> ReviewerResponse:
+        """Load one owned reviewer."""
+
+    def save_regenerated_reviewer(
+        self,
+        *,
+        user_id: UUID,
+        reviewer_id: UUID,
+        content: ReviewerContent,
+        sources: Sequence[
+            ReviewerSource,
+        ],
+        generation_model: str,
+        generated_at: datetime,
+    ) -> ReviewerResponse:
+        """Replace generated content on one owned reviewer."""
+
 
 class ReviewerOrchestrationService:
     """Coordinate complete reviewer generation and persistence."""
@@ -155,6 +178,77 @@ class ReviewerOrchestrationService:
             sources=sources,
             generation_model=generation.model,
         )
+
+    async def regenerate_reviewer(
+        self,
+        *,
+        user_id: UUID,
+        reviewer_id: UUID,
+    ) -> ReviewerResponse:
+        """Regenerate one saved reviewer using its existing settings."""
+
+        saved_reviewer = (
+            self._reviewer_service.get_reviewer(
+                user_id=user_id,
+                reviewer_id=reviewer_id,
+            )
+        )
+
+        request = ReviewerGenerateRequest(
+            scope_type=saved_reviewer.scope_type,
+            subject_id=saved_reviewer.subject_id,
+            study_file_id=(
+                saved_reviewer.study_file_id
+            ),
+            reviewer_length=(
+                saved_reviewer.reviewer_length
+            ),
+        )
+
+        source_bundle = (
+            await self._source_loader.load(
+                user_id=user_id,
+                request=request,
+            )
+        )
+
+        self._validate_source_bundle(
+            user_id=user_id,
+            request=request,
+            source_bundle=source_bundle,
+        )
+
+        sources = self._build_sources(
+            source_bundle,
+        )
+
+        generation = (
+            await self._generation_service.generate(
+                request=request,
+                source_bundle=source_bundle,
+            )
+        )
+
+        self._validate_generation_metadata(
+            generation=generation,
+            source_bundle=source_bundle,
+        )
+
+        generated_at = datetime.now(
+            UTC,
+        )
+
+        return (
+            self._reviewer_service.save_regenerated_reviewer(
+                user_id=user_id,
+                reviewer_id=reviewer_id,
+                content=generation.content,
+                sources=sources,
+                generation_model=generation.model,
+                generated_at=generated_at,
+            )
+        )
+
 
     def _build_sources(
         self,

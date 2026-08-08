@@ -230,6 +230,29 @@ class FakeReviewerOrchestrationService:
 
         return make_reviewer()
 
+    async def regenerate_reviewer(
+        self,
+        *,
+        user_id: UUID,
+        reviewer_id: UUID,
+    ) -> ReviewerResponse:
+        self.calls.append(
+            (
+                "regenerate",
+                user_id,
+                reviewer_id,
+            )
+        )
+
+        if self.error is not None:
+            raise self.error
+
+        return make_reviewer().model_copy(
+            update={
+                "generation_count": 2,
+            },
+        )
+
 
 class UnusedFakeSupabaseClient:
     """Placeholder used when real authentication is not needed."""
@@ -343,6 +366,102 @@ def test_generate_reviewer_uses_authenticated_owner() -> None:
     )
 
     assert request.study_file_id == STUDY_FILE_ID
+
+
+def test_regenerate_reviewer_uses_authenticated_owner() -> None:
+    """Regeneration must use the authenticated owner and reviewer ID."""
+
+    orchestration = (
+        FakeReviewerOrchestrationService()
+    )
+
+    with create_test_client(
+        orchestration_service=orchestration,
+    ) as client:
+        response = client.post(
+            (
+                f"/api/reviewers/"
+                f"{REVIEWER_ID}/regenerate"
+            ),
+        )
+
+    assert response.status_code == 200
+
+    body = response.json()
+
+    assert body[
+        "id"
+    ] == str(
+        REVIEWER_ID,
+    )
+
+    assert body[
+        "generation_count"
+    ] == 2
+
+    assert orchestration.calls == [
+        (
+            "regenerate",
+            USER_ID,
+            REVIEWER_ID,
+        )
+    ]
+
+
+def test_regenerate_missing_reviewer_returns_404() -> None:
+    """Missing regeneration targets must return a safe 404."""
+
+    orchestration = (
+        FakeReviewerOrchestrationService(
+            error=ReviewerNotFoundError(
+                "missing",
+            ),
+        )
+    )
+
+    with create_test_client(
+        orchestration_service=orchestration,
+    ) as client:
+        response = client.post(
+            (
+                f"/api/reviewers/"
+                f"{REVIEWER_ID}/regenerate"
+            ),
+        )
+
+    assert response.status_code == 404
+
+    assert response.json()[
+        "error_code"
+    ] == "REVIEWER_NOT_FOUND"
+
+
+def test_regeneration_failure_returns_502() -> None:
+    """Provider failures during regeneration must remain safe."""
+
+    orchestration = (
+        FakeReviewerOrchestrationService(
+            error=ReviewerGenerationError(
+                "provider failed",
+            ),
+        )
+    )
+
+    with create_test_client(
+        orchestration_service=orchestration,
+    ) as client:
+        response = client.post(
+            (
+                f"/api/reviewers/"
+                f"{REVIEWER_ID}/regenerate"
+            ),
+        )
+
+    assert response.status_code == 502
+
+    assert response.json()[
+        "error_code"
+    ] == "REVIEWER_GENERATION_FAILED"
 
 
 def test_list_reviewers_uses_default_limit() -> None:

@@ -1,6 +1,6 @@
 # File: /backend/app/api/routes/reviewers.py
 # Purpose: Provides authenticated reviewer generation,
-# listing, retrieval, and deletion endpoints.
+# regeneration, listing, retrieval, and deletion endpoints.
 
 from __future__ import annotations
 
@@ -141,6 +141,52 @@ async def generate_reviewer(
         return await service.generate_reviewer(
             user_id=authenticated_user.user_id,
             request=payload,
+        )
+
+    except ReviewerError as exc:
+        return _build_controlled_error_response(
+            exc,
+        )
+
+    except SupabaseAdminError:
+        return _build_source_storage_error_response()
+
+
+@router.post(
+    "/{reviewer_id}/regenerate",
+    response_model=ReviewerResponse,
+    status_code=status.HTTP_200_OK,
+    responses={
+        status.HTTP_401_UNAUTHORIZED: {
+            "description": (
+                "Missing, invalid, or expired student "
+                "authentication."
+            ),
+        },
+        **_ERROR_RESPONSE_MODELS,
+    },
+)
+async def regenerate_reviewer(
+    reviewer_id: UUID,
+    authenticated_user: Annotated[
+        AuthenticatedUser,
+        Depends(
+            require_authenticated_user,
+        ),
+    ],
+    service: Annotated[
+        ReviewerOrchestrationService,
+        Depends(
+            get_reviewer_orchestration_service,
+        ),
+    ],
+) -> ReviewerResponse | JSONResponse:
+    """Regenerate one saved reviewer using its existing settings."""
+
+    try:
+        return await service.regenerate_reviewer(
+            user_id=authenticated_user.user_id,
+            reviewer_id=reviewer_id,
         )
 
     except ReviewerError as exc:

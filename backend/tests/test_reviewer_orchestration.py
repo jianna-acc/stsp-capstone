@@ -210,6 +210,19 @@ class FakeReviewerService:
             object,
         ] | None = None
 
+        self.saved_reviewers: dict[
+            UUID,
+            ReviewerResponse,
+        ] = {}
+
+        self.get_user_id: UUID | None = None
+        self.get_reviewer_id: UUID | None = None
+
+        self.regeneration_arguments: dict[
+            str,
+            object,
+        ] | None = None
+
     def save_generated_reviewer(
         self,
         *,
@@ -260,6 +273,68 @@ class FakeReviewerService:
             created_at=now,
             updated_at=now,
         )
+
+    def get_reviewer(
+        self,
+        *,
+        user_id: UUID,
+        reviewer_id: UUID,
+    ) -> ReviewerResponse:
+        self.get_user_id = user_id
+        self.get_reviewer_id = reviewer_id
+
+        return self.saved_reviewers[
+            reviewer_id
+        ]
+
+    def save_regenerated_reviewer(
+        self,
+        *,
+        user_id: UUID,
+        reviewer_id: UUID,
+        content: ReviewerContent,
+        sources: Sequence[
+            ReviewerSource,
+        ],
+        generation_model: str,
+        generated_at: datetime,
+    ) -> ReviewerResponse:
+        self.regeneration_arguments = {
+            "user_id": user_id,
+            "reviewer_id": reviewer_id,
+            "content": content,
+            "sources": tuple(
+                sources,
+            ),
+            "generation_model": generation_model,
+            "generated_at": generated_at,
+        }
+
+        existing = self.saved_reviewers[
+            reviewer_id
+        ]
+
+        updated = existing.model_copy(
+            update={
+                "content": content,
+                "sources": tuple(
+                    sources,
+                ),
+                "generation_model": generation_model,
+                "generation_count": (
+                    existing.generation_count
+                    + 1
+                ),
+                "generated_at": generated_at,
+                "updated_at": generated_at,
+            },
+        )
+
+        self.saved_reviewers[
+            reviewer_id
+        ] = updated
+
+        return updated
 
 
 def _generation_result(
@@ -329,6 +404,217 @@ async def test_file_reviewer_is_generated_and_saved() -> None:
     assert (
         generation_service.bundle
         is bundle
+    )
+
+
+@async_test
+async def test_regenerate_reviewer_reuses_saved_scope_and_length() -> None:
+    """Regeneration must rebuild generation settings from the saved reviewer."""
+
+    user_id, request, bundle = (
+        _file_request_and_bundle()
+    )
+
+    reviewer_id = uuid4()
+
+    now = datetime.now(
+        UTC,
+    )
+
+    saved_reviewer = ReviewerResponse(
+        id=reviewer_id,
+        subject_id=request.subject_id,
+        study_file_id=request.study_file_id,
+        scope_type=ReviewerScopeType.FILE,
+        title="Financial Management Reviewer",
+        reviewer_length=ReviewerLength.MEDIUM,
+        content=_content(),
+        sources=(),
+        generation_model="old-model",
+        generation_count=2,
+        generated_at=now,
+        created_at=now,
+        updated_at=now,
+    )
+
+    source_loader = FakeSourceLoader(
+        bundle,
+    )
+
+    generation_service = FakeGenerationService(
+        _generation_result(
+            bundle,
+        ),
+    )
+
+    reviewer_service = FakeReviewerService()
+
+    reviewer_service.saved_reviewers[
+        reviewer_id
+    ] = saved_reviewer
+
+    orchestration = ReviewerOrchestrationService(
+        source_loader=source_loader,
+        generation_service=generation_service,
+        reviewer_service=reviewer_service,
+    )
+
+    result = await orchestration.regenerate_reviewer(
+        user_id=user_id,
+        reviewer_id=reviewer_id,
+    )
+
+    assert result.id == reviewer_id
+    assert result.generation_count == 3
+
+    assert reviewer_service.get_user_id == user_id
+
+    assert (
+        reviewer_service.get_reviewer_id
+        == reviewer_id
+    )
+
+    assert source_loader.request is not None
+
+    assert (
+        source_loader.request.scope_type
+        == saved_reviewer.scope_type
+    )
+
+    assert (
+        source_loader.request.subject_id
+        == saved_reviewer.subject_id
+    )
+
+    assert (
+        source_loader.request.study_file_id
+        == saved_reviewer.study_file_id
+    )
+
+    assert (
+        source_loader.request.reviewer_length
+        == saved_reviewer.reviewer_length
+    )
+
+    assert generation_service.request == (
+        source_loader.request
+    )
+
+    assert (
+        reviewer_service.regeneration_arguments
+        is not None
+    )
+
+    assert (
+        reviewer_service.regeneration_arguments[
+            "reviewer_id"
+        ]
+        == reviewer_id
+    )
+
+    assert (
+        reviewer_service.regeneration_arguments[
+            "generation_model"
+        ]
+        == "fake-model"
+    )
+
+
+@async_test
+async def test_subject_reviewer_regeneration_preserves_subject_scope() -> None:
+    """Subject regeneration must not invent a study-file filter."""
+
+    user_id = uuid4()
+    reviewer_id = uuid4()
+    subject_id = uuid4()
+
+    first_file_id = uuid4()
+    second_file_id = uuid4()
+
+    bundle = ReviewerSourceBundle(
+        user_id=user_id,
+        subject_id=subject_id,
+        scope_type=ReviewerScopeType.SUBJECT,
+        study_file_id=None,
+        chunks=(
+            ReviewerSourceChunk(
+                study_file_id=first_file_id,
+                source_name="Week 1.pdf",
+                chunk_index=0,
+                content="Week one content.",
+            ),
+            ReviewerSourceChunk(
+                study_file_id=second_file_id,
+                source_name="Week 2.pdf",
+                chunk_index=0,
+                content="Week two content.",
+            ),
+        ),
+    )
+
+    now = datetime.now(
+        UTC,
+    )
+
+    saved_reviewer = ReviewerResponse(
+        id=reviewer_id,
+        subject_id=subject_id,
+        study_file_id=None,
+        scope_type=ReviewerScopeType.SUBJECT,
+        title="Subject Reviewer (2 files)",
+        reviewer_length=ReviewerLength.LONG,
+        content=_content(),
+        sources=(),
+        generation_model="old-model",
+        generation_count=1,
+        generated_at=now,
+        created_at=now,
+        updated_at=now,
+    )
+
+    source_loader = FakeSourceLoader(
+        bundle,
+    )
+
+    reviewer_service = FakeReviewerService()
+
+    reviewer_service.saved_reviewers[
+        reviewer_id
+    ] = saved_reviewer
+
+    orchestration = ReviewerOrchestrationService(
+        source_loader=source_loader,
+        generation_service=FakeGenerationService(
+            _generation_result(
+                bundle,
+            ),
+        ),
+        reviewer_service=reviewer_service,
+    )
+
+    result = await orchestration.regenerate_reviewer(
+        user_id=user_id,
+        reviewer_id=reviewer_id,
+    )
+
+    assert result.id == reviewer_id
+    assert result.generation_count == 2
+
+    assert source_loader.request is not None
+
+    assert (
+        source_loader.request.scope_type
+        == ReviewerScopeType.SUBJECT
+    )
+
+    assert (
+        source_loader.request.study_file_id
+        is None
+    )
+
+    assert (
+        source_loader.request.reviewer_length
+        == ReviewerLength.LONG
     )
 
 

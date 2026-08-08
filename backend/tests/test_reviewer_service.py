@@ -137,6 +137,13 @@ class FakeReviewerRepository:
             object,
         ] | None = None
 
+        self.update_arguments: dict[
+            str,
+            object,
+        ] | None = None
+
+        self.updated: ReviewerResponse | None = None
+
         self.list_user_id: UUID | None = None
         self.list_limit: int | None = None
 
@@ -183,6 +190,33 @@ class FakeReviewerRepository:
         self.created = reviewer
 
         return reviewer
+
+    def update_generated_reviewer(
+        self,
+        *,
+        user_id: UUID,
+        reviewer_id: UUID,
+        content: ReviewerContent,
+        sources: Sequence[
+            ReviewerSource,
+        ],
+        generation_model: str,
+        generation_count: int,
+        generated_at: datetime,
+    ) -> ReviewerResponse | None:
+        self.update_arguments = {
+            "user_id": user_id,
+            "reviewer_id": reviewer_id,
+            "content": content,
+            "sources": tuple(
+                sources,
+            ),
+            "generation_model": generation_model,
+            "generation_count": generation_count,
+            "generated_at": generated_at,
+        }
+
+        return self.updated
 
     def list_reviewers(
         self,
@@ -281,6 +315,174 @@ def test_save_generated_reviewer_delegates_to_repository() -> None:
         ]
         == ReviewerLength.MEDIUM
     )
+
+
+def test_save_regenerated_reviewer_increments_generation_count() -> None:
+    """Regeneration must update the same owned reviewer and increment its count."""
+
+    repository = FakeReviewerRepository()
+    service = ReviewerService(
+        repository,
+    )
+
+    user_id = uuid4()
+    reviewer_id = uuid4()
+    study_file_id = uuid4()
+
+    existing = _reviewer(
+        reviewer_id=reviewer_id,
+        study_file_id=study_file_id,
+    ).model_copy(
+        update={
+            "generation_count": 3,
+        },
+    )
+
+    repository.reviewer_by_id[
+        reviewer_id
+    ] = existing
+
+    generated_at = datetime.now(
+        UTC,
+    )
+
+    updated = existing.model_copy(
+        update={
+            "content": _content(),
+            "sources": (
+                _source(
+                    study_file_id,
+                ),
+            ),
+            "generation_model": "gemini-3.6-flash",
+            "generation_count": 4,
+            "generated_at": generated_at,
+        },
+    )
+
+    repository.updated = updated
+
+    result = service.save_regenerated_reviewer(
+        user_id=user_id,
+        reviewer_id=reviewer_id,
+        content=_content(),
+        sources=(
+            _source(
+                study_file_id,
+            ),
+        ),
+        generation_model="gemini-3.6-flash",
+        generated_at=generated_at,
+    )
+
+    assert result.id == reviewer_id
+    assert result.generation_count == 4
+
+    assert repository.update_arguments is not None
+
+    assert (
+        repository.update_arguments[
+            "user_id"
+        ]
+        == user_id
+    )
+
+    assert (
+        repository.update_arguments[
+            "reviewer_id"
+        ]
+        == reviewer_id
+    )
+
+    assert (
+        repository.update_arguments[
+            "generation_count"
+        ]
+        == 4
+    )
+
+    assert (
+        repository.get_user_id
+        == user_id
+    )
+
+    assert (
+        repository.get_reviewer_id
+        == reviewer_id
+    )
+
+
+def test_save_regenerated_reviewer_missing_original_raises_not_found() -> None:
+    """Regeneration cannot proceed without an owned original reviewer."""
+
+    repository = FakeReviewerRepository()
+
+    service = ReviewerService(
+        repository,
+    )
+
+    with pytest.raises(
+        ReviewerNotFoundError,
+    ):
+        service.save_regenerated_reviewer(
+            user_id=uuid4(),
+            reviewer_id=uuid4(),
+            content=_content(),
+            sources=(
+                _source(
+                    uuid4(),
+                ),
+            ),
+            generation_model="gemini-3.6-flash",
+            generated_at=datetime.now(
+                UTC,
+            ),
+        )
+
+    assert (
+        repository.update_arguments
+        is None
+    )
+
+
+def test_save_regenerated_reviewer_missing_during_update_raises_not_found() -> None:
+    """A reviewer removed during regeneration must fail safely."""
+
+    repository = FakeReviewerRepository()
+    service = ReviewerService(
+        repository,
+    )
+
+    user_id = uuid4()
+    reviewer_id = uuid4()
+    study_file_id = uuid4()
+
+    repository.reviewer_by_id[
+        reviewer_id
+    ] = _reviewer(
+        reviewer_id=reviewer_id,
+        study_file_id=study_file_id,
+    )
+
+    repository.updated = None
+
+    with pytest.raises(
+        ReviewerNotFoundError,
+    ):
+        service.save_regenerated_reviewer(
+            user_id=user_id,
+            reviewer_id=reviewer_id,
+            content=_content(),
+            sources=(
+                _source(
+                    study_file_id,
+                ),
+            ),
+            generation_model="gemini-3.6-flash",
+            generated_at=datetime.now(
+                UTC,
+            ),
+        )
 
 
 def test_list_reviewers_preserves_owner_and_limit() -> None:

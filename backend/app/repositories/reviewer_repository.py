@@ -5,6 +5,7 @@
 from __future__ import annotations
 
 from collections.abc import Mapping, Sequence
+from datetime import datetime
 from typing import Protocol, Self
 from uuid import UUID
 
@@ -57,6 +58,14 @@ class _SupabaseQuery(
     ) -> Self: ...
 
     def insert(
+        self,
+        payload: Mapping[
+            str,
+            object,
+        ],
+    ) -> Self: ...
+
+    def update(
         self,
         payload: Mapping[
             str,
@@ -194,6 +203,112 @@ class ReviewerRepository:
         if len(rows) != 1:
             raise ReviewerResponseError(
                 "The created reviewer response was invalid.",
+            )
+
+        return self._parse_reviewer(
+            rows[0],
+        )
+
+    def update_generated_reviewer(
+        self,
+        *,
+        user_id: UUID,
+        reviewer_id: UUID,
+        content: ReviewerContent,
+        sources: Sequence[
+            ReviewerSource,
+        ],
+        generation_model: str,
+        generation_count: int,
+        generated_at: datetime,
+    ) -> ReviewerResponse | None:
+        """Replace generated fields on one owned reviewer."""
+
+        normalized_model = (
+            generation_model.strip()
+        )
+
+        if not normalized_model:
+            raise ReviewerValidationError(
+                "Reviewer generation model must not be empty.",
+            )
+
+        if (
+            isinstance(
+                generation_count,
+                bool,
+            )
+            or not isinstance(
+                generation_count,
+                int,
+            )
+            or generation_count < 2
+        ):
+            raise ReviewerValidationError(
+                "Regenerated reviewer generation count "
+                "must be at least 2.",
+            )
+
+        payload: dict[
+            str,
+            object,
+        ] = {
+            "content": content.model_dump(
+                mode="json",
+            ),
+            "sources": [
+                source.model_dump(
+                    mode="json",
+                )
+                for source in sources
+            ],
+            "generation_model": (
+                normalized_model
+            ),
+            "generation_count": (
+                generation_count
+            ),
+            "generated_at": (
+                generated_at.isoformat()
+            ),
+        }
+
+        response = self._execute(
+            self._client
+            .table(
+                "reviewers",
+            )
+            .update(
+                payload,
+            )
+            .select(
+                _REVIEWER_COLUMNS,
+            )
+            .eq(
+                "id",
+                str(
+                    reviewer_id,
+                ),
+            )
+            .eq(
+                "user_id",
+                str(
+                    user_id,
+                ),
+            ),
+            operation="update the reviewer",
+        )
+
+        rows = self._extract_rows(
+            response,
+        )
+
+        if not rows:
+            return None
+
+        if len(rows) != 1:
+            raise ReviewerResponseError(
+                "The updated reviewer response was invalid.",
             )
 
         return self._parse_reviewer(
