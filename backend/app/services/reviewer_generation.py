@@ -49,8 +49,8 @@ _REVIEWER_TEMPERATURE: Final = 0.2
 
 _REVIEWER_OUTPUT_TOKENS: Final = {
     ReviewerLength.SHORT: 4_096,
-    ReviewerLength.MEDIUM: 4_096,
-    ReviewerLength.LONG: 6_144,
+    ReviewerLength.MEDIUM: 8_192,
+    ReviewerLength.LONG: 8_192,
 }
 
 
@@ -340,6 +340,17 @@ class ReviewerGenerationService:
 
         normalized = response_text.strip()
 
+        if (
+            normalized.startswith("```")
+            and normalized.endswith("```")
+        ):
+            lines = normalized.splitlines()
+
+            if len(lines) >= 3:
+                normalized = "\n".join(
+                    lines[1:-1],
+                ).strip()
+
         if not normalized:
             raise ReviewerGenerationResponseError(
                 "The generated reviewer response was empty.",
@@ -351,6 +362,18 @@ class ReviewerGenerationService:
             )
 
         except json.JSONDecodeError as exc:
+            logger.warning(
+                "Reviewer JSON decode failed: "
+                "message=%s line=%s column=%s position=%s "
+                "response_length=%s ends_with_brace=%s",
+                exc.msg,
+                exc.lineno,
+                exc.colno,
+                exc.pos,
+                len(normalized),
+                normalized.endswith("}"),
+            )
+
             raise ReviewerGenerationResponseError(
                 "The generated reviewer was not valid JSON.",
             ) from exc

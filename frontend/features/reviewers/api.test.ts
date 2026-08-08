@@ -29,6 +29,7 @@ vi.mock(
 
 import {
   generateReviewer,
+  regenerateReviewer,
   ReviewerApiError,
 } from "./api";
 
@@ -540,5 +541,86 @@ describe(
         );
       },
     );
+
+    it(
+        "regenerates an existing reviewer with authentication",
+        async () => {
+            const regeneratedResponse = {
+            ...REVIEWER_RESPONSE,
+            generation_count: 2,
+            updated_at:
+                "2026-08-08T09:00:00Z",
+            };
+
+            mocks.fetch
+            .mockResolvedValue(
+                createJsonResponse(
+                regeneratedResponse,
+                200,
+                ),
+            );
+
+            const controller =
+            new AbortController();
+
+            const result =
+            await regenerateReviewer(
+                "reviewer-id",
+                {
+                signal:
+                    controller.signal,
+                },
+            );
+
+            expect(result).toEqual(
+            regeneratedResponse,
+            );
+
+            expect(
+            mocks.fetch,
+            ).toHaveBeenCalledTimes(1);
+
+            const [
+            requestUrl,
+            requestOptions,
+            ] = mocks.fetch.mock
+            .calls[0] as [
+            string,
+            RequestInit,
+            ];
+
+            expect(
+            requestUrl,
+            ).toBe(
+            "http://127.0.0.1:8000/api/reviewers/reviewer-id/regenerate",
+            );
+
+            expect(
+            requestOptions.method,
+            ).toBe("POST");
+
+            expect(
+            requestOptions.cache,
+            ).toBe("no-store");
+
+            expect(
+            requestOptions.signal,
+            ).toBe(
+            controller.signal,
+            );
+
+            expect(
+            requestOptions.headers,
+            ).toEqual({
+            Authorization:
+                "Bearer test-access-token",
+            });
+
+            expect(
+            requestOptions.body,
+            ).toBeUndefined();
+        },
+    );
+
   },
 );

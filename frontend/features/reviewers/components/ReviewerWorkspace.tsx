@@ -34,6 +34,10 @@ import {
 } from "./ReviewerResult";
 import classes from "./ReviewerWorkspace.module.css";
 
+import {
+  regenerateReviewer,
+} from "@/features/reviewers/api";
+
 interface ReviewerWorkspaceProps {
   filterOptions:
     ReviewerFilterOptions;
@@ -49,14 +53,57 @@ export function ReviewerWorkspace({
     ReviewerResponse | null
   >(null);
 
+    const [
+    isRegenerating,
+    setIsRegenerating,
+  ] = useState(false);
+
+  const [
+    regenerationError,
+    setRegenerationError,
+  ] = useState<string | null>(
+    null,
+  );
+
   function handleGenerated(
     reviewer: ReviewerResponse,
   ): void {
     setGeneratedReviewer(
       reviewer,
     );
+    setRegenerationError(null);
   }
+  async function handleRegenerate():
+    Promise<void> {
+    if (
+      !generatedReviewer ||
+      isRegenerating
+    ) {
+      return;
+    }
 
+    setIsRegenerating(true);
+    setRegenerationError(null);
+
+    try {
+      const regeneratedReviewer =
+        await regenerateReviewer(
+          generatedReviewer.id,
+        );
+
+      setGeneratedReviewer(
+        regeneratedReviewer,
+      );
+    } catch (error) {
+      setRegenerationError(
+        error instanceof Error
+          ? error.message
+          : "The reviewer could not be regenerated.",
+      );
+    } finally {
+      setIsRegenerating(false);
+    }
+  }
   return (
     <main
       className={
@@ -149,9 +196,18 @@ export function ReviewerWorkspace({
             >
               <ReviewerResult
                 reviewer={
-                  generatedReviewer
+                    generatedReviewer
                 }
-              />
+                onRegenerate={
+                    handleRegenerate
+                }
+                isRegenerating={
+                    isRegenerating
+                }
+                regenerationError={
+                    regenerationError
+                }
+                />
             </section>
           )}
         </Stack>

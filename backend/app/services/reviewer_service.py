@@ -5,6 +5,7 @@
 from __future__ import annotations
 
 from collections.abc import Sequence
+from datetime import datetime
 from typing import Protocol
 from uuid import UUID
 
@@ -39,6 +40,20 @@ class _ReviewerRepository(
         ],
         generation_model: str,
     ) -> ReviewerResponse: ...
+
+    def update_generated_reviewer(
+        self,
+        *,
+        user_id: UUID,
+        reviewer_id: UUID,
+        content: ReviewerContent,
+        sources: Sequence[
+            ReviewerSource,
+        ],
+        generation_model: str,
+        generation_count: int,
+        generated_at: datetime,
+    ) -> ReviewerResponse | None: ...
 
     def list_reviewers(
         self,
@@ -101,6 +116,54 @@ class ReviewerService:
             sources=sources,
             generation_model=generation_model,
         )
+
+    def save_regenerated_reviewer(
+        self,
+        *,
+        user_id: UUID,
+        reviewer_id: UUID,
+        content: ReviewerContent,
+        sources: Sequence[
+            ReviewerSource,
+        ],
+        generation_model: str,
+        generated_at: datetime,
+    ) -> ReviewerResponse:
+        """Replace generated content on one existing owned reviewer."""
+
+        existing = (
+            self._repository.get_reviewer(
+                user_id=user_id,
+                reviewer_id=reviewer_id,
+            )
+        )
+
+        if existing is None:
+            raise ReviewerNotFoundError(
+                "The requested reviewer was not found.",
+            )
+
+        updated = (
+            self._repository.update_generated_reviewer(
+                user_id=user_id,
+                reviewer_id=reviewer_id,
+                content=content,
+                sources=sources,
+                generation_model=generation_model,
+                generation_count=(
+                    existing.generation_count
+                    + 1
+                ),
+                generated_at=generated_at,
+            )
+        )
+
+        if updated is None:
+            raise ReviewerNotFoundError(
+                "The requested reviewer was not found.",
+            )
+
+        return updated
 
     def list_reviewers(
         self,

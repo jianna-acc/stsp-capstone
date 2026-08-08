@@ -79,6 +79,18 @@ class FakeQuery:
         )
         return self
 
+    def update(
+        self,
+        payload: object,
+    ) -> FakeQuery:
+        self.operations.append(
+            (
+                "update",
+                payload,
+            )
+        )
+        return self
+
     def delete(
         self,
     ) -> FakeQuery:
@@ -363,14 +375,190 @@ def test_create_reviewer_saves_owned_payload() -> None:
     assert "user_id" not in selected_columns
 
     assert [
-        operation
-        for operation, _ in query.operations
-    ][
-        :2
-    ] == [
-        "insert",
-        "select",
-    ]
+            operation
+            for operation, _ in query.operations
+        ][
+            :2
+        ] == [
+            "insert",
+            "select",
+        ]
+
+
+def test_update_generated_reviewer_filters_owner_and_returns_updated_row() -> None:
+        """Regeneration updates generated fields on one owned reviewer."""
+
+        user_id = uuid4()
+        reviewer_id = uuid4()
+        subject_id = uuid4()
+        study_file_id = uuid4()
+
+        generated_at = datetime.now(
+            UTC,
+        )
+
+        updated_row = _reviewer_row(
+            reviewer_id=reviewer_id,
+            subject_id=subject_id,
+            study_file_id=study_file_id,
+        )
+
+        updated_row[
+            "generation_count"
+        ] = 2
+
+        updated_row[
+            "generation_model"
+        ] = "gemini-3.6-flash"
+
+        updated_row[
+            "generated_at"
+        ] = generated_at.isoformat()
+
+        query = FakeQuery(
+            [
+                updated_row,
+            ],
+        )
+
+        repository = ReviewerRepository(
+            FakeClient(
+                query,
+            )
+        )
+
+        content = _content()
+
+        sources = (
+            _source(
+                study_file_id,
+            ),
+        )
+
+        result = (
+            repository.update_generated_reviewer(
+                user_id=user_id,
+                reviewer_id=reviewer_id,
+                content=content,
+                sources=sources,
+                generation_model="gemini-3.6-flash",
+                generation_count=2,
+                generated_at=generated_at,
+            )
+        )
+
+        assert result is not None
+        assert result.id == reviewer_id
+        assert result.generation_count == 2
+
+        assert (
+            "eq",
+            (
+                "id",
+                str(
+                    reviewer_id,
+                ),
+            ),
+        ) in query.operations
+
+        assert (
+            "eq",
+            (
+                "user_id",
+                str(
+                    user_id,
+                ),
+            ),
+        ) in query.operations
+
+        update_operations = [
+            operation
+            for operation in query.operations
+            if operation[0] == "update"
+        ]
+
+        assert len(
+            update_operations,
+        ) == 1
+
+        payload = update_operations[
+            0
+        ][1]
+
+        assert isinstance(
+            payload,
+            dict,
+        )
+
+        assert payload[
+            "content"
+        ] == content.model_dump(
+            mode="json",
+        )
+
+        assert payload[
+            "sources"
+        ] == [
+            source.model_dump(
+                mode="json",
+            )
+            for source in sources
+        ]
+
+        assert (
+            payload[
+                "generation_model"
+            ]
+            == "gemini-3.6-flash"
+        )
+
+        assert (
+            payload[
+                "generation_count"
+            ]
+            == 2
+        )
+
+        assert (
+            payload[
+                "generated_at"
+            ]
+            == generated_at.isoformat()
+        )
+
+
+def test_update_missing_reviewer_returns_none() -> None:
+        """Ownership-scoped regeneration returns none when no row was updated."""
+
+        repository = ReviewerRepository(
+            FakeClient(
+                FakeQuery(
+                    [],
+                )
+            )
+        )
+
+        result = (
+            repository.update_generated_reviewer(
+                user_id=uuid4(),
+                reviewer_id=uuid4(),
+                content=_content(),
+                sources=(
+                    _source(
+                        uuid4(),
+                    ),
+                ),
+                generation_model="gemini-3.6-flash",
+                generation_count=2,
+                generated_at=datetime.now(
+                    UTC,
+                ),
+            )
+        )
+
+        assert result is None
+
+
 def test_list_reviewers_filters_by_owner() -> None:
     """Reviewer lists must always filter by user ID."""
 
