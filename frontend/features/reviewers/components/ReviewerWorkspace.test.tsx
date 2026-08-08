@@ -96,6 +96,21 @@ ReviewerResponse = {
     "2026-08-08T08:00:00Z",
 };
 
+const mocks = vi.hoisted(
+  () => ({
+    regenerateReviewer:
+      vi.fn(),
+  }),
+);
+
+vi.mock(
+  "@/features/reviewers/api",
+  () => ({
+    regenerateReviewer:
+      mocks.regenerateReviewer,
+  }),
+);
+
 vi.mock(
   "@/features/reviewers/components/ReviewerGenerationForm",
   () => ({
@@ -126,13 +141,32 @@ vi.mock(
   () => ({
     ReviewerResult: ({
       reviewer,
+      onRegenerate,
     }: {
       reviewer:
         ReviewerResponse;
+      onRegenerate?:
+        () => Promise<void>;
     }) => (
       <div>
-        Result:{" "}
-        {reviewer.title}
+        <div>
+          Result:{" "}
+          {reviewer.title}
+        </div>
+
+        <div>
+          Generation{" "}
+          {reviewer.generation_count}
+        </div>
+
+        <button
+          type="button"
+          onClick={() => {
+            void onRegenerate?.();
+          }}
+        >
+          Mock regenerate reviewer
+        </button>
       </div>
     ),
   }),
@@ -254,5 +288,64 @@ describe(
         ).toBeInTheDocument();
       },
     );
+    it(
+        "regenerates the displayed reviewer",
+        async () => {
+            const user =
+            userEvent.setup();
+
+            const regeneratedReviewer = {
+            ...REVIEWER,
+            generation_count: 2,
+            updated_at:
+                "2026-08-08T09:00:00Z",
+            };
+
+            mocks.regenerateReviewer
+            .mockResolvedValue(
+                regeneratedReviewer,
+            );
+
+            renderWorkspace();
+
+            await user.click(
+            screen.getByRole(
+                "button",
+                {
+                name:
+                    "Mock generate reviewer",
+                },
+            ),
+            );
+
+            expect(
+            screen.getByText(
+                "Generation 1",
+            ),
+            ).toBeInTheDocument();
+
+            await user.click(
+            screen.getByRole(
+                "button",
+                {
+                name:
+                    "Mock regenerate reviewer",
+                },
+            ),
+            );
+
+            expect(
+            await screen.findByText(
+                "Generation 2",
+            ),
+            ).toBeInTheDocument();
+
+            expect(
+            mocks.regenerateReviewer,
+            ).toHaveBeenCalledWith(
+            "reviewer-id",
+            );
+        },
+        );
   },
 );

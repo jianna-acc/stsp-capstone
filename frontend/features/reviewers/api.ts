@@ -34,6 +34,10 @@ interface GenerateReviewerOptions {
   signal?: AbortSignal;
 }
 
+interface RegenerateReviewerOptions {
+  signal?: AbortSignal;
+}
+
 export class ReviewerApiError extends Error {
   readonly status: number | null;
   readonly code: string | null;
@@ -111,6 +115,34 @@ function buildReviewerGenerateUrl():
   return [
     apiBaseUrl,
     REVIEWER_GENERATE_API_PATH,
+  ].join("");
+}
+
+function buildReviewerRegenerateUrl(
+  reviewerId: string,
+): string {
+  const apiBaseUrl =
+    getApiBaseUrl();
+
+  const encodedReviewerId =
+    encodeURIComponent(
+      reviewerId,
+    );
+
+  if (apiBaseUrl.endsWith("/api")) {
+    return [
+      apiBaseUrl,
+      "/reviewers/",
+      encodedReviewerId,
+      "/regenerate",
+    ].join("");
+  }
+
+  return [
+    apiBaseUrl,
+    "/api/reviewers/",
+    encodedReviewerId,
+    "/regenerate",
   ].join("");
 }
 
@@ -467,6 +499,104 @@ export async function generateReviewer(
         body: JSON.stringify(
           request,
         ),
+
+        cache: "no-store",
+        signal: options.signal,
+      },
+    );
+  } catch (error) {
+    if (
+      error instanceof DOMException &&
+      error.name === "AbortError"
+    ) {
+      throw error;
+    }
+
+    throw new ReviewerApiError(
+      "The reviewer could not connect to the backend.",
+      null,
+      "REVIEWER_API_UNREACHABLE",
+    );
+  }
+
+  const payload =
+    await readJsonResponse(
+      response,
+    );
+
+  if (!response.ok) {
+    throw new ReviewerApiError(
+      getErrorMessage(
+        payload,
+        response.status,
+      ),
+      response.status,
+      getErrorCode(payload),
+    );
+  }
+
+  if (
+    !isReviewerResponse(payload)
+  ) {
+    throw new ReviewerApiError(
+      "The reviewer service returned an invalid response.",
+      502,
+      "INVALID_REVIEWER_RESPONSE",
+    );
+  }
+
+  return payload;
+}
+
+export async function regenerateReviewer(
+  reviewerId: string,
+  options: RegenerateReviewerOptions = {},
+): Promise<ReviewerResponse> {
+  const normalizedReviewerId =
+    reviewerId.trim();
+
+  if (!normalizedReviewerId) {
+    throw new ReviewerApiError(
+      "A reviewer must be selected before regeneration.",
+      400,
+      "REVIEWER_ID_REQUIRED",
+    );
+  }
+
+  const supabase = createClient();
+
+  const {
+    data: {
+      session,
+    },
+    error: sessionError,
+  } = await supabase.auth.getSession();
+
+  if (
+    sessionError ||
+    !session?.access_token
+  ) {
+    throw new ReviewerApiError(
+      SESSION_EXPIRED_MESSAGE,
+      401,
+      "AUTHENTICATION_REQUIRED",
+    );
+  }
+
+  let response: Response;
+
+  try {
+    response = await fetch(
+      buildReviewerRegenerateUrl(
+        normalizedReviewerId,
+      ),
+      {
+        method: "POST",
+
+        headers: {
+          Authorization:
+            `Bearer ${session.access_token}`,
+        },
 
         cache: "no-store",
         signal: options.signal,

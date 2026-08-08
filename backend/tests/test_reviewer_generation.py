@@ -233,6 +233,45 @@ async def test_valid_json_generates_reviewer() -> None:
     assert result.generation_attempt_count == 1
     assert len(provider.requests) == 1
 
+@async_test
+async def test_markdown_fenced_json_generates_reviewer() -> None:
+    """Markdown-fenced JSON must be accepted as reviewer content."""
+
+    fenced_json = (
+        "```json\n"
+        f"{_valid_json()}\n"
+        "```"
+    )
+
+    provider = FakeGenerationProvider(
+        [
+            GenerationResult(
+                text=fenced_json,
+                provider="fake",
+                model="fake-model",
+            )
+        ]
+    )
+
+    service = ReviewerGenerationService(
+        provider=provider,
+    )
+
+    request, bundle = (
+        _request_and_bundle()
+    )
+
+    result = await service.generate(
+        request=request,
+        source_bundle=bundle,
+    )
+
+    assert result.content.overview == (
+        "Overview of the lesson."
+    )
+
+    assert result.generation_attempt_count == 1
+    assert len(provider.requests) == 1
 
 @async_test
 async def test_invalid_json_is_repaired_once() -> None:
@@ -376,11 +415,11 @@ async def test_structurally_invalid_json_is_repaired() -> None:
         ),
         (
             ReviewerLength.MEDIUM,
-            4_096,
+            8_192,
         ),
         (
             ReviewerLength.LONG,
-            6_144,
+            8_192,
         ),
     ),
 )

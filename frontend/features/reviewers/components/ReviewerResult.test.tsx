@@ -139,15 +139,17 @@ function renderReviewer(
     ReviewerResponse =
       REVIEWER,
 ): void {
-  render(
+    render(
     <MantineProvider>
-      <ReviewerResult
-        reviewer={
-          reviewer
+        <ReviewerResult
+        reviewer={reviewer}
+        onRegenerate={
+            async () => {}
         }
-      />
+        isRegenerating
+        />
     </MantineProvider>,
-  );
+    );
 }
 
 describe(
@@ -276,5 +278,37 @@ describe(
         ).toBeInTheDocument();
       },
     );
+    it(
+        "displays reviewer regeneration controls",
+        () => {
+            render(
+            <MantineProvider>
+                <ReviewerResult
+                reviewer={REVIEWER}
+                onRegenerate={
+                    async () => {}
+                }
+                isRegenerating
+                />
+            </MantineProvider>,
+            );
+
+            expect(
+            screen.getByRole(
+                "button",
+                {
+                name:
+                    "Regenerate Reviewer",
+                },
+            ),
+            ).toBeDisabled();
+
+            expect(
+            screen.getByText(
+                "Generation 1",
+            ),
+            ).toBeInTheDocument();
+        },
+        );
   },
 );

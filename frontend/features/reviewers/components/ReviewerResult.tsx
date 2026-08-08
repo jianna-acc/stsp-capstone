@@ -3,7 +3,9 @@
 // topics, key points, definitions, and grounded sources.
 
 import {
+  Alert,
   Badge,
+  Button,
   Divider,
   Group,
   List,
@@ -15,9 +17,11 @@ import {
   Title,
 } from "@mantine/core";
 import {
+  IconAlertCircle,
   IconBook2,
   IconFileText,
   IconListCheck,
+  IconRefresh,
   IconSparkles,
 } from "@tabler/icons-react";
 
@@ -30,6 +34,9 @@ import classes from "./ReviewerResult.module.css";
 
 interface ReviewerResultProps {
   reviewer: ReviewerResponse;
+  onRegenerate?: () => Promise<void>;
+  isRegenerating?: boolean;
+  regenerationError?: string | null;
 }
 
 function formatLength(
@@ -73,6 +80,9 @@ function getSourceLocation(
 
 export function ReviewerResult({
   reviewer,
+  onRegenerate,
+  isRegenerating = false,
+  regenerationError = null,
 }: Readonly<ReviewerResultProps>) {
   return (
     <Paper
@@ -133,30 +143,75 @@ export function ReviewerResult({
             </Group>
 
             <Group
-              gap="xs"
-              justify="flex-end"
-            >
-              <Badge
-                variant="light"
-                color="violet"
-              >
-                {formatLength(
-                  reviewer.reviewer_length,
-                )}
-              </Badge>
+                gap="xs"
+                justify="flex-end"
+                >
+                <Badge
+                    variant="light"
+                    color="violet"
+                >
+                    {formatLength(
+                    reviewer.reviewer_length,
+                    )}
+                </Badge>
 
-              <Badge
-                variant="light"
-                color="gray"
-              >
-                {formatScope(
-                  reviewer.scope_type,
+                <Badge
+                    variant="light"
+                    color="gray"
+                >
+                    {formatScope(
+                    reviewer.scope_type,
+                    )}
+                </Badge>
+
+                <Badge
+                    variant="light"
+                    color="gray"
+                >
+                    Generation{" "}
+                    {reviewer.generation_count}
+                </Badge>
+
+                {onRegenerate && (
+                    <Button
+                    variant="light"
+                    color="violet"
+                    leftSection={
+                        <IconRefresh
+                        size={16}
+                        />
+                    }
+                    loading={
+                        isRegenerating
+                    }
+                    disabled={
+                        isRegenerating
+                    }
+                    onClick={() => {
+                        void onRegenerate();
+                    }}
+                    >
+                    Regenerate Reviewer
+                    </Button>
                 )}
-              </Badge>
-            </Group>
+                </Group>
           </Group>
         </header>
 
+        {regenerationError && (
+          <Alert
+            color="red"
+            variant="light"
+            icon={
+              <IconAlertCircle
+                size={18}
+              />
+            }
+            title="Regeneration failed"
+          >
+            {regenerationError}
+          </Alert>
+        )}
         <section
           aria-labelledby="reviewer-overview-title"
         >
