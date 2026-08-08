@@ -27,8 +27,13 @@ The system currently includes:
 - Saved Study Assistant conversations
 - Bounded conversation memory
 - Deterministic conversation summaries
+- Reviewer generation from a subject or study file
+- Structured reviewer content with topics, key points, and definitions
+- Reviewer source tracking
+- Saved reviewer persistence
+- Protected FastAPI reviewer API
 
-Future phases may add reviewers, flashcards, quizzes, study planning, scheduling, analytics, and deployment improvements.
+Future phases may add the reviewer frontend, reviewer regeneration, scalable multi-pass generation for very large materials, flashcards, quizzes, study planning, scheduling, analytics, and deployment improvements.
 
 ---
 
@@ -41,8 +46,9 @@ Future phases may add reviewers, flashcards, quizzes, study planning, scheduling
 | Phase 3 | Subjects, uploads, extraction, processing worker | Implemented |
 | Phase 4 | AI provider, chunking, embeddings, vector persistence, retrieval | Implemented |
 | Phase 5A–5F | Retrieval orchestration, grounded RAG API, Study Assistant | Implemented |
-| Phase 5G | Saved conversations, memory, summaries, conversation history UI | In Progress — finalization |
-| Later phases | Reviewers, flashcards, quizzes, study plans, analytics, deployment | Planned |
+| Phase 5G | Saved conversations, memory, summaries, conversation history UI | Implemented |
+| Phase 6A | Reviewer backend foundation, persistence, generation, sources, protected API | Implemented |
+| Later phases | Reviewer frontend and regeneration, flashcards, quizzes, study plans, analytics, deployment | Planned |
 
 ---
 
@@ -81,6 +87,11 @@ flowchart LR
         CONVERSATION["Conversation Service"]
         MEMORY["Bounded Memory"]
         SUMMARY["Deterministic Summary"]
+        REVIEWER_API["Reviewer API"]
+        REVIEWER_ORCHESTRATION["Reviewer Orchestration"]
+        REVIEWER_SOURCE["Reviewer Source Loader"]
+        REVIEWER_GENERATION["Reviewer Generation"]
+        REVIEWER_SERVICE["Reviewer Persistence Service"]
     end
 
     subgraph SUPABASE["Supabase"]
@@ -134,6 +145,15 @@ flowchart LR
     RAG --> GEMINI
 
     CONVERSATION --> DATABASE
+    API --> REVIEWER_API
+    REVIEWER_API --> REVIEWER_ORCHESTRATION
+    REVIEWER_ORCHESTRATION --> REVIEWER_SOURCE
+    REVIEWER_ORCHESTRATION --> REVIEWER_GENERATION
+    REVIEWER_ORCHESTRATION --> REVIEWER_SERVICE
+
+    REVIEWER_SOURCE --> DATABASE
+    REVIEWER_GENERATION --> GEMINI
+    REVIEWER_SERVICE --> DATABASE
 ```
 
 ---
@@ -789,13 +809,115 @@ Corrections require a new timestamped migration.
 20260806234000_restrict_study_conversation_summary_updates.sql
 ```
 
+````markdown
+# Phase 6A Migrations
+
+```text
+20260807230500_create_reviewers.sql
+20260808053929_create_reviewers_foundation.sql
+```
+
+This migration creates the owned `reviewers` table, reviewer scope and length constraints, ownership validation, timestamps, indexes, and Row Level Security policies.
+
+---
+
+# Phase 6A Reviewer Backend
+
+Phase 6A introduces the backend foundation for generated study reviewers.
+
+A reviewer can currently be generated from:
+
+- One ready study file
+- All ready study files within one subject
+
+Reviewer generation does not use similarity-based RAG retrieval. It loads the processed source-aware chunks in deterministic file and chunk order so that the reviewer can represent the selected material broadly rather than only answering a similarity-based question.
+
+```mermaid
+flowchart LR
+    REQUEST["Authenticated Reviewer Request"]
+
+    API["Reviewer API"]
+    ORCHESTRATION["Reviewer Orchestration"]
+
+    SOURCE["Reviewer Source Loader"]
+    GENERATION["Reviewer Generation"]
+    PERSISTENCE["Reviewer Service"]
+
+    FILES[("study_files")]
+    CHUNKS[("study_file_chunks")]
+    REVIEWERS[("reviewers")]
+
+    GEMINI["Gemini Generation Provider"]
+
+    REQUEST --> API
+    API --> ORCHESTRATION
+
+    ORCHESTRATION --> SOURCE
+    SOURCE --> FILES
+    SOURCE --> CHUNKS
+
+    ORCHESTRATION --> GENERATION
+    GENERATION --> GEMINI
+
+    ORCHESTRATION --> PERSISTENCE
+    PERSISTENCE --> REVIEWERS
+```
+
+Generated reviewer content is structured as:
+
+```text
+overview
+topics
+  title
+  summary
+  key_points
+  definitions
+```
+
+Saved reviewer metadata includes:
+
+```text
+scope_type
+subject_id
+study_file_id
+reviewer_length
+sources
+generation_model
+generation_count
+generated_at
+```
+
+Reviewer sources preserve the originating study file, chunk index, and available locator metadata.
+
+Current protected endpoints are:
+
+```text
+POST   /api/reviewers/generate
+GET    /api/reviewers
+GET    /api/reviewers/{reviewer_id}
+DELETE /api/reviewers/{reviewer_id}
+```
+
+The authenticated user's identity comes from the validated bearer token. Reviewer requests cannot choose a trusted `user_id`.
+
+Reviewer insert and generation operations are performed through the trusted backend. Browser clients do not receive direct insert or update access to reviewer records.
+
+Phase 6A intentionally does not yet include:
+
+- Reviewer frontend UI
+- Reviewer regeneration
+- Multi-pass generation for source collections that exceed the current bounded prompt size
+- Quiz generation
+
 ---
 
 # Planned Future Features
 
 Future phases may introduce:
 
-- Reviewer generation
+- Reviewer frontend
+- Reviewer regeneration
+- Scalable multi-pass reviewer generation for very large materials
 - Flashcards
 - Quizzes
 - Academic tasks

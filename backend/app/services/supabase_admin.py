@@ -154,6 +154,196 @@ class SupabaseAdminService:
 
         return row
 
+    async def list_ready_study_files_for_subject(
+        self,
+        *,
+        user_id: UUID,
+        subject_id: UUID,
+    ) -> list[dict[str, Any]]:
+        """Return ready study files owned by one user and subject."""
+
+        endpoint = (
+            f"{self._settings.supabase_url}"
+            "/rest/v1/study_files"
+        )
+
+        params = {
+            "select": (
+                "id,"
+                "user_id,"
+                "subject_id,"
+                "original_filename,"
+                "processing_status,"
+                "created_at"
+            ),
+            "user_id": f"eq.{user_id}",
+            "subject_id": f"eq.{subject_id}",
+            "processing_status": "eq.ready",
+            "order": "created_at.asc,id.asc",
+        }
+
+        try:
+            async with httpx.AsyncClient(
+                timeout=(
+                    self._settings.request_timeout_seconds
+                ),
+            ) as client:
+                response = await client.get(
+                    endpoint,
+                    params=params,
+                    headers=self._postgrest_headers,
+                )
+
+        except httpx.TimeoutException as error:
+            raise SupabaseAdminError(
+                "The subject study-file lookup timed out.",
+            ) from error
+
+        except httpx.RequestError as error:
+            raise SupabaseAdminError(
+                "The subject study-file lookup could not "
+                "reach Supabase.",
+            ) from error
+
+        if response.status_code != 200:
+            raise SupabaseAdminError(
+                "Unable to retrieve ready subject study files. "
+                f"Supabase returned {response.status_code}: "
+                f"{response.text}"
+            )
+
+        try:
+            rows = response.json()
+
+        except ValueError as error:
+            raise SupabaseAdminError(
+                "Supabase returned invalid JSON for the "
+                "subject study-file lookup.",
+            ) from error
+
+        if not isinstance(
+            rows,
+            list,
+        ):
+            raise SupabaseAdminError(
+                "Supabase returned an invalid subject "
+                "study-file response.",
+            )
+
+        normalized_rows: list[
+            dict[str, Any]
+        ] = []
+
+        for row in rows:
+            if not isinstance(
+                row,
+                dict,
+            ):
+                raise SupabaseAdminError(
+                    "Supabase returned an invalid subject "
+                    "study-file row.",
+                )
+
+            normalized_rows.append(
+                row,
+            )
+
+        return normalized_rows
+
+    async def list_study_file_chunks(
+        self,
+        *,
+        user_id: UUID,
+        study_file_id: UUID,
+    ) -> list[dict[str, Any]]:
+        """Return one owned study file's chunks in document order."""
+
+        endpoint = (
+            f"{self._settings.supabase_url}"
+            "/rest/v1/study_file_chunks"
+        )
+
+        params = {
+            "select": (
+                "study_file_id,"
+                "chunk_index,"
+                "content,"
+                "locator_type,"
+                "locator_label"
+            ),
+            "user_id": f"eq.{user_id}",
+            "study_file_id": f"eq.{study_file_id}",
+            "order": "chunk_index.asc",
+        }
+
+        try:
+            async with httpx.AsyncClient(
+                timeout=(
+                    self._settings.request_timeout_seconds
+                ),
+            ) as client:
+                response = await client.get(
+                    endpoint,
+                    params=params,
+                    headers=self._postgrest_headers,
+                )
+
+        except httpx.TimeoutException as error:
+            raise SupabaseAdminError(
+                "The study-file chunk lookup timed out.",
+            ) from error
+
+        except httpx.RequestError as error:
+            raise SupabaseAdminError(
+                "The study-file chunk lookup could not "
+                "reach Supabase.",
+            ) from error
+
+        if response.status_code != 200:
+            raise SupabaseAdminError(
+                "Unable to retrieve study-file chunks. "
+                f"Supabase returned {response.status_code}: "
+                f"{response.text}"
+            )
+
+        try:
+            rows = response.json()
+
+        except ValueError as error:
+            raise SupabaseAdminError(
+                "Supabase returned invalid JSON for the "
+                "study-file chunk lookup.",
+            ) from error
+
+        if not isinstance(
+            rows,
+            list,
+        ):
+            raise SupabaseAdminError(
+                "Supabase returned an invalid study-file "
+                "chunk response.",
+            )
+
+        normalized_rows: list[
+            dict[str, Any]
+        ] = []
+
+        for row in rows:
+            if not isinstance(
+                row,
+                dict,
+            ):
+                raise SupabaseAdminError(
+                    "Supabase returned an invalid study-file "
+                    "chunk row.",
+                )
+
+            normalized_rows.append(
+                row,
+            )
+
+        return normalized_rows
+
     async def get_processing_job(
         self,
         file_id: UUID,

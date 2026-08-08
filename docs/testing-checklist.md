@@ -379,6 +379,83 @@ Because the Study Assistant CSS layout was adjusted afterward, perform the final
 
 ---
 
+# Phase 6A — Reviewer Backend Foundation
+
+## Database and Security
+
+- [x] Effective `reviewers` foundation migration created and applied
+- [x] `public.reviewers` verified remotely with 14 columns
+- [x] Reviewer table verified with 2 RLS policies
+- [x] Reviewer table verified with 2 application triggers
+- [x] Local and remote migration histories include `20260808053929`
+- [x] Reviewer ownership references authenticated users
+- [x] Reviewer subject/file scope constraints are enforced
+- [x] Reviewer RLS policies are defined
+- [x] Browser clients cannot directly insert or update reviewer records
+
+## Reviewer Source Loading
+
+- [x] File-scope reviewer loads one owned ready study file
+- [x] Subject-scope reviewer loads owned ready files for the subject
+- [x] Reviewer generation uses `study_file_chunks`
+- [x] Source chunks are ordered deterministically
+- [x] Missing or incomplete chunk sequences fail safely
+- [x] Reviewer sources preserve file/chunk locator metadata
+
+## Reviewer Generation
+
+- [x] Reviewer supports `short`, `medium`, and `long`
+- [x] Generated content includes overview, topics, key points, and definitions
+- [x] Generation is grounded only in supplied study material
+- [x] Study-material text is treated as untrusted prompt content
+- [x] Malformed model output receives one controlled repair attempt
+- [x] Reviewer generation uses reviewer-specific output-token budgets
+- [x] Oversized source collections fail safely instead of silently dropping content
+
+## Reviewer Persistence
+
+- [x] Generated reviewers can be saved
+- [x] Saved reviewers can be listed
+- [x] One owned reviewer can be retrieved
+- [x] One owned reviewer can be deleted
+- [x] Reviewer operations remain scoped to the authenticated user
+
+## Reviewer API
+
+- [x] `POST /api/reviewers/generate` registered
+- [x] `GET /api/reviewers` registered
+- [x] `GET /api/reviewers/{reviewer_id}` registered
+- [x] `DELETE /api/reviewers/{reviewer_id}` registered
+- [x] Reviewer API does not accept trusted `user_id`
+- [x] Controlled reviewer errors use safe public responses
+- [x] Successful delete returns `204 No Content`
+
+## Reviewer Automated Validation
+
+- [x] Reviewer migration tests pass
+- [x] Reviewer schema tests pass
+- [x] Reviewer repository tests pass
+- [x] Reviewer service tests pass
+- [x] Reviewer source-loader tests pass
+- [x] Reviewer Supabase-admin tests pass
+- [x] Reviewer prompt tests pass
+- [x] Reviewer generation tests pass
+- [x] Reviewer orchestration tests pass
+- [x] Reviewer API endpoint tests pass
+- [x] Focused reviewer regression: 68 tests passed
+- [x] Reviewer Ruff validation passes
+- [x] Reviewer application modules compile successfully
+- [x] `git diff --check` passes
+
+## Deferred Beyond Phase 6A
+
+- [ ] Reviewer frontend UI
+- [ ] Reviewer regeneration
+- [ ] Multi-pass generation for very large source collections
+- [ ] Quiz generation
+
+---
+
 # Final Documentation Checks
 
 After replacing the documentation files:
@@ -395,6 +472,11 @@ After replacing the documentation files:
 - [ ] No duplicate planned `chat_*` tables remain
 - [ ] No real secrets appear
 - [ ] `git diff --check` passes
+- [x] `ARCHITECTURE.md` reflects Phase 6A reviewer backend
+- [x] `PROJECT_FILE_MAP.md` includes Phase 6A files
+- [x] `api-contracts.md` includes reviewer endpoints
+- [x] `database.md` includes the implemented `reviewers` table
+- [x] `testing-checklist.md` includes Phase 6A validation
 
 ---
 

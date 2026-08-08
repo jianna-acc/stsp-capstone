@@ -581,6 +581,259 @@ Public responses must never expose:
 - Provider tracebacks
 
 ---
+# Reviewer API
+
+Reviewer endpoints require authenticated Supabase bearer authentication.
+
+The backend derives the trusted student identity from the validated access token. Reviewer requests must not provide or override `user_id`.
+
+---
+
+## Generate Reviewer
+
+```http
+POST /api/reviewers/generate
+```
+
+The endpoint generates and saves one reviewer from processed study material owned by the authenticated student.
+
+Supported scopes:
+
+```text
+file
+subject
+```
+
+Supported reviewer lengths:
+
+```text
+short
+medium
+long
+```
+
+### File-Scope Request
+
+```json
+{
+  "scope_type": "file",
+  "subject_id": "subject-uuid",
+  "study_file_id": "study-file-uuid",
+  "reviewer_length": "medium"
+}
+```
+
+For file scope:
+
+- `subject_id` is required.
+- `study_file_id` is required.
+- The selected file must belong to the authenticated student.
+- The file must belong to the selected subject.
+- The file must be in the `ready` processing state.
+
+### Subject-Scope Request
+
+```json
+{
+  "scope_type": "subject",
+  "subject_id": "subject-uuid",
+  "study_file_id": null,
+  "reviewer_length": "long"
+}
+```
+
+For subject scope:
+
+- `subject_id` is required.
+- `study_file_id` must be omitted or `null`.
+- Reviewer generation uses ready study files owned by the authenticated student within that subject.
+
+Reviewer generation loads processed source-aware chunks in deterministic file and chunk order.
+
+It does not use similarity-based RAG retrieval.
+
+---
+
+## Reviewer Response
+
+Representative response:
+
+```json
+{
+  "id": "reviewer-uuid",
+  "subject_id": "subject-uuid",
+  "study_file_id": "study-file-uuid",
+  "scope_type": "file",
+  "title": "Biology Notes Reviewer",
+  "reviewer_length": "medium",
+  "content": {
+    "overview": "Overview of the selected study material.",
+    "topics": [
+      {
+        "title": "Photosynthesis",
+        "summary": "Summary of the topic.",
+        "key_points": [
+          "Plants convert light energy into chemical energy."
+        ],
+        "definitions": [
+          {
+            "term": "Photosynthesis",
+            "definition": "Definition grounded in the selected material."
+          }
+        ]
+      }
+    ]
+  },
+  "sources": [
+    {
+      "study_file_id": "study-file-uuid",
+      "source_name": "Biology Notes.pdf",
+      "chunk_index": 0,
+      "locator_type": "page",
+      "locator_label": "Page 1"
+    }
+  ],
+  "generation_model": "gemini-generation-model",
+  "generation_count": 1,
+  "generated_at": "2026-08-07T00:00:00Z",
+  "created_at": "2026-08-07T00:00:00Z",
+  "updated_at": "2026-08-07T00:00:00Z"
+}
+```
+
+The response does not expose a trusted `user_id`.
+
+The `sources` array records which processed study-file chunks were used for the reviewer.
+
+---
+
+## List Reviewers
+
+```http
+GET /api/reviewers
+```
+
+Optional query parameter:
+
+```text
+limit
+```
+
+Valid range:
+
+```text
+1 to 100
+```
+
+Default:
+
+```text
+20
+```
+
+Representative response:
+
+```json
+{
+  "items": [
+    {
+      "id": "reviewer-uuid",
+      "subject_id": "subject-uuid",
+      "study_file_id": "study-file-uuid",
+      "scope_type": "file",
+      "title": "Biology Notes Reviewer",
+      "reviewer_length": "medium",
+      "content": {
+        "overview": "Overview.",
+        "topics": []
+      },
+      "sources": [],
+      "generation_model": "gemini-generation-model",
+      "generation_count": 1,
+      "generated_at": "2026-08-07T00:00:00Z",
+      "created_at": "2026-08-07T00:00:00Z",
+      "updated_at": "2026-08-07T00:00:00Z"
+    }
+  ]
+}
+```
+
+Only reviewers owned by the authenticated student are returned.
+
+---
+
+## Get Reviewer
+
+```http
+GET /api/reviewers/{reviewer_id}
+```
+
+Returns one reviewer owned by the authenticated student.
+
+A reviewer that does not exist or is not owned by the authenticated student returns a safe not-found response.
+
+---
+
+## Delete Reviewer
+
+```http
+DELETE /api/reviewers/{reviewer_id}
+```
+
+Successful response:
+
+```text
+204 No Content
+```
+
+The client must not attempt to parse a JSON body from the successful 204 response.
+
+---
+
+# Reviewer API Errors
+
+Controlled reviewer errors use:
+
+```json
+{
+  "error_code": "REVIEWER_NOT_FOUND",
+  "message": "The requested reviewer or study material was not found."
+}
+```
+
+Current controlled error mappings include:
+
+| HTTP | Error Code | Meaning |
+|---|---|---|
+| `400` | `REVIEWER_VALIDATION_FAILED` | Reviewer operation is invalid |
+| `404` | `REVIEWER_NOT_FOUND` | Reviewer or owned source material was not found |
+| `409` | `REVIEWER_SOURCE_UNAVAILABLE` | Selected source material is not ready or usable |
+| `500` | `REVIEWER_GENERATION_RESPONSE_FAILED` | Generated reviewer output could not be processed |
+| `500` | `REVIEWER_RESPONSE_FAILED` | Reviewer response could not be completed |
+| `502` | `REVIEWER_GENERATION_FAILED` | AI generation provider failed |
+| `503` | `REVIEWER_PERSISTENCE_FAILED` | Reviewer storage is temporarily unavailable |
+| `503` | `REVIEWER_SOURCE_STORAGE_FAILED` | Study-material source loading is temporarily unavailable |
+
+Authentication failures continue to use the existing protected-API authentication behavior.
+
+---
+
+# Reviewer Security Contract
+
+Reviewer API security requirements:
+
+1. The authenticated bearer token determines the trusted student identity.
+2. The request body cannot choose `user_id`.
+3. File-scope reviewers must use a study file owned by the authenticated student.
+4. Subject-scope reviewers only load ready files owned by the authenticated student.
+5. Reviewer source chunks are loaded through trusted backend operations.
+6. Browser clients cannot directly insert or update reviewer records.
+7. Saved reviewer reads and deletes remain ownership scoped.
+8. Generated reviewer content must be grounded in the selected processed study material.
+9. Study-material content is treated as untrusted prompt content.
+10. Raw backend secrets, provider errors, and database details must not appear in public API errors.
+
+---
 
 # OpenAPI Verification
 
@@ -605,6 +858,11 @@ GET    /api/study-conversations
 GET    /api/study-conversations/{conversation_id}
 PATCH  /api/study-conversations/{conversation_id}
 DELETE /api/study-conversations/{conversation_id}
+
+POST   /api/reviewers/generate
+GET    /api/reviewers
+GET    /api/reviewers/{reviewer_id}
+DELETE /api/reviewers/{reviewer_id}
 ```
 
 ---
