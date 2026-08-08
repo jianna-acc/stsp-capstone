@@ -372,7 +372,7 @@ async def test_structurally_invalid_json_is_repaired() -> None:
     (
         (
             ReviewerLength.SHORT,
-            2_048,
+            4_096,
         ),
         (
             ReviewerLength.MEDIUM,

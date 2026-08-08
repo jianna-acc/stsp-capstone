@@ -34,7 +34,8 @@ Update it whenever files, APIs, migrations, owners, or major system connections 
 | Phase 5A–5F | RAG and Study Assistant | Integrated |
 | Phase 5G | Saved conversations, memory, summaries, history UI | Integrated |
 | Phase 6A | Reviewer backend foundation | Integrated |
-| Later | Reviewer frontend/regeneration, flashcards, quizzes, planning, analytics | Planned |
+| Phase 6B | Reviewer generation frontend and result display | Integrated |
+| Later | Reviewer history/regeneration, scalable multi-pass generation, flashcards, quizzes, planning, analytics | Planned |
 
 ---
 
@@ -277,7 +278,7 @@ Update it whenever files, APIs, migrations, owners, or major system connections 
 | `/backend/app/repositories/reviewer_repository.py` | Integrated | Member 3 | Reviewer persistence and ownership filtering | Supabase |
 | `/backend/app/services/reviewer_errors.py` | Integrated | Member 3 | Controlled reviewer-domain errors | Reviewer services, API |
 | `/backend/app/services/reviewer_source_loader.py` | Integrated | Member 3 | Loads ordered source-aware chunks for file/subject scope | Study files, chunks |
-| `/backend/app/services/reviewer_generation.py` | Integrated | Member 3 | Structured Gemini reviewer generation and repair | Gemini provider |
+| `/backend/app/services/reviewer_generation.py` | Integrated | Member 3 | Structured Gemini reviewer generation, strict response validation, bounded repair, and reviewer-length output budgets | Gemini provider |
 | `/backend/app/services/reviewer_service.py` | Integrated | Member 3 | Reviewer save/list/get/delete operations | Reviewer repository |
 | `/backend/app/services/reviewer_orchestration.py` | Integrated | Member 3 | Coordinates source loading, generation, and persistence | Reviewer services |
 | `/backend/app/api/reviewer_dependency.py` | Integrated | Member 3 | Reviewer persistence dependency | Repository, Supabase client |
@@ -324,7 +325,31 @@ Update it whenever files, APIs, migrations, owners, or major system connections 
 
 ---
 
+# Phase 6B Reviewer Frontend
 
+| Path | Status | Owner | Purpose | Connections |
+|---|---|---|---|---|
+| `/frontend/app/(protected)/reviewers/page.tsx` | Integrated | Frontend | Protected Reviewer page | Reviewer workspace, filter options |
+| `/frontend/features/reviewers/types.ts` | Integrated | Frontend | Reviewer request, response, source, and option contracts | Reviewer API/UI |
+| `/frontend/features/reviewers/api.ts` | Integrated | Frontend | Authenticated reviewer-generation API client | `POST /api/reviewers/generate` |
+| `/frontend/features/reviewers/server/options.ts` | Integrated | Frontend | Loads authenticated subjects and ready study files | Supabase |
+| `/frontend/features/reviewers/components/ReviewerGenerationForm.tsx` | Integrated | Frontend | Reviewer scope, subject/file, and length controls | Reviewer API client |
+| `/frontend/features/reviewers/components/ReviewerGenerationForm.module.css` | Integrated | Frontend | Reviewer generation-form styling | Generation form |
+| `/frontend/features/reviewers/components/ReviewerResult.tsx` | Integrated | Frontend | Displays generated overview, topics, key points, definitions, and sources | Reviewer response |
+| `/frontend/features/reviewers/components/ReviewerResult.module.css` | Integrated | Frontend | Reviewer content/result styling | Reviewer result |
+| `/frontend/features/reviewers/components/ReviewerWorkspace.tsx` | Integrated | Frontend | Coordinates generation form and generated result | Reviewer page |
+| `/frontend/features/reviewers/components/ReviewerWorkspace.module.css` | Integrated | Frontend | Reviewer page layout | Reviewer workspace |
+| `/frontend/features/navigation/components/ProtectedAppShell.tsx` | Integrated | Frontend | Adds Reviewers to authenticated navigation | `/reviewers` |
+
+# Phase 6B Reviewer Frontend Tests
+
+| Path | Status | Purpose |
+|---|---|---|
+| `/frontend/features/reviewers/api.test.ts` | Ready | Authenticated generation API tests |
+| `/frontend/features/reviewers/server/options.test.ts` | Ready | Subject and ready-file option loading |
+| `/frontend/features/reviewers/components/ReviewerGenerationForm.test.tsx` | Ready | Scope, material, length, generation, and error-state tests |
+| `/frontend/features/reviewers/components/ReviewerResult.test.tsx` | Ready | Overview, topics, definitions, and source rendering |
+| `/frontend/features/reviewers/components/ReviewerWorkspace.test.tsx` | Ready | Workspace generation/result integration |
 
 # Important Supabase Resources
 

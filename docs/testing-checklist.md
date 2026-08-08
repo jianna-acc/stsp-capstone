@@ -442,19 +442,119 @@ Because the Study Assistant CSS layout was adjusted afterward, perform the final
 - [x] Reviewer generation tests pass
 - [x] Reviewer orchestration tests pass
 - [x] Reviewer API endpoint tests pass
-- [x] Focused reviewer regression: 68 tests passed
+- [x] Focused reviewer regression passes
 - [x] Reviewer Ruff validation passes
 - [x] Reviewer application modules compile successfully
 - [x] `git diff --check` passes
 
 ## Deferred Beyond Phase 6A
 
-- [ ] Reviewer frontend UI
+- [x] Reviewer frontend UI — implemented in Phase 6B
+- [ ] Reviewer saved-history and reopening UI
 - [ ] Reviewer regeneration
 - [ ] Multi-pass generation for very large source collections
 - [ ] Quiz generation
 
 ---
+
+# Phase 6B — Reviewer Frontend
+
+## Reviewer API Client
+
+- [x] Authenticated Supabase session required
+- [x] Bearer token sent to Reviewer FastAPI endpoint
+- [x] Reviewer request serialized correctly
+- [x] File-scope request supported
+- [x] Subject-scope request supported
+- [x] Successful reviewer response validated
+- [x] Malformed successful response rejected
+- [x] Inconsistent scope response rejected
+- [x] Controlled backend errors displayed safely
+- [x] Network errors do not expose access tokens
+
+## Reviewer Filter Options
+
+- [x] Authenticated subjects load
+- [x] Ready study files load
+- [x] Study files remain scoped to authenticated user
+- [x] Only `processing_status = ready` files are selectable
+- [x] Filter-loading failures disable generation safely
+
+## Reviewer Generation UI
+
+- [x] `/reviewers` protected route exists
+- [x] Reviewer navigation entry exists
+- [x] Whole-subject scope supported
+- [x] Single-study-material scope supported
+- [x] Subject selection required
+- [x] File selection required for file scope
+- [x] File options filter by selected subject
+- [x] Changing subject clears incompatible selected file
+- [x] Short reviewer selectable
+- [x] Medium reviewer selectable
+- [x] Long reviewer selectable
+- [x] Loading state displayed
+- [x] Safe API error state displayed
+- [x] Successful generation state displayed
+
+## Reviewer Result UI
+
+- [x] Reviewer title renders
+- [x] Scope badge renders
+- [x] Length badge renders
+- [x] Overview renders
+- [x] Topic summaries render
+- [x] Key points render
+- [x] Definitions render when available
+- [x] Source files render
+- [x] Source locator labels render
+- [x] Missing locator label uses safe section fallback
+
+## Live Integration
+
+- [x] Single study material + Medium generation succeeded
+- [x] Whole subject + Medium generation succeeded
+- [x] Whole subject generation combined 3 ready files
+- [x] Whole subject + Short generation succeeded after output-budget fix
+- [x] Generated reviewer persisted successfully
+- [x] Generated reviewer displayed successfully
+- [x] Final Short whole-subject request returned `201 Created`
+- [x] Final Short whole-subject request produced valid JSON on first generation attempt
+
+## Reviewer Generation Robustness
+
+- [x] Malformed AI JSON detected
+- [x] One bounded repair attempt retained
+- [x] Short reviewer output budget increased from 2,048 to 4,096 tokens
+- [x] Short prompt remains concise despite larger maximum output budget
+- [x] Medium output budget remains 4,096 tokens
+- [x] Long output budget remains 6,144 tokens
+
+## Phase 6B Automated Validation
+
+- [x] Reviewer API tests: 7 passed
+- [x] Reviewer option-loader tests: 3 passed
+- [x] Reviewer generation-form tests: 6 passed
+- [x] Reviewer result tests: 4 passed
+- [x] Reviewer workspace tests: 2 passed
+- [x] Full frontend suite: 54 passed
+- [x] Full backend suite: 700 passed
+- [x] Backend Ruff validation passes
+- [x] Backend compilation passes
+- [x] Frontend TypeScript validation passes
+- [x] Frontend production build passes
+- [x] Frontend ESLint has 0 errors
+- [x] Existing unrelated subject-page ESLint warning remains documented
+- [x] `git diff --check` passes
+
+## Deferred Beyond Phase 6B
+
+- [ ] Saved reviewer history UI
+- [ ] Open previously saved reviewer
+- [ ] Reviewer deletion UI
+- [ ] Reviewer regeneration
+- [ ] Multi-pass generation for source collections above the single-pass limit
+- [ ] Quiz generation
 
 # Final Documentation Checks
 
@@ -477,6 +577,10 @@ After replacing the documentation files:
 - [x] `api-contracts.md` includes reviewer endpoints
 - [x] `database.md` includes the implemented `reviewers` table
 - [x] `testing-checklist.md` includes Phase 6A validation
+- [x] `ARCHITECTURE.md` reflects Phase 6B Reviewer frontend
+- [x] `PROJECT_FILE_MAP.md` includes Phase 6B Reviewer frontend files
+- [x] `testing-checklist.md` includes Phase 6B automated and live validation
+- [x] Reviewer API contracts remain current
 
 ---
 

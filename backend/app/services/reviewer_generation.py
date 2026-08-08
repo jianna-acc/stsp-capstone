@@ -5,6 +5,7 @@
 from __future__ import annotations
 
 import json
+import logging
 from dataclasses import dataclass
 from inspect import isawaitable
 from typing import Final
@@ -40,10 +41,14 @@ from app.services.reviewer_source_loader import (
     ReviewerSourceBundle,
 )
 
+logger = logging.getLogger(
+    __name__,
+)
+
 _REVIEWER_TEMPERATURE: Final = 0.2
 
 _REVIEWER_OUTPUT_TOKENS: Final = {
-    ReviewerLength.SHORT: 2_048,
+    ReviewerLength.SHORT: 4_096,
     ReviewerLength.MEDIUM: 4_096,
     ReviewerLength.LONG: 6_144,
 }
@@ -221,7 +226,13 @@ class ReviewerGenerationService:
                 first_result.text,
             )
 
-        except ReviewerGenerationResponseError:
+        except ReviewerGenerationResponseError as exc:
+            logger.warning(
+                "Reviewer generation response rejected "
+                "on attempt 1: %s",
+                exc,
+            )
+
             repair_prompt = self._build_repair_prompt(
                 prompt=prompt,
                 invalid_response=first_result.text,
@@ -236,9 +247,19 @@ class ReviewerGenerationService:
                 )
             )
 
-            content = self._parse_content(
-                repaired_result.text,
-            )
+            try:
+                content = self._parse_content(
+                    repaired_result.text,
+                )
+
+            except ReviewerGenerationResponseError as repair_exc:
+                logger.warning(
+                    "Reviewer generation response rejected "
+                    "on attempt 2: %s",
+                    repair_exc,
+                )
+
+                raise
 
             return self._build_result(
                 content=content,

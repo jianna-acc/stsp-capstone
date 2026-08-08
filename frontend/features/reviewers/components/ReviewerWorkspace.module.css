@@ -1,0 +1,32 @@
+/* File: /frontend/features/reviewers/components/ReviewerWorkspace.module.css */
+/* Purpose: Styles the protected Reviewer generation workspace. */
+
+.page {
+  min-height: 100%;
+  padding: 2rem;
+  background:
+    radial-gradient(
+      circle at top right,
+      rgba(121, 80, 242, 0.1),
+      transparent 32rem
+    ),
+    var(--mantine-color-body);
+}
+
+.container {
+  width: 100%;
+}
+
+.header {
+  padding-top: 0.25rem;
+}
+
+.resultRegion {
+  min-width: 0;
+}
+
+@media (max-width: 48em) {
+  .page {
+    padding: 1rem;
+  }
+}

@@ -1,0 +1,61 @@
+/* File: /frontend/features/reviewers/components/ReviewerResult.module.css */
+/* Purpose: Styles generated reviewer topics, definitions, and sources. */
+
+.resultCard {
+  background: light-dark(
+    rgba(255, 255, 255, 0.94),
+    rgba(37, 38, 43, 0.94)
+  );
+  backdrop-filter: blur(8px);
+}
+
+.overview,
+.topicSummary {
+  white-space: pre-wrap;
+  line-height: 1.7;
+}
+
+.topicCard {
+  background: light-dark(
+    var(--mantine-color-gray-0),
+    var(--mantine-color-dark-6)
+  );
+}
+
+.keyPoints {
+  line-height: 1.65;
+}
+
+.definitionCard {
+  background: light-dark(
+    rgba(121, 80, 242, 0.04),
+    rgba(121, 80, 242, 0.08)
+  );
+}
+
+.sourceGrid {
+  display: grid;
+  grid-template-columns:
+    repeat(
+      auto-fit,
+      minmax(min(100%, 17rem), 1fr)
+    );
+  gap: 0.75rem;
+}
+
+.sourceCard {
+  min-width: 0;
+}
+
+.sourceIcon {
+  flex-shrink: 0;
+}
+
+.sourceDetails {
+  min-width: 0;
+  flex: 1;
+}
+
+.sourceName {
+  overflow-wrap: anywhere;
+}
