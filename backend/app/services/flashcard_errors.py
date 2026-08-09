@@ -23,3 +23,14 @@ class FlashcardResponseError(
     FlashcardError,
 ):
     """Raised when persisted Flashcard data is malformed."""
+
+class FlashcardSourceNotFoundError(
+    FlashcardError,
+):
+    """Raised when owned Flashcard source material is unavailable."""
+
+
+class FlashcardSourceUnavailableError(
+    FlashcardError,
+):
+    """Raised when Flashcard source material cannot be safely used."""
