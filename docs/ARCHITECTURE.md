@@ -32,10 +32,14 @@ The system currently includes:
 - Reviewer source tracking
 - Saved reviewer persistence
 - Protected FastAPI reviewer API
+- Saved reviewer management and regeneration
+- Large-material multi-pass reviewer generation
+- Deterministic reviewer source batching
+- Partial-reviewer synthesis into one final structured reviewer
 
 The application now also includes a protected Reviewer frontend for generating structured reviewers from a whole subject or one ready study material.
 
-Future phases may add reviewer regeneration, scalable multi-pass generation for very large materials, flashcards, quizzes, study planning, scheduling, analytics, and deployment improvements.
+Future phases may add flashcards, quizzes, study planning, scheduling, analytics, and deployment improvements.
 ---
 
 # Phase Status
@@ -50,7 +54,9 @@ Future phases may add reviewer regeneration, scalable multi-pass generation for 
 | Phase 5G | Saved conversations, memory, summaries, conversation history UI | Implemented |
 | Phase 6A | Reviewer backend foundation, persistence, generation, sources, protected API | Implemented |
 | Phase 6B | Reviewer frontend, authenticated generation UI, structured result display | Implemented |
-| Later phases | Reviewer history/regeneration, scalable multi-pass generation, flashcards, quizzes, study plans, analytics, deployment | Planned |
+| Phase 6C | Saved reviewer management and regeneration | Implemented |
+| Phase 6D | Large-material multi-pass reviewer generation | Implemented |
+| Later phases | Flashcards, quizzes, study plans, analytics, deployment | Planned |
 
 ---
 
@@ -94,6 +100,7 @@ flowchart LR
         REVIEWER_ORCHESTRATION["Reviewer Orchestration"]
         REVIEWER_SOURCE["Reviewer Source Loader"]
         REVIEWER_GENERATION["Reviewer Generation"]
+        REVIEWER_BATCHER["Reviewer Source Batcher"]
         REVIEWER_SERVICE["Reviewer Persistence Service"]
     end
 
@@ -157,6 +164,7 @@ flowchart LR
     REVIEWER_ORCHESTRATION --> REVIEWER_SERVICE
 
     REVIEWER_SOURCE --> DATABASE
+    REVIEWER_GENERATION --> REVIEWER_BATCHER
     REVIEWER_GENERATION --> GEMINI
     REVIEWER_SERVICE --> DATABASE
 ```
@@ -873,7 +881,7 @@ Corrections require a new timestamped migration.
 20260806234000_restrict_study_conversation_summary_updates.sql
 ```
 
-````
+---
 # Phase 6A Migrations
 
 ```text
@@ -968,13 +976,11 @@ Reviewer insert and generation operations are performed through the trusted back
 
 Phase 6A did not include a student-facing reviewer workspace. That workspace is now implemented in Phase 6B.
 
-The following capabilities remain deferred:
+Saved reviewer management and regeneration were implemented in Phase 6C.
 
-- Saved reviewer history and reopening
-- Reviewer deletion controls in the frontend
-- Reviewer regeneration
-- Multi-pass generation for source collections that exceed the current bounded prompt size
-- Quiz generation
+Large-material multi-pass reviewer generation was implemented in Phase 6D.
+
+Quiz generation remains deferred to a later Phase 6 feature.
 
 # Phase 6B Reviewer Frontend
 
@@ -1031,24 +1037,186 @@ During live integration, short whole-subject generation exposed an output trunca
 
 Reviewer response validation still remains strict, and malformed provider output continues to receive only one controlled repair attempt.
 
-Phase 6B intentionally does not yet include:
+Phase 6B originally excluded saved reviewer management, regeneration, and large-material multi-pass generation. These capabilities were implemented later in Phase 6C and Phase 6D.
 
-- Saved reviewer history UI
-- Opening previously saved reviewers
-- Reviewer deletion controls in the frontend
-- Reviewer regeneration
-- Multi-pass generation for very large materials
-- Quiz generation
+Quiz generation remains deferred.
 
+---
+
+# Phase 6D Large-Material Reviewer Generation
+
+Phase 6D extends the existing reviewer-generation pipeline so study material that exceeds the normal single-pass prompt limit can still be processed without silently truncating source content.
+
+The existing source loader continues to load the complete authenticated source bundle. Large-material handling begins only inside the reviewer generation layer.
+
+## Generation Strategy
+
+Reviewer generation uses two paths:
+
+```text
+Source bundle at or below single-pass limit
+→ Complete reviewer prompt
+→ Gemini
+→ Validated ReviewerContent
+```
+
+For oversized source bundles:
+
+```text
+Complete source bundle
+→ ReviewerSourceBatcher
+→ Ordered source batches
+→ Partial reviewer generation
+→ Final synthesis prompt
+→ Gemini
+→ Validated ReviewerContent
+```
+
+The default limits are:
+
+| Limit                              |             Value |
+| ---------------------------------- | ----------------: |
+| Normal single-pass source limit    | 80,000 characters |
+| Default large-material batch limit | 60,000 characters |
+| Maximum configurable batch limit   | 80,000 characters |
+
+The batcher splits only at existing source-chunk boundaries. It does not truncate a chunk, remove chunks, duplicate chunks, or change their original order.
+
+## Large-Material Flow
+
+```mermaid
+flowchart TD
+    REQUEST["Reviewer Request"]
+    SOURCE["Complete ReviewerSourceBundle"]
+
+    SINGLE{"Fits single-pass limit?"}
+
+    COMPLETE_PROMPT["Complete Reviewer Prompt"]
+    BATCHER["ReviewerSourceBatcher"]
+
+    BATCH1["Source Batch 1"]
+    BATCH2["Source Batch 2"]
+    BATCHN["Source Batch N"]
+
+    PARTIAL1["Partial Reviewer 1"]
+    PARTIAL2["Partial Reviewer 2"]
+    PARTIALN["Partial Reviewer N"]
+
+    SYNTHESIS["Final Synthesis Prompt"]
+    GEMINI["Gemini Generation"]
+    CONTENT["Validated ReviewerContent"]
+    SAVE["Reviewer Persistence"]
+
+    REQUEST --> SOURCE
+    SOURCE --> SINGLE
+
+    SINGLE -->|Yes| COMPLETE_PROMPT
+    COMPLETE_PROMPT --> GEMINI
+
+    SINGLE -->|No| BATCHER
+
+    BATCHER --> BATCH1
+    BATCHER --> BATCH2
+    BATCHER --> BATCHN
+
+    BATCH1 --> PARTIAL1
+    BATCH2 --> PARTIAL2
+    BATCHN --> PARTIALN
+
+    PARTIAL1 --> SYNTHESIS
+    PARTIAL2 --> SYNTHESIS
+    PARTIALN --> SYNTHESIS
+
+    SYNTHESIS --> GEMINI
+    GEMINI --> CONTENT
+    CONTENT --> SAVE
+```
+
+Each partial batch prompt identifies itself as one ordered portion of a larger source collection. The model is instructed to use only concepts supported by that batch and not assume information from unseen batches.
+
+The synthesis prompt receives the ordered validated partial reviewers and combines them into one final reviewer. It removes unnecessary repetition while preserving important distinctions between concepts.
+
+## Compatibility With Existing Reviewer Generation
+
+Materials within the normal source limit continue through the original single-pass reviewer flow.
+
+This means Phase 6D does not change normal reviewer behavior simply because batching support exists.
+
+Existing behaviors remain enforced:
+
+* Short, medium, and long reviewer lengths
+* Strict JSON response validation
+* One controlled repair attempt for malformed output
+* Provider identity validation
+* Structured overview, topics, key points, and definitions
+* File-level and subject-level scopes
+* Authenticated ownership validation
+* Complete source tracking
+* Existing reviewer persistence
+
+## Source Metadata
+
+Even when generation uses multiple batches, the final `ReviewerGenerationResult` reports metadata for the complete original source bundle:
+
+```text
+source_character_count
+source_chunk_count
+source_file_count
+```
+
+The orchestration layer therefore continues to verify generation against the same complete source material loaded for the authenticated reviewer request.
+
+Saved reviewer source metadata also continues to reference the original source chunks rather than the generated partial reviewers.
+
+## Database Impact
+
+Phase 6D introduces no new table, migration, or RLS policy.
+
+It reuses:
+
+```text
+study_files
+study_file_chunks
+reviewers
+```
+
+The change is contained within the backend reviewer generation pipeline.
+
+## Phase 6D Validation
+
+Phase 6D added dedicated automated coverage for:
+
+* Small-material single-pass compatibility
+* Character-bounded source batching
+* Stable batch indices
+* Preservation of every source chunk
+* Preservation of chunk order
+* Oversized individual-chunk rejection
+* Partial batch prompt generation
+* Batch metadata
+* Large-material partial generation
+* Final reviewer synthesis
+* Complete-source generation metadata
+
+Backend regression validation after Phase 6D:
+
+```text
+727 passed
+```
+
+Reviewer-focused validation:
+
+```text
+106 passed
+```
+
+Phase 6D Ruff validation also passes.
 ---
 
 # Planned Future Features
 
 Future phases may introduce:
 
-- Saved reviewer history and reopening
-- Reviewer regeneration
-- Scalable multi-pass reviewer generation for very large materials
 - Flashcards
 - Quizzes
 - Academic tasks
