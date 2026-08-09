@@ -1,3 +1,6 @@
+﻿// File: /frontend/types/database.ts
+// Purpose: Contains TypeScript types generated from the linked hosted Supabase public schema.
+
 export type Json =
   | string
   | number
@@ -14,6 +17,59 @@ export type Database = {
   }
   public: {
     Tables: {
+      academic_tasks: {
+        Row: {
+          created_at: string
+          deadline: string
+          description: string | null
+          difficulty: string
+          estimated_minutes: number
+          id: string
+          status: string
+          subject_id: string
+          task_type: string
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          deadline: string
+          description?: string | null
+          difficulty: string
+          estimated_minutes: number
+          id?: string
+          status?: string
+          subject_id: string
+          task_type: string
+          title: string
+          updated_at?: string
+          user_id?: string
+        }
+        Update: {
+          created_at?: string
+          deadline?: string
+          description?: string | null
+          difficulty?: string
+          estimated_minutes?: number
+          id?: string
+          status?: string
+          subject_id?: string
+          task_type?: string
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "academic_tasks_subject_id_fkey"
+            columns: ["subject_id"]
+            isOneToOne: false
+            referencedRelation: "subjects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       file_processing_jobs: {
         Row: {
           attempt_count: number
@@ -187,6 +243,72 @@ export type Database = {
           year_level?: string | null
         }
         Relationships: []
+      }
+      reviewers: {
+        Row: {
+          content: Json
+          created_at: string
+          generated_at: string
+          generation_count: number
+          generation_model: string
+          id: string
+          reviewer_length: string
+          scope_type: string
+          sources: Json
+          study_file_id: string | null
+          subject_id: string
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          content: Json
+          created_at?: string
+          generated_at?: string
+          generation_count?: number
+          generation_model: string
+          id?: string
+          reviewer_length: string
+          scope_type: string
+          sources?: Json
+          study_file_id?: string | null
+          subject_id: string
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          content?: Json
+          created_at?: string
+          generated_at?: string
+          generation_count?: number
+          generation_model?: string
+          id?: string
+          reviewer_length?: string
+          scope_type?: string
+          sources?: Json
+          study_file_id?: string | null
+          subject_id?: string
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reviewers_study_file_id_fkey"
+            columns: ["study_file_id"]
+            isOneToOne: false
+            referencedRelation: "study_files"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reviewers_subject_id_fkey"
+            columns: ["subject_id"]
+            isOneToOne: false
+            referencedRelation: "subjects"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       study_availability: {
         Row: {
