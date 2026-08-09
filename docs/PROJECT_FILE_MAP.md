@@ -37,7 +37,8 @@ Update it whenever files, APIs, migrations, owners, or major system connections 
 | Phase 6B    | Reviewer generation frontend and result display          | Integrated |
 | Phase 6C    | Saved reviewer management and regeneration               | Integrated |
 | Phase 6D    | Large-material multi-pass reviewer generation            | Integrated |
-| Later       | Flashcards, quizzes, planning, analytics                 | Planned    |
+| Track A Backend | Flashcard persistence, source loading, AI generation, orchestration, and protected API | Integrated |
+| Later | Flashcard frontend, quizzes, planning, analytics | Planned |
 
 
 ---
@@ -307,6 +308,26 @@ Large-material generation preserves the complete original source bundle for owne
 
 ---
 
+# Track A — Flashcard Backend
+
+| Path | Status | Owner | Purpose | Connections |
+|---|---|---|---|---|
+| `/backend/app/ai/flashcard_prompt.py` | Integrated | Member 3 | Builds bounded, source-grounded Flashcard generation prompts and strict JSON output instructions | Flashcard generation, Gemini |
+| `/backend/app/schemas/flashcard.py` | Integrated | Member 3 | Flashcard generation requests, cards, sources, deck responses, and API error contracts | Routes, generation, repository |
+| `/backend/app/schemas/flashcard_summary.py` | Integrated | Member 3 | Lightweight saved-deck summary and list-response contracts | Flashcard repository, API |
+| `/backend/app/repositories/flashcard_repository.py` | Integrated | Member 3 | Atomic Flashcard creation, owner-scoped retrieval, listing, and deletion | Supabase, Flashcard RPC |
+| `/backend/app/services/flashcard_errors.py` | Integrated | Member 3 | Controlled Flashcard validation, source, generation, persistence, response, and orchestration errors | Flashcard services, API |
+| `/backend/app/services/flashcard_service.py` | Integrated | Member 3 | Flashcard persistence service for create/list/get/delete operations | Flashcard repository |
+| `/backend/app/services/flashcard_source_loader.py` | Integrated | Member 3 | Loads complete ordered owned source chunks for file or subject Flashcard generation | Study files, study-file chunks |
+| `/backend/app/services/flashcard_generation.py` | Integrated | Member 3 | Generates structured Flashcards through the shared AI provider with strict validation and one repair attempt | Flashcard prompt, Gemini |
+| `/backend/app/services/flashcard_orchestration.py` | Integrated | Member 3 | Coordinates source loading, AI generation, deterministic titles, and persistence | Flashcard source loader, generation, persistence |
+| `/backend/app/api/flashcard_dependency.py` | Integrated | Member 3 | Builds Flashcard persistence dependencies | Supabase client, repository |
+| `/backend/app/api/flashcard_orchestration_dependency.py` | Integrated | Member 3 | Assembles Gemini, trusted source loading, generation, and persistence dependencies | Gemini, Supabase, Flashcard services |
+| `/backend/app/api/routes/flashcards.py` | Integrated | Member 3 | Protected Flashcard generation, listing, retrieval, and deletion endpoints | Authentication, orchestration, persistence |
+| `/backend/app/api/router.py` | Integrated | Member 3 | Registers the protected Flashcard router with the shared FastAPI API router | FastAPI app |
+
+---
+
 # Phase 5G Migrations
 
 | Path | Status | Purpose |
@@ -327,6 +348,15 @@ Large-material generation preserves the complete original source bundle for owne
 
 ---
 
+# Track A Flashcard Migrations
+
+| Path | Status | Purpose |
+|---|---|---|
+| `/supabase/migrations/20260809142000_create_flashcard_foundation.sql` | Integrated | Creates `flashcard_decks` and `flashcards`, constraints, ownership validation, indexes, privileges, and RLS |
+| `/supabase/migrations/20260809145600_create_flashcard_persistence_rpc.sql` | Integrated | Creates the trusted atomic `create_flashcard_deck_with_cards` persistence function |
+
+---
+
 # Phase 6A Reviewer Tests
 
 | Path | Status | Purpose |
@@ -341,6 +371,24 @@ Large-material generation preserves the complete original source bundle for owne
 | `/backend/tests/test_reviewer_generation.py` | Ready | Structured AI generation and repair |
 | `/backend/tests/test_reviewer_orchestration.py` | Ready | End-to-end reviewer service orchestration |
 | `/backend/tests/test_reviewer_api_endpoint.py` | Ready | Authenticated reviewer API contract |
+
+---
+
+# Track A Flashcard Backend Tests
+
+| Path | Status | Purpose |
+|---|---|---|
+| `/backend/tests/test_flashcard_schemas.py` | Ready | Flashcard request, card, source, and response schema validation |
+| `/backend/tests/test_flashcard_migration.py` | Ready | Flashcard table, ownership, RLS, privilege, and constraint migration contract |
+| `/backend/tests/test_flashcard_persistence_rpc_migration.py` | Ready | Atomic Flashcard persistence RPC migration contract |
+| `/backend/tests/test_flashcard_repository.py` | Ready | Flashcard persistence, listing, retrieval, deletion, and owner filtering |
+| `/backend/tests/test_flashcard_service.py` | Ready | Flashcard persistence-service delegation |
+| `/backend/tests/test_flashcard_source_loader.py` | Ready | Complete file/subject source loading, ownership, readiness, and chunk validation |
+| `/backend/tests/test_flashcard_prompt.py` | Ready | Grounded Flashcard prompt construction, limits, and source-data boundary |
+| `/backend/tests/test_flashcard_generation.py` | Ready | Structured AI generation, exact card counts, duplicate rejection, and one repair attempt |
+| `/backend/tests/test_flashcard_orchestration.py` | Ready | End-to-end source → generation → persistence orchestration |
+| `/backend/tests/test_flashcard_api_endpoint.py` | Ready | Authenticated Flashcard API contract and controlled error responses |
+| `/backend/tests/test_flashcard_router_registration.py` | Ready | Real FastAPI/OpenAPI Flashcard route registration |
 
 ---
 
@@ -390,6 +438,9 @@ public.study_file_ai_chunks
 public.study_conversations
 public.study_messages
 public.reviewers
+
+public.flashcard_decks
+public.flashcards
 
 storage bucket: study-materials
 ```
