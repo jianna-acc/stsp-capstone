@@ -881,3 +881,73 @@ When an API or RPC changes:
 8. Use a new migration for database-function changes.
 9. Regenerate database types after schema changes.
 10. Re-run frontend and backend regression tests.
+
+### GET `/api/academic-tasks/prioritized`
+
+Returns academic tasks owned by the authenticated student with their
+deterministic priority score and factor breakdown.
+
+Query parameters:
+
+| Parameter | Type | Default | Rules |
+|---|---|---:|---|
+| `limit` | integer | 100 | 1–100 |
+
+Success:
+
+```text
+200 OK
+
+Response:
+
+{
+  "items": [
+    {
+      "task": {
+        "...": "AcademicTaskResponse"
+      },
+      "priority": {
+        "total_score": 72.5,
+        "deadline_score": 85.0,
+        "difficulty_score": 60.0,
+        "estimated_time_score": 60.0,
+        "output_confidence_score": 75.0,
+        "previous_performance_score": 50.0,
+        "available_study_time_score": 80.0,
+        "status_score": 50.0
+      }
+    }
+  ]
+}
+
+Tasks are sorted by highest priority score first.
+
+The endpoint requires authenticated student access.
+
+
+If your API-contract filename is different, put the same section in the existing API contract document rather than creating a duplicate.
+
+---
+
+# Phase 7C.6C checkpoint
+
+From the repo root:
+
+```powershell
+git diff --check
+git status --short
+
+Then inspect what changed:
+
+git diff --stat
+
+And:
+
+git diff -- `
+    docs/ACADEMIC_TASK_PRIORITY.md `
+    docs/ARCHITECTURE.md `
+    docs/PROJECT_FILE_MAP.md
+
+If your API contracts file was modified, include it too:
+
+git diff -- docs/API_CONTRACTS.md

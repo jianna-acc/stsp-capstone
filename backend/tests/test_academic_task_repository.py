@@ -238,6 +238,7 @@ def _task_row(
         "estimated_minutes": 120,
         "difficulty": "medium",
         "task_type": "assignment",
+        "output_type": "writing",
         "status": status,
         "created_at": now,
         "updated_at": now,
@@ -255,6 +256,7 @@ def _create_request() -> AcademicTaskCreateRequest:
         estimated_minutes=120,
         difficulty="medium",
         task_type="assignment",
+        output_type="writing",
     )
 
 
@@ -332,6 +334,10 @@ def test_create_academic_task_saves_owned_payload() -> None:
     ] == "assignment"
 
     assert payload[
+    "output_type"
+    ] == "writing"
+
+    assert payload[
         "status"
     ] == "pending"
 
@@ -359,6 +365,10 @@ def test_create_academic_task_saves_owned_payload() -> None:
 
     assert "user_id" not in selected_columns[
         0
+    ]
+
+    assert "output_type" in selected_columns[
+    0
     ]
 
 

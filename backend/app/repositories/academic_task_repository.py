@@ -30,6 +30,7 @@ _ACADEMIC_TASK_COLUMNS = (
     "estimated_minutes,"
     "difficulty,"
     "task_type,"
+    "output_type,"
     "status,"
     "created_at,"
     "updated_at"

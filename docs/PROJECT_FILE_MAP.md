@@ -490,3 +490,21 @@ Update this map whenever:
 - A database migration is added
 - A system connection changes
 - A development phase becomes implemented
+
+### Academic Tasks
+
+| File | Purpose | Owner | Connections |
+|---|---|---|---|
+| `backend/app/schemas/academic_task.py` | Academic task CRUD request and response contracts | Backend | Academic Task API, service, repository |
+| `backend/app/schemas/academic_task_priority.py` | Explainable priority API response contracts | Backend | Priority service, Academic Task API |
+| `backend/app/repositories/academic_task_repository.py` | Student-owned academic task persistence | Backend | Supabase, Academic Task service |
+| `backend/app/repositories/academic_task_priority_context_repository.py` | Loads timezone, output confidence, and study availability for priority scoring | Backend | Supabase, priority service |
+| `backend/app/services/academic_task_errors.py` | Controlled Academic Task domain errors | Backend | Repository, service, API |
+| `backend/app/services/academic_task_service.py` | Academic task CRUD orchestration | Backend | Repository, Academic Task API |
+| `backend/app/services/academic_task_priority.py` | Pure deterministic priority scoring engine | Backend | Priority orchestration service |
+| `backend/app/services/academic_task_priority_context.py` | Resolves output confidence and available study time | Backend | Context repository, priority service |
+| `backend/app/services/academic_task_priority_service.py` | Combines tasks and student context into priority evaluations | Backend | Priority engine, context resolver, API |
+| `backend/app/api/academic_task_dependency.py` | Creates Academic Task CRUD service dependencies | Backend | FastAPI, repository |
+| `backend/app/api/academic_task_priority_dependency.py` | Creates Academic Task priority dependencies | Backend | FastAPI, priority context repository |
+| `backend/app/api/routes/academic_tasks.py` | Authenticated CRUD, status, and prioritized-task endpoints | Backend | Academic Task services |
+| `docs/ACADEMIC_TASK_PRIORITY.md` | Priority weights, rules, context sources, fallbacks, and API behavior | Documentation | Academic Task priority implementation |

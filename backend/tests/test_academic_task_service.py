@@ -77,6 +77,7 @@ def _task_response(
         estimated_minutes=120,
         difficulty="medium",
         task_type="assignment",
+        output_type="writing",
         status=status,
         created_at=CREATED_AT,
         updated_at=UPDATED_AT,
@@ -94,6 +95,7 @@ def _create_request() -> AcademicTaskCreateRequest:
         estimated_minutes=120,
         difficulty="medium",
         task_type="assignment",
+        output_type="writing",
     )
 
 

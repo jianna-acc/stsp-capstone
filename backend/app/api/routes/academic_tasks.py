@@ -1,7 +1,11 @@
 # File: /backend/app/api/routes/academic_tasks.py
-# Purpose: Exposes authenticated academic-task CRUD and status
-# endpoints for student-owned tasks.
+# Purpose: Exposes authenticated academic-task CRUD, status,
+# and deterministic priority endpoints for student-owned tasks.
 
+from datetime import (
+    UTC,
+    datetime,
+)
 from typing import Annotated
 from uuid import UUID
 
@@ -17,6 +21,9 @@ from fastapi.responses import JSONResponse
 from app.api.academic_task_dependency import (
     get_academic_task_service,
 )
+from app.api.academic_task_priority_dependency import (
+    get_academic_task_priority_service,
+)
 from app.api.authenticated_user_dependency import (
     AuthenticatedUser,
     require_authenticated_user,
@@ -29,12 +36,21 @@ from app.schemas.academic_task import (
     AcademicTaskStatusUpdateRequest,
     AcademicTaskUpdateRequest,
 )
+from app.schemas.academic_task_priority import (
+    AcademicTaskPriorityBreakdownResponse,
+    AcademicTaskPriorityListResponse,
+    AcademicTaskPriorityResponse,
+)
 from app.services.academic_task_errors import (
     AcademicTaskError,
     AcademicTaskNotFoundError,
     AcademicTaskPersistenceError,
     AcademicTaskResponseError,
     AcademicTaskValidationError,
+)
+from app.services.academic_task_priority_service import (
+    AcademicTaskPriorityEvaluation,
+    AcademicTaskPriorityService,
 )
 from app.services.academic_task_service import (
     AcademicTaskService,
@@ -46,6 +62,39 @@ router = APIRouter(
         "Academic Tasks",
     ],
 )
+
+
+def _to_priority_response(
+    evaluation: AcademicTaskPriorityEvaluation,
+) -> AcademicTaskPriorityResponse:
+    """Convert one deterministic evaluation into an API response."""
+
+    task = evaluation.task
+    priority = evaluation.priority
+
+    return AcademicTaskPriorityResponse(
+        task=task,
+        priority=(
+            AcademicTaskPriorityBreakdownResponse(
+                total_score=priority.total_score,
+                deadline_score=priority.deadline_score,
+                difficulty_score=priority.difficulty_score,
+                estimated_time_score=(
+                    priority.estimated_time_score
+                ),
+                output_confidence_score=(
+                    priority.output_confidence_score
+                ),
+                previous_performance_score=(
+                    priority.previous_performance_score
+                ),
+                available_study_time_score=(
+                    priority.available_study_time_score
+                ),
+                status_score=priority.status_score,
+            )
+        ),
+    )
 
 
 @router.post(
@@ -91,6 +140,100 @@ async def create_academic_task(
         return service.create_task(
             user_id=authenticated_user.user_id,
             request=payload,
+        )
+
+    except AcademicTaskError as exc:
+        return _build_controlled_error_response(
+            exc,
+        )
+
+
+@router.get(
+    "/prioritized",
+    response_model=AcademicTaskPriorityListResponse,
+    status_code=status.HTTP_200_OK,
+    responses={
+        status.HTTP_401_UNAUTHORIZED: {
+            "description": (
+                "Missing, invalid, or expired student "
+                "authentication."
+            ),
+        },
+        status.HTTP_400_BAD_REQUEST: {
+            "model": AcademicTaskApiErrorResponse,
+        },
+        status.HTTP_503_SERVICE_UNAVAILABLE: {
+            "model": AcademicTaskApiErrorResponse,
+        },
+        status.HTTP_500_INTERNAL_SERVER_ERROR: {
+            "model": AcademicTaskApiErrorResponse,
+        },
+    },
+)
+async def list_prioritized_academic_tasks(
+    authenticated_user: Annotated[
+        AuthenticatedUser,
+        Depends(
+            require_authenticated_user,
+        ),
+    ],
+    service: Annotated[
+        AcademicTaskService,
+        Depends(
+            get_academic_task_service,
+        ),
+    ],
+    priority_service: Annotated[
+        AcademicTaskPriorityService,
+        Depends(
+            get_academic_task_priority_service,
+        ),
+    ],
+    limit: Annotated[
+        int,
+        Query(
+            ge=1,
+            le=100,
+        ),
+    ] = 100,
+) -> AcademicTaskPriorityListResponse | JSONResponse:
+    """Return owned academic tasks ranked by priority."""
+
+    try:
+        tasks = service.list_tasks(
+            user_id=authenticated_user.user_id,
+            limit=limit,
+        )
+
+        evaluations = (
+            priority_service.score_tasks(
+                user_id=authenticated_user.user_id,
+                tasks=tasks,
+                now=datetime.now(
+                    UTC,
+                ),
+            )
+        )
+
+        ranked = sorted(
+            evaluations,
+            key=lambda evaluation: (
+                -evaluation.priority.total_score,
+                evaluation.task.deadline,
+                evaluation.task.created_at,
+                str(
+                    evaluation.task.id,
+                ),
+            ),
+        )
+
+        return AcademicTaskPriorityListResponse(
+            items=tuple(
+                _to_priority_response(
+                    evaluation,
+                )
+                for evaluation in ranked
+            ),
         )
 
     except AcademicTaskError as exc:

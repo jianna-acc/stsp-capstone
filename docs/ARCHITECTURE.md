@@ -1241,3 +1241,62 @@ Update this document whenever:
 6. A planned feature becomes implemented.
 7. A security boundary changes.
 8. A development phase is completed.
+
+### Academic Tasks and Deterministic Priority
+
+Academic tasks are student-owned records containing subject, deadline,
+estimated duration, difficulty, task type, academic output type, and
+workflow status.
+
+Priority calculation is performed by a deterministic backend engine,
+not by the generative AI provider.
+
+```mermaid
+flowchart TD
+    User[Authenticated Student]
+
+    Tasks[(academic_tasks)]
+    Profile[(profiles)]
+    Confidence[(learning_output_confidences)]
+    Availability[(study_availability)]
+
+    TaskRepo[Academic Task Repository]
+    ContextRepo[Priority Context Repository]
+
+    PriorityContext[Priority Context Resolver]
+    PriorityEngine[Deterministic Priority Engine]
+    PriorityService[Academic Task Priority Service]
+
+    API[GET /api/academic-tasks/prioritized]
+
+    User --> API
+
+    Tasks --> TaskRepo
+    Profile --> ContextRepo
+    Confidence --> ContextRepo
+    Availability --> ContextRepo
+
+    TaskRepo --> PriorityService
+    ContextRepo --> PriorityContext
+    PriorityContext --> PriorityService
+
+    PriorityService --> PriorityEngine
+    PriorityEngine --> PriorityService
+    PriorityService --> API
+
+The engine currently scores:
+
+deadline proximity
+difficulty
+estimated completion time
+academic output confidence
+previous performance
+available study time
+task status
+
+Previous performance currently uses a neutral fallback until a real
+quiz/performance data source is available.
+
+See:
+
+docs/ACADEMIC_TASK_PRIORITY.md

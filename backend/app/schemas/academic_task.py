@@ -54,6 +54,20 @@ class AcademicTaskStatus(StrEnum):
     CANCELLED = "cancelled"
 
 
+class AcademicTaskOutputType(StrEnum):
+    """Academic output or skill primarily required by a task."""
+
+    WRITING = "writing"
+    COMPUTATION = "computation"
+    RESEARCH = "research"
+    PRESENTATION = "presentation"
+    CREATIVE = "creative"
+    READING_ANALYSIS = "reading_analysis"
+    MEMORIZATION = "memorization"
+    MIXED = "mixed"
+    OTHER = "other"
+
+
 _NON_NULL_UPDATE_FIELDS = frozenset(
     {
         "subject_id",
@@ -62,6 +76,7 @@ _NON_NULL_UPDATE_FIELDS = frozenset(
         "estimated_minutes",
         "difficulty",
         "task_type",
+        "output_type",
         "status",
     }
 )
@@ -146,6 +161,8 @@ class AcademicTaskCreateRequest(BaseModel):
 
     task_type: AcademicTaskType
 
+    output_type: AcademicTaskOutputType
+
     status: AcademicTaskStatus = (
         AcademicTaskStatus.PENDING
     )
@@ -228,6 +245,8 @@ class AcademicTaskUpdateRequest(BaseModel):
 
     task_type: AcademicTaskType | None = None
 
+    output_type: AcademicTaskOutputType | None = None
+
     status: AcademicTaskStatus | None = None
 
     @field_validator(
@@ -308,6 +327,7 @@ class AcademicTaskUpdateRequest(BaseModel):
 
         return self
 
+
 class AcademicTaskStatusUpdateRequest(BaseModel):
     """Request to change only an academic task's status."""
 
@@ -317,6 +337,7 @@ class AcademicTaskStatusUpdateRequest(BaseModel):
     )
 
     status: AcademicTaskStatus
+
 
 class AcademicTaskResponse(BaseModel):
     """Academic task returned to its authenticated owner."""
@@ -350,6 +371,8 @@ class AcademicTaskResponse(BaseModel):
     difficulty: AcademicTaskDifficulty
 
     task_type: AcademicTaskType
+
+    output_type: AcademicTaskOutputType
 
     status: AcademicTaskStatus
 

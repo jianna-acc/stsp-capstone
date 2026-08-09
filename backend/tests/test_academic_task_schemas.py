@@ -12,6 +12,7 @@ from app.schemas.academic_task import (
     AcademicTaskCreateRequest,
     AcademicTaskDifficulty,
     AcademicTaskListResponse,
+    AcademicTaskOutputType,
     AcademicTaskResponse,
     AcademicTaskStatus,
     AcademicTaskStatusUpdateRequest,
@@ -66,6 +67,7 @@ def create_request_payload() -> dict[str, object]:
         "estimated_minutes": 120,
         "difficulty": "medium",
         "task_type": "assignment",
+        "output_type": "writing",
     }
 
 
@@ -81,6 +83,7 @@ def response_payload() -> dict[str, object]:
         "estimated_minutes": 120,
         "difficulty": "medium",
         "task_type": "assignment",
+        "output_type": "writing",
         "status": "pending",
         "created_at": CREATED_AT,
         "updated_at": UPDATED_AT,
@@ -115,6 +118,21 @@ def test_academic_task_enum_values_match_database() -> None:
 
     assert {
         item.value
+        for item in AcademicTaskOutputType
+    } == {
+        "writing",
+        "computation",
+        "research",
+        "presentation",
+        "creative",
+        "reading_analysis",
+        "memorization",
+        "mixed",
+        "other",
+    }
+
+    assert {
+        item.value
         for item in AcademicTaskStatus
     } == {
         "pending",
@@ -139,6 +157,10 @@ def test_create_request_normalizes_text_and_defaults_status() -> None:
     assert request.title == "Research assignment"
     assert request.description == "Complete the first draft."
     assert request.status is AcademicTaskStatus.PENDING
+    assert (
+        request.output_type
+        is AcademicTaskOutputType.WRITING
+    )
 
 
 def test_create_request_converts_blank_description_to_none() -> None:
@@ -168,6 +190,20 @@ def test_create_request_rejects_blank_title() -> None:
         )
 
 
+def test_create_request_requires_output_type() -> None:
+    """Creation must identify the academic output required."""
+
+    payload = create_request_payload()
+    payload.pop("output_type")
+
+    with pytest.raises(
+        ValidationError,
+    ):
+        AcademicTaskCreateRequest(
+            **payload,
+        )
+
+
 @pytest.mark.parametrize(
     ("field_name", "invalid_value"),
     [
@@ -178,6 +214,10 @@ def test_create_request_rejects_blank_title() -> None:
         (
             "task_type",
             "homework123",
+        ),
+        (
+            "output_type",
+            "coding",
         ),
         (
             "status",
@@ -289,6 +329,30 @@ def test_update_request_normalizes_provided_fields() -> None:
     )
 
 
+def test_update_request_accepts_output_type() -> None:
+    """Partial updates should allow changing output type."""
+
+    request = AcademicTaskUpdateRequest(
+        output_type="research",
+    )
+
+    assert (
+        request.output_type
+        is AcademicTaskOutputType.RESEARCH
+    )
+
+
+def test_update_request_rejects_invalid_output_type() -> None:
+    """Updates must reject unsupported output categories."""
+
+    with pytest.raises(
+        ValidationError,
+    ):
+        AcademicTaskUpdateRequest(
+            output_type="coding",
+        )
+
+
 def test_update_request_can_clear_description() -> None:
     """Explicit blank description should clear the description."""
 
@@ -309,6 +373,7 @@ def test_update_request_can_clear_description() -> None:
         "estimated_minutes",
         "difficulty",
         "task_type",
+        "output_type",
         "status",
     ],
 )
@@ -336,9 +401,40 @@ def test_response_validates_persisted_task() -> None:
 
     assert response.id == TASK_ID
     assert response.subject_id == SUBJECT_ID
-    assert response.status is AcademicTaskStatus.PENDING
-    assert response.difficulty is AcademicTaskDifficulty.MEDIUM
-    assert response.task_type is AcademicTaskType.ASSIGNMENT
+
+    assert (
+        response.status
+        is AcademicTaskStatus.PENDING
+    )
+
+    assert (
+        response.difficulty
+        is AcademicTaskDifficulty.MEDIUM
+    )
+
+    assert (
+        response.task_type
+        is AcademicTaskType.ASSIGNMENT
+    )
+
+    assert (
+        response.output_type
+        is AcademicTaskOutputType.WRITING
+    )
+
+
+def test_response_requires_output_type() -> None:
+    """Persisted task responses must contain an output type."""
+
+    payload = response_payload()
+    payload.pop("output_type")
+
+    with pytest.raises(
+        ValidationError,
+    ):
+        AcademicTaskResponse(
+            **payload,
+        )
 
 
 def test_response_forbids_user_id() -> None:
@@ -394,6 +490,7 @@ def test_api_error_response_normalizes_text() -> None:
         == "The requested task was not found."
     )
 
+
 def test_status_update_request_accepts_valid_status() -> None:
     """Dedicated status requests should accept task statuses."""
 
@@ -415,5 +512,7 @@ def test_status_update_request_rejects_unknown_fields() -> None:
     ):
         AcademicTaskStatusUpdateRequest(
             status="completed",
-            user_id="33333333-3333-4333-8333-333333333333",
+            user_id=(
+                "33333333-3333-4333-8333-333333333333"
+            ),
         )

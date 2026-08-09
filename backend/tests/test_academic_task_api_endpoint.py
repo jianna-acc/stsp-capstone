@@ -13,6 +13,9 @@ from fastapi.testclient import TestClient
 from app.api.academic_task_dependency import (
     get_academic_task_service,
 )
+from app.api.academic_task_priority_dependency import (
+    get_academic_task_priority_service,
+)
 from app.api.authenticated_user_dependency import (
     AuthenticatedUser,
     require_authenticated_user,
@@ -35,6 +38,12 @@ from app.services.academic_task_errors import (
     AcademicTaskResponseError,
     AcademicTaskValidationError,
 )
+from app.services.academic_task_priority import (
+    AcademicTaskPriorityResult,
+)
+from app.services.academic_task_priority_service import (
+    AcademicTaskPriorityEvaluation,
+)
 
 USER_ID = UUID(
     "11111111-1111-4111-8111-111111111111"
@@ -42,6 +51,10 @@ USER_ID = UUID(
 
 TASK_ID = UUID(
     "22222222-2222-4222-8222-222222222222"
+)
+
+SECOND_TASK_ID = UUID(
+    "44444444-4444-4444-8444-444444444444"
 )
 
 SUBJECT_ID = UUID(
@@ -60,6 +73,7 @@ DEADLINE = datetime(
 
 def make_task(
     *,
+    task_id: UUID = TASK_ID,
     title: str = "Research assignment",
     status: AcademicTaskStatus = AcademicTaskStatus.PENDING,
 ) -> AcademicTaskResponse:
@@ -70,7 +84,7 @@ def make_task(
     )
 
     return AcademicTaskResponse(
-        id=TASK_ID,
+        id=task_id,
         subject_id=SUBJECT_ID,
         title=title,
         description="Complete the first draft.",
@@ -78,6 +92,7 @@ def make_task(
         estimated_minutes=120,
         difficulty="medium",
         task_type="assignment",
+        output_type="writing",
         status=status,
         created_at=now,
         updated_at=now,
@@ -93,6 +108,12 @@ class FakeAcademicTaskService:
         error: Exception | None = None,
     ) -> None:
         self.error = error
+
+        self.listed_tasks: list[
+            AcademicTaskResponse
+        ] = [
+            make_task(),
+        ]
 
         self.calls: list[
             tuple[
@@ -147,9 +168,7 @@ class FakeAcademicTaskService:
 
         self._raise_error()
 
-        return [
-            make_task(),
-        ]
+        return self.listed_tasks
 
     def get_task(
         self,
@@ -200,6 +219,11 @@ class FakeAcademicTaskService:
             updates[
                 "title"
             ] = request.title
+
+        if request.output_type is not None:
+            updates[
+                "output_type"
+            ] = request.output_type
 
         if request.status is not None:
             updates[
@@ -252,6 +276,74 @@ class FakeAcademicTaskService:
 
         self._raise_error()
 
+class FakeAcademicTaskPriorityService:
+    """Record deterministic priority-scoring API operations."""
+
+    def __init__(
+        self,
+        *,
+        error: Exception | None = None,
+        evaluations: list[
+            AcademicTaskPriorityEvaluation
+        ] | None = None,
+    ) -> None:
+        self.error = error
+        self.evaluations = evaluations
+
+        self.calls: list[
+            tuple[
+                UUID,
+                list[
+                    AcademicTaskResponse
+                ],
+                datetime,
+            ]
+        ] = []
+
+    def score_tasks(
+        self,
+        *,
+        user_id: UUID,
+        tasks: list[
+            AcademicTaskResponse
+        ],
+        now: datetime,
+    ) -> list[
+        AcademicTaskPriorityEvaluation
+    ]:
+        """Record and return deterministic task priorities."""
+
+        self.calls.append(
+            (
+                user_id,
+                tasks,
+                now,
+            )
+        )
+
+        if self.error is not None:
+            raise self.error
+
+        if self.evaluations is not None:
+            return self.evaluations
+
+        return [
+            AcademicTaskPriorityEvaluation(
+                task=task,
+                priority=AcademicTaskPriorityResult(
+                    total_score=72.5,
+                    deadline_score=85.0,
+                    difficulty_score=60.0,
+                    estimated_time_score=60.0,
+                    output_confidence_score=75.0,
+                    previous_performance_score=50.0,
+                    available_study_time_score=80.0,
+                    status_score=50.0,
+                ),
+            )
+            for task in tasks
+        ]
+
 
 class UnusedFakeSupabaseClient:
     """Placeholder when real Supabase authentication is unused."""
@@ -262,6 +354,9 @@ class UnusedFakeSupabaseClient:
 def create_test_client(
     *,
     service: FakeAcademicTaskService | None = None,
+    priority_service: (
+        FakeAcademicTaskPriorityService | None
+    ) = None,
     authenticated: bool = True,
 ) -> TestClient:
     """Create an isolated academic-task API application."""
@@ -279,9 +374,19 @@ def create_test_client(
         else FakeAcademicTaskService()
     )
 
+    task_priority_service = (
+        priority_service
+        if priority_service is not None
+        else FakeAcademicTaskPriorityService()
+    )
+
     app.dependency_overrides[
         get_academic_task_service
     ] = lambda: task_service
+
+    app.dependency_overrides[
+        get_academic_task_priority_service
+    ] = lambda: task_priority_service
 
     app.dependency_overrides[
         get_supabase_client
@@ -315,6 +420,7 @@ def valid_create_payload() -> dict[
         "estimated_minutes": 120,
         "difficulty": "medium",
         "task_type": "assignment",
+        "output_type": "writing",
     }
 
 
@@ -355,6 +461,10 @@ def test_create_task_uses_authenticated_owner() -> None:
         "status"
     ] == "pending"
 
+    assert body[
+    "output_type"
+    ] == "writing"
+
     assert "user_id" not in body
 
     assert len(
@@ -385,6 +495,7 @@ def test_create_task_uses_authenticated_owner() -> None:
     assert request.subject_id == SUBJECT_ID
     assert request.title == "Research assignment"
     assert request.estimated_minutes == 120
+    assert request.output_type == "writing"
 
 
 def test_create_task_rejects_client_user_id() -> None:
@@ -423,6 +534,50 @@ def test_create_task_rejects_invalid_payload() -> None:
     payload[
         "estimated_minutes"
     ] = 0
+
+    with create_test_client(
+        service=service,
+    ) as client:
+        response = client.post(
+            "/api/academic-tasks",
+            json=payload,
+        )
+
+    assert response.status_code == 422
+    assert service.calls == []
+
+def test_create_task_requires_output_type() -> None:
+    """Task creation must identify its academic output type."""
+
+    service = FakeAcademicTaskService()
+
+    payload = valid_create_payload()
+    payload.pop(
+        "output_type",
+    )
+
+    with create_test_client(
+        service=service,
+    ) as client:
+        response = client.post(
+            "/api/academic-tasks",
+            json=payload,
+        )
+
+    assert response.status_code == 422
+    assert service.calls == []
+
+
+def test_create_task_rejects_invalid_output_type() -> None:
+    """Unsupported academic output types must fail validation."""
+
+    service = FakeAcademicTaskService()
+
+    payload = valid_create_payload()
+
+    payload[
+        "output_type"
+    ] = "coding"
 
     with create_test_client(
         service=service,
@@ -573,6 +728,7 @@ def test_update_task_uses_authenticated_owner() -> None:
             f"/api/academic-tasks/{TASK_ID}",
             json={
                 "title": "Revised assignment",
+                "output_type": "research",
                 "status": "in_progress",
             },
         )
@@ -588,6 +744,10 @@ def test_update_task_uses_authenticated_owner() -> None:
     assert body[
         "status"
     ] == "in_progress"
+
+    assert body[
+    "output_type"
+    ] == "research"
 
     assert len(
         service.calls,
@@ -619,6 +779,7 @@ def test_update_task_uses_authenticated_owner() -> None:
     )
 
     assert request.title == "Revised assignment"
+    assert request.output_type == "research"
 
     assert (
         request.status
@@ -878,3 +1039,277 @@ def test_missing_authentication_returns_401() -> None:
 
     assert response.status_code == 401
     assert service.calls == []
+
+def test_prioritized_tasks_use_authenticated_owner() -> None:
+    """Priority ranking must use authenticated ownership."""
+
+    service = FakeAcademicTaskService()
+
+    priority_service = (
+        FakeAcademicTaskPriorityService()
+    )
+
+    with create_test_client(
+        service=service,
+        priority_service=priority_service,
+    ) as client:
+        response = client.get(
+            "/api/academic-tasks/prioritized",
+        )
+
+    assert response.status_code == 200
+
+    body = response.json()
+
+    assert len(
+        body[
+            "items"
+        ],
+    ) == 1
+
+    item = body[
+        "items"
+    ][
+        0
+    ]
+
+    assert item[
+        "task"
+    ][
+        "id"
+    ] == str(
+        TASK_ID,
+    )
+
+    assert item[
+        "priority"
+    ][
+        "total_score"
+    ] == 72.5
+
+    assert item[
+        "priority"
+    ][
+        "deadline_score"
+    ] == 85.0
+
+    assert service.calls == [
+        (
+            "list",
+            USER_ID,
+            100,
+        )
+    ]
+
+    assert len(
+        priority_service.calls,
+    ) == 1
+
+    (
+        called_user_id,
+        called_tasks,
+        called_now,
+    ) = priority_service.calls[
+        0
+    ]
+
+    assert called_user_id == USER_ID
+
+    assert len(
+        called_tasks,
+    ) == 1
+
+    assert (
+        called_tasks[
+            0
+        ].id
+        == TASK_ID
+    )
+
+    assert (
+        called_now.tzinfo
+        is not None
+    )
+
+def test_prioritized_tasks_accept_custom_limit() -> None:
+    """Prioritized task listing should forward list limits."""
+
+    service = FakeAcademicTaskService()
+
+    priority_service = (
+        FakeAcademicTaskPriorityService()
+    )
+
+    with create_test_client(
+        service=service,
+        priority_service=priority_service,
+    ) as client:
+        response = client.get(
+            "/api/academic-tasks/prioritized?limit=25",
+        )
+
+    assert response.status_code == 200
+
+    assert service.calls == [
+        (
+            "list",
+            USER_ID,
+            25,
+        )
+    ]
+
+def test_prioritized_tasks_reject_invalid_limit() -> None:
+    """Prioritized task listing must enforce API bounds."""
+
+    service = FakeAcademicTaskService()
+
+    priority_service = (
+        FakeAcademicTaskPriorityService()
+    )
+
+    with create_test_client(
+        service=service,
+        priority_service=priority_service,
+    ) as client:
+        response = client.get(
+            "/api/academic-tasks/prioritized?limit=101",
+        )
+
+    assert response.status_code == 422
+
+    assert service.calls == []
+    assert priority_service.calls == []
+
+def test_prioritized_context_failure_returns_500() -> None:
+    """Invalid priority context must return a safe API error."""
+
+    service = FakeAcademicTaskService()
+
+    priority_service = (
+        FakeAcademicTaskPriorityService(
+            error=AcademicTaskResponseError(
+                "private invalid priority context",
+            ),
+        )
+    )
+
+    with create_test_client(
+        service=service,
+        priority_service=priority_service,
+    ) as client:
+        response = client.get(
+            "/api/academic-tasks/prioritized",
+        )
+
+    assert response.status_code == 500
+
+    assert response.json() == {
+        "error_code": "ACADEMIC_TASK_RESPONSE_FAILED",
+        "message": (
+            "Stored academic-task data could not be processed."
+        ),
+    }
+
+    assert (
+        "private invalid priority context"
+        not in response.text
+    )
+
+def test_prioritized_tasks_are_sorted_highest_first() -> None:
+    """Highest deterministic priority must appear first."""
+
+    service = FakeAcademicTaskService()
+
+    first_task = make_task(
+        task_id=TASK_ID,
+        title="Lower priority task",
+    )
+
+    second_task = make_task(
+        task_id=SECOND_TASK_ID,
+        title="Higher priority task",
+    )
+
+    service.listed_tasks = [
+        first_task,
+        second_task,
+    ]
+
+    priority_service = (
+        FakeAcademicTaskPriorityService(
+            evaluations=[
+                AcademicTaskPriorityEvaluation(
+                    task=first_task,
+                    priority=AcademicTaskPriorityResult(
+                        total_score=40.0,
+                        deadline_score=50.0,
+                        difficulty_score=60.0,
+                        estimated_time_score=60.0,
+                        output_confidence_score=50.0,
+                        previous_performance_score=50.0,
+                        available_study_time_score=50.0,
+                        status_score=50.0,
+                    ),
+                ),
+                AcademicTaskPriorityEvaluation(
+                    task=second_task,
+                    priority=AcademicTaskPriorityResult(
+                        total_score=90.0,
+                        deadline_score=100.0,
+                        difficulty_score=100.0,
+                        estimated_time_score=80.0,
+                        output_confidence_score=100.0,
+                        previous_performance_score=50.0,
+                        available_study_time_score=100.0,
+                        status_score=100.0,
+                    ),
+                ),
+            ],
+        )
+    )
+
+    with create_test_client(
+        service=service,
+        priority_service=priority_service,
+    ) as client:
+        response = client.get(
+            "/api/academic-tasks/prioritized",
+        )
+
+    assert response.status_code == 200
+
+    items = response.json()[
+        "items"
+    ]
+
+    assert len(
+        items,
+    ) == 2
+
+    assert items[
+        0
+    ][
+        "task"
+    ][
+        "id"
+    ] == str(
+        SECOND_TASK_ID,
+    )
+
+    assert items[
+        0
+    ][
+        "priority"
+    ][
+        "total_score"
+    ] == 90.0
+
+    assert items[
+        1
+    ][
+        "task"
+    ][
+        "id"
+    ] == str(
+        TASK_ID,
+    )
