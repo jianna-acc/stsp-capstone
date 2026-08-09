@@ -34,3 +34,14 @@ class FlashcardSourceUnavailableError(
     FlashcardError,
 ):
     """Raised when Flashcard source material cannot be safely used."""
+
+class FlashcardGenerationError(
+    FlashcardError,
+):
+    """Raised when Flashcard AI generation cannot complete."""
+
+
+class FlashcardGenerationResponseError(
+    FlashcardGenerationError,
+):
+    """Raised when AI output cannot become valid Flashcards."""
