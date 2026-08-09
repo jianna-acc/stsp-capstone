@@ -45,3 +45,8 @@ class FlashcardGenerationResponseError(
     FlashcardGenerationError,
 ):
     """Raised when AI output cannot become valid Flashcards."""
+
+class FlashcardOrchestrationError(
+    FlashcardError,
+):
+    """Raised when the Flashcard generation pipeline is inconsistent."""
