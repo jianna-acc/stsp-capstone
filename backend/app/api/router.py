@@ -14,6 +14,9 @@ from app.api.routes import (
 from app.api.routes.file_processing import (
     router as file_processing_router,
 )
+from app.api.routes.flashcards import (
+    router as flashcard_router,
+)
 
 api_router = APIRouter()
 
@@ -35,4 +38,7 @@ api_router.include_router(
 
 api_router.include_router(
     reviewers.router,
+)
+api_router.include_router(
+    flashcard_router,
 )

@@ -123,3 +123,18 @@ class FlashcardDeckSummary(
             )
 
         return self
+
+class FlashcardListResponse(
+    BaseModel,
+):
+    """Saved Flashcard decks returned by the list endpoint."""
+
+    model_config = ConfigDict(
+        extra="forbid",
+        frozen=True,
+    )
+
+    items: tuple[
+        FlashcardDeckSummary,
+        ...,
+    ] = ()

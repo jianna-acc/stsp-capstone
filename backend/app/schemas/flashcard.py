@@ -324,3 +324,23 @@ class FlashcardDeckResponse(BaseModel):
             )
 
         return self
+
+class FlashcardApiErrorResponse(
+    BaseModel,
+):
+    """Safe public error returned by Flashcard endpoints."""
+
+    model_config = ConfigDict(
+        extra="forbid",
+        frozen=True,
+    )
+
+    error_code: str = Field(
+        min_length=1,
+        max_length=120,
+    )
+
+    message: str = Field(
+        min_length=1,
+        max_length=500,
+    )
