@@ -25,6 +25,7 @@ export type Database = {
           difficulty: string
           estimated_minutes: number
           id: string
+          output_type: string
           status: string
           subject_id: string
           task_type: string
@@ -39,6 +40,7 @@ export type Database = {
           difficulty: string
           estimated_minutes: number
           id?: string
+          output_type?: string
           status?: string
           subject_id: string
           task_type: string
@@ -53,6 +55,7 @@ export type Database = {
           difficulty?: string
           estimated_minutes?: number
           id?: string
+          output_type?: string
           status?: string
           subject_id?: string
           task_type?: string
@@ -116,6 +119,139 @@ export type Database = {
             columns: ["study_file_id"]
             isOneToOne: true
             referencedRelation: "study_files"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      flashcard_decks: {
+        Row: {
+          created_at: string
+          generated_at: string
+          generation_count: number
+          generation_model: string
+          id: string
+          requested_card_count: number
+          scope_type: string
+          sources: Json
+          study_file_id: string | null
+          subject_id: string
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          generated_at?: string
+          generation_count?: number
+          generation_model: string
+          id?: string
+          requested_card_count: number
+          scope_type: string
+          sources?: Json
+          study_file_id?: string | null
+          subject_id: string
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          generated_at?: string
+          generation_count?: number
+          generation_model?: string
+          id?: string
+          requested_card_count?: number
+          scope_type?: string
+          sources?: Json
+          study_file_id?: string | null
+          subject_id?: string
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "flashcard_decks_study_file_id_fkey"
+            columns: ["study_file_id"]
+            isOneToOne: false
+            referencedRelation: "study_files"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "flashcard_decks_subject_id_fkey"
+            columns: ["subject_id"]
+            isOneToOne: false
+            referencedRelation: "subjects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      flashcards: {
+        Row: {
+          answer: string
+          created_at: string
+          deck_id: string
+          id: string
+          position: number
+          question: string
+        }
+        Insert: {
+          answer: string
+          created_at?: string
+          deck_id: string
+          id?: string
+          position: number
+          question: string
+        }
+        Update: {
+          answer?: string
+          created_at?: string
+          deck_id?: string
+          id?: string
+          position?: number
+          question?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "flashcards_deck_id_fkey"
+            columns: ["deck_id"]
+            isOneToOne: false
+            referencedRelation: "flashcard_decks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      learning_output_confidences: {
+        Row: {
+          confidence_level: number
+          created_at: string
+          id: string
+          output_type: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          confidence_level: number
+          created_at?: string
+          id?: string
+          output_type: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          confidence_level?: number
+          created_at?: string
+          id?: string
+          output_type?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "learning_output_confidences_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -717,6 +853,20 @@ export type Database = {
         }
         Returns: undefined
       }
+      create_flashcard_deck_with_cards: {
+        Args: {
+          p_cards: Json
+          p_generation_model: string
+          p_requested_card_count: number
+          p_scope_type: string
+          p_sources: Json
+          p_study_file_id: string
+          p_subject_id: string
+          p_title: string
+          p_user_id: string
+        }
+        Returns: string
+      }
       fail_study_file_processing: {
         Args: {
           p_error_code: string
@@ -760,6 +910,10 @@ export type Database = {
           failed_count: number
           requeued_count: number
         }[]
+      }
+      replace_learning_output_confidences: {
+        Args: { p_confidences: Json }
+        Returns: undefined
       }
       replace_learning_profile_subjects: {
         Args: { p_subjects: Json }
