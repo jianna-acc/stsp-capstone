@@ -7,6 +7,7 @@ from app.api.health import (
     router as health_router,
 )
 from app.api.routes import (
+    analytics,
     rag,
     reviewers,
     study_conversations,
@@ -16,6 +17,7 @@ from app.api.routes.file_processing import (
 )
 
 api_router = APIRouter()
+
 
 api_router.include_router(
     health_router,
@@ -35,4 +37,8 @@ api_router.include_router(
 
 api_router.include_router(
     reviewers.router,
+)
+
+api_router.include_router(
+    analytics.router,
 )

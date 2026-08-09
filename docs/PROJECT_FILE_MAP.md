@@ -370,6 +370,22 @@ Large-material generation preserves the complete original source bundle for owne
 | `/frontend/features/reviewers/components/ReviewerResult.test.tsx` | Ready | Overview, topics, definitions, and source rendering |
 | `/frontend/features/reviewers/components/ReviewerWorkspace.test.tsx` | Ready | Workspace generation/result integration |
 
+## Phase 6 Track E — Analytics
+
+| File | Purpose | Owner | Connections |
+|---|---|---|---|
+| `backend/app/api/analytics_dependency.py` | Constructs the Analytics service and repository dependency graph. | Track E — Analytics | Supabase client, Analytics repository, Analytics service |
+| `backend/app/api/routes/analytics.py` | Exposes authenticated Analytics endpoints. | Track E — Analytics | Authentication dependency, Analytics service |
+| `backend/app/repositories/analytics_repository.py` | Reads owner-scoped canonical subject and study-material data. | Track E — Analytics | `subjects`, `study_files`, Supabase client |
+| `backend/app/schemas/analytics.py` | Defines Analytics request/response contracts and metric states. | Track E — Analytics | Analytics route and service |
+| `backend/app/services/analytics_errors.py` | Defines controlled Analytics feature errors. | Track E — Analytics | Repository and route |
+| `backend/app/services/analytics_service.py` | Aggregates canonical data and deferred performance metrics. | Track E — Analytics | Analytics repository; future Tracks A/B |
+| `backend/tests/test_analytics_api_endpoint.py` | Tests authentication, periods, responses, and controlled API failures. | Track E — Analytics | Analytics API |
+| `backend/tests/test_analytics_repository.py` | Tests owner-scoped canonical data access. | Track E — Analytics | Analytics repository |
+| `backend/tests/test_analytics_router_registration.py` | Protects Analytics router registration. | Track E — Analytics | FastAPI application router |
+| `backend/tests/test_analytics_service.py` | Tests Analytics aggregation behavior. | Track E — Analytics | Analytics service |
+| `docs/ANALYTICS_DESIGN.md` | Documents Track E architecture, scope, and future Track A/B integration. | Track E — Analytics | Phase 6 implementation |
+
 # Important Supabase Resources
 
 ```text

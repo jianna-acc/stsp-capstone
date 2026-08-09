@@ -1132,6 +1132,39 @@ flowchart TD
     CONTENT --> SAVE
 ```
 
+## Phase 6 Track E — Analytics
+
+```mermaid
+flowchart LR
+    U[Authenticated Student]
+    AUTH[Authenticated User Dependency]
+    ROUTE[Analytics API]
+    SERVICE[Analytics Service]
+    REPO[Analytics Repository]
+    SUBJECTS[(subjects)]
+    FILES[(study_files)]
+    A[Track A Flashcards]
+    B[Track B Quizzes]
+    ACT[Future Study Activity]
+
+    U --> AUTH
+    AUTH --> ROUTE
+    ROUTE --> SERVICE
+    SERVICE --> REPO
+    REPO --> SUBJECTS
+    REPO --> FILES
+
+    A -. future provider .-> SERVICE
+    B -. future provider .-> SERVICE
+    ACT -. future provider .-> SERVICE
+```
+
+The partial implementation currently exposes canonical subject and
+study-material inventory metrics. Quiz, flashcard, topic-performance, and
+study-activity metrics remain deferred until their canonical data sources are
+available.
+
+
 Each partial batch prompt identifies itself as one ordered portion of a larger source collection. The model is instructed to use only concepts supported by that batch and not assume information from unseen batches.
 
 The synthesis prompt receives the ordered validated partial reviewers and combines them into one final reviewer. It removes unnecessary repetition while preserving important distinctions between concepts.
