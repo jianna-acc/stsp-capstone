@@ -25,20 +25,20 @@ Update it whenever files, APIs, migrations, owners, or major system connections 
 
 # Phase Status
 
-| Phase       | Scope                                                    | Status     |
-| ----------- | -------------------------------------------------------- | ---------- |
-| Phase 1     | Foundation and authentication                            | Integrated |
-| Phase 2     | Learning-profile onboarding                              | Integrated |
-| Phase 3     | Subjects and study-material processing                   | Integrated |
-| Phase 4     | AI provider, preparation, embeddings, vectors, retrieval | Integrated |
-| Phase 5A–5F | RAG and Study Assistant                                  | Integrated |
-| Phase 5G    | Saved conversations, memory, summaries, history UI       | Integrated |
-| Phase 6A    | Reviewer backend foundation                              | Integrated |
-| Phase 6B    | Reviewer generation frontend and result display          | Integrated |
-| Phase 6C    | Saved reviewer management and regeneration               | Integrated |
-| Phase 6D    | Large-material multi-pass reviewer generation            | Integrated |
-| Later       | Flashcards, quizzes, planning, analytics                 | Planned    |
-
+| Phase | Scope | Status |
+|---|---|---|
+| Phase 1 | Foundation and authentication | Integrated |
+| Phase 2 | Learning-profile onboarding | Integrated |
+| Phase 3 | Subjects and study-material processing | Integrated |
+| Phase 4 | AI provider, preparation, embeddings, vectors, retrieval | Integrated |
+| Phase 5A–5F | RAG and Study Assistant | Integrated |
+| Phase 5G | Saved conversations, memory, summaries, history UI | Integrated |
+| Phase 6A | Reviewer backend foundation | Integrated |
+| Phase 6B | Reviewer generation frontend and result display | Integrated |
+| Phase 6C | Saved reviewer management and regeneration | Integrated |
+| Phase 6D | Large-material multi-pass reviewer generation | Integrated |
+| Phase 7A–7E | Academic tasks, output confidence, deterministic priority, frontend, live integration | Integrated |
+| Later | Flashcards, quizzes, study planning, analytics | Planned |
 
 ---
 
@@ -87,6 +87,7 @@ Update it whenever files, APIs, migrations, owners, or major system connections 
 | `/docs/AI_QUERY_EMBEDDING.md` | Integrated | Member 3 | Query embedding | Retrieval |
 | `/docs/AI_RAG_API_ENDPOINT.md` | Integrated | Member 3 | RAG endpoint | FastAPI, frontend |
 | `/docs/AI_REVIEWER_GENERATION.md` | Integrated | Member 3 | Reviewer generation and large-material batching design | Gemini, reviewer services |
+| `/docs/ACADEMIC_TASK_PRIORITY.md` | Integrated | Backend/Documentation | Deterministic Academic Task priority design, weights, fallbacks, and API behavior | Academic Task backend and frontend |
 
 ---
 
@@ -142,7 +143,7 @@ Update it whenever files, APIs, migrations, owners, or major system connections 
 | `/frontend/features/learning-profile/types.ts` | Integrated | Member 2 | Profile types | Onboarding |
 | `/frontend/features/learning-profile/validation.ts` | Integrated | Member 2 | Input validation | Mutations |
 | `/frontend/features/learning-profile/server/queries.ts` | Integrated | Member 2 | Load profile | Supabase |
-| `/frontend/features/learning-profile/server/mutations.ts` | Integrated | Member 2 | Save profile | Supabase RPC |
+| `/frontend/features/learning-profile/server/mutations.ts` | Integrated | Member 2 | Save profile and output confidence | Supabase RPC |
 | `/frontend/features/learning-profile/server/guards.ts` | Integrated | Member 2 | Onboarding guards | Protected routes |
 | `/frontend/app/(protected)/onboarding` | Integrated | Member 2 | Onboarding flow | Learning-profile feature |
 | `/frontend/app/(protected)/profile/page.tsx` | Integrated | Member 2 | Profile display | Learning profile |
@@ -273,7 +274,7 @@ Update it whenever files, APIs, migrations, owners, or major system connections 
 
 ---
 
-# Phase 6A Reviewer Backend
+# Reviewer Backend
 
 | Path | Status | Owner | Purpose | Connections |
 |---|---|---|---|---|
@@ -282,28 +283,95 @@ Update it whenever files, APIs, migrations, owners, or major system connections 
 | `/backend/app/repositories/reviewer_repository.py` | Integrated | Member 3 | Reviewer persistence and ownership filtering | Supabase |
 | `/backend/app/services/reviewer_errors.py` | Integrated | Member 3 | Controlled reviewer-domain errors | Reviewer services, API |
 | `/backend/app/services/reviewer_source_loader.py` | Integrated | Member 3 | Loads ordered source-aware chunks for file/subject scope | Study files, chunks |
-| `/backend/app/services/reviewer_generation.py` | Integrated | Member 3 | Structured reviewer generation with single-pass and large-material multi-pass flows, strict validation, and bounded repair | Gemini provider, reviewer batching |
-| `/backend/app/services/reviewer_service.py` | Integrated | Member 3 | Reviewer save/list/get/delete operations | Reviewer repository |
+| `/backend/app/services/reviewer_generation.py` | Integrated | Member 3 | Single-pass and large-material reviewer generation | Gemini, reviewer batching |
+| `/backend/app/services/reviewer_batching.py` | Integrated | Member 3 | Deterministic character-bounded reviewer source batching | Reviewer generation |
+| `/backend/app/services/reviewer_service.py` | Integrated | Member 3 | Reviewer persistence operations | Reviewer repository |
 | `/backend/app/services/reviewer_orchestration.py` | Integrated | Member 3 | Coordinates source loading, generation, and persistence | Reviewer services |
-| `/backend/app/api/reviewer_dependency.py` | Integrated | Member 3 | Reviewer persistence dependency | Repository, Supabase client |
+| `/backend/app/api/reviewer_dependency.py` | Integrated | Member 3 | Reviewer persistence dependency | Repository |
 | `/backend/app/api/reviewer_orchestration_dependency.py` | Integrated | Member 3 | Reviewer generation dependency assembly | Gemini, source loader, service |
-| `/backend/app/api/routes/reviewers.py` | Integrated | Member 3 | Protected reviewer API endpoints | Reviewer orchestration/service |
-| `/backend/app/services/supabase_admin.py` | Integrated | Member 3 | Trusted ready-file and source-chunk reads | Reviewer source loader |
-# Phase 6D Large-Material Reviewer Generation
+| `/backend/app/api/routes/reviewers.py` | Integrated | Member 3 | Protected Reviewer API | Reviewer services |
 
-| Path                                               | Status     | Owner    | Purpose                                                                                                                 | Connections                        |
-| -------------------------------------------------- | ---------- | -------- | ----------------------------------------------------------------------------------------------------------------------- | ---------------------------------- |
-| `/backend/app/services/reviewer_batching.py`       | Integrated | Member 3 | Splits large reviewer source bundles into deterministic character-bounded batches without dropping or reordering chunks | Reviewer generation, source loader |
-| `/backend/app/ai/reviewer_prompt.py`               | Integrated | Member 3 | Builds single-pass, partial-batch, and final-synthesis reviewer prompts                                                 | Reviewer batching, Gemini          |
-| `/backend/app/services/reviewer_generation.py`     | Integrated | Member 3 | Selects single-pass or multi-pass generation and synthesizes partial reviewers into one validated reviewer              | Reviewer prompt builder, Gemini    |
-| `/backend/tests/test_reviewer_batching.py`         | Ready      | Member 3 | Verifies batching limits, order preservation, and chunk completeness                                                    | Reviewer batching                  |
-| `/backend/tests/test_reviewer_large_generation.py` | Ready      | Member 3 | Verifies small-material compatibility, batched generation, synthesis, and complete-source metadata                      | Reviewer generation                |
-| `/backend/tests/test_reviewer_prompt.py`           | Ready      | Member 3 | Verifies complete, batch, and synthesis-aware prompt behavior                                                           | Reviewer prompt builder            |
-| `/docs/AI_REVIEWER_GENERATION.md`                  | Integrated | Member 3 | Documents reviewer generation architecture and Phase 6D large-material flow                                             | Reviewer backend                   |
+---
 
-Phase 6D does not require a new database migration. Existing reviewer persistence and source metadata continue to use the Phase 6A reviewer schema and `reviewers` table.
+# Reviewer Frontend
 
-Large-material generation preserves the complete original source bundle for ownership validation, persistence, and source metadata while sending bounded subsets of source chunks to the generation provider.
+| Path | Status | Owner | Purpose | Connections |
+|---|---|---|---|---|
+| `/frontend/app/(protected)/reviewers/page.tsx` | Integrated | Frontend | Protected Reviewer page | Reviewer workspace |
+| `/frontend/features/reviewers/types.ts` | Integrated | Frontend | Reviewer contracts | Reviewer API/UI |
+| `/frontend/features/reviewers/api.ts` | Integrated | Frontend | Authenticated Reviewer API client | Reviewer endpoints |
+| `/frontend/features/reviewers/server/options.ts` | Integrated | Frontend | Loads subjects and ready files | Supabase |
+| `/frontend/features/reviewers/components/ReviewerGenerationForm.tsx` | Integrated | Frontend | Reviewer generation controls | Reviewer API |
+| `/frontend/features/reviewers/components/ReviewerGenerationForm.module.css` | Integrated | Frontend | Reviewer generation form styles | Generation form |
+| `/frontend/features/reviewers/components/ReviewerResult.tsx` | Integrated | Frontend | Reviewer content display | Reviewer response |
+| `/frontend/features/reviewers/components/ReviewerResult.module.css` | Integrated | Frontend | Reviewer result styles | Reviewer result |
+| `/frontend/features/reviewers/components/ReviewerWorkspace.tsx` | Integrated | Frontend | Reviewer workspace orchestration | Reviewer page |
+| `/frontend/features/reviewers/components/ReviewerWorkspace.module.css` | Integrated | Frontend | Reviewer workspace layout | Reviewer workspace |
+| `/frontend/features/navigation/components/ProtectedAppShell.tsx` | Integrated | Frontend | Protected application navigation | Reviewer, Academic Tasks, other protected pages |
+
+---
+
+# Phase 7 Academic Tasks
+
+## Database and Migrations
+
+| Path | Status | Owner | Purpose | Connections |
+|---|---|---|---|---|
+| `/supabase/migrations/20260809054523_create_academic_tasks.sql` | Integrated | Database | Creates student-owned academic tasks, validation, indexes, triggers, privileges, and RLS | Academic Task backend |
+| `/supabase/migrations/20260809153000_add_output_confidence_and_task_output_type.sql` | Integrated | Database | Adds output-confidence storage and academic-task output type | Learning profile, priority engine |
+| `/frontend/types/database.ts` | Generated | Supabase CLI | Generated schema contracts including Track C database changes | Frontend Supabase clients |
+
+## Academic Task Backend
+
+| Path | Status | Owner | Purpose | Connections |
+|---|---|---|---|---|
+| `/backend/app/schemas/academic_task.py` | Integrated | Backend | CRUD request, response, enum, and validation contracts | Academic Task API/service |
+| `/backend/app/schemas/academic_task_priority.py` | Integrated | Backend | Explainable deterministic priority response contracts | Priority API |
+| `/backend/app/repositories/academic_task_repository.py` | Integrated | Backend | Student-owned academic task persistence | Supabase |
+| `/backend/app/repositories/academic_task_priority_context_repository.py` | Integrated | Backend | Loads timezone, output confidence, and study availability | Priority service |
+| `/backend/app/services/academic_task_errors.py` | Integrated | Backend | Controlled Academic Task domain errors | Repository, service, API |
+| `/backend/app/services/academic_task_service.py` | Integrated | Backend | Academic Task CRUD orchestration | Repository, API |
+| `/backend/app/services/academic_task_priority.py` | Integrated | Backend | Pure deterministic seven-factor scoring engine | Priority service |
+| `/backend/app/services/academic_task_priority_context.py` | Integrated | Backend | Resolves output confidence and available study time | Context repository, priority service |
+| `/backend/app/services/academic_task_priority_service.py` | Integrated | Backend | Combines task data and student context into priority evaluations | Priority engine, API |
+| `/backend/app/api/academic_task_dependency.py` | Integrated | Backend | Academic Task CRUD dependency assembly | FastAPI, repository |
+| `/backend/app/api/academic_task_priority_dependency.py` | Integrated | Backend | Priority dependency assembly | FastAPI, priority context |
+| `/backend/app/api/routes/academic_tasks.py` | Integrated | Backend | Protected CRUD, status, and prioritized-task routes | Academic Task services |
+
+## Academic Tasks Frontend
+
+| Path | Status | Owner | Purpose | Connections |
+|---|---|---|---|---|
+| `/frontend/app/(protected)/academic-tasks/page.tsx` | Integrated | Frontend | Protected Academic Tasks route | Academic Tasks workspace |
+| `/frontend/features/academic-tasks/types.ts` | Integrated | Frontend | CRUD and priority request/response contracts | Academic Task API/UI |
+| `/frontend/features/academic-tasks/api.ts` | Integrated | Frontend | Authenticated CRUD and prioritized API client | FastAPI Academic Task routes |
+| `/frontend/features/academic-tasks/validation.ts` | Integrated | Frontend | Create/edit form validation | Academic Tasks workspace |
+| `/frontend/features/academic-tasks/form.ts` | Integrated | Frontend | Maps persisted tasks into editable form values | Academic Tasks workspace |
+| `/frontend/features/academic-tasks/priority-presentation.ts` | Integrated | Frontend | Converts numeric priority into score and urgency presentation | Academic Tasks workspace |
+| `/frontend/features/academic-tasks/components/AcademicTaskPriorityBreakdown.tsx` | Integrated | Frontend | Expandable seven-factor `Why this priority?` explanation | Priority response |
+| `/frontend/features/academic-tasks/components/AcademicTasksWorkspace.tsx` | Integrated | Frontend | Task CRUD, status, priority display, refresh, and independent-column layout | Academic Task API |
+| `/frontend/features/academic-tasks/components/AcademicTasksWorkspace.module.css` | Integrated | Frontend | Responsive independent-column task-card layout | Academic Tasks workspace |
+| `/frontend/features/navigation/components/ProtectedAppShell.tsx` | Integrated | Frontend | Adds Academic Tasks to authenticated navigation | `/academic-tasks` |
+
+## Academic Task Frontend Tests
+
+| Path | Status | Purpose |
+|---|---|---|
+| `/frontend/features/academic-tasks/api.test.ts` | Ready | Authenticated Academic Task API client and priority-response validation |
+| `/frontend/features/academic-tasks/validation.test.ts` | Ready | Task-form validation |
+| `/frontend/features/academic-tasks/form.test.ts` | Ready | Persisted-task form mapping |
+| `/frontend/features/academic-tasks/priority-presentation.test.ts` | Ready | Priority score and urgency presentation |
+| `/frontend/features/academic-tasks/components/AcademicTaskPriorityBreakdown.test.tsx` | Ready | Seven-factor explanation UI |
+| `/frontend/features/academic-tasks/components/AcademicTasksWorkspace.test.tsx` | Ready | Loading, errors, priority presentation, and task creation |
+| `/frontend/features/academic-tasks/components/AcademicTasksWorkspace.mutations.test.tsx` | Ready | Edit, status, delete, and post-mutation priority refresh |
+
+## Academic Task Documentation
+
+| Path | Status | Purpose |
+|---|---|---|
+| `/docs/ACADEMIC_TASK_PRIORITY.md` | Integrated | Deterministic scoring weights, rules, context, fallbacks, and API behavior |
+| `/docs/ARCHITECTURE.md` | Integrated | Academic Task end-to-end architecture |
+| `/docs/api-contracts.md` | Integrated | Protected Academic Task CRUD and priority API |
 
 ---
 
@@ -327,48 +395,19 @@ Large-material generation preserves the complete original source bundle for owne
 
 ---
 
-# Phase 6A Reviewer Tests
-
-| Path | Status | Purpose |
-|---|---|---|
-| `/backend/tests/test_reviewer_migration.py` | Ready | Reviewer migration contract |
-| `/backend/tests/test_reviewer_schemas.py` | Ready | Reviewer schema validation |
-| `/backend/tests/test_reviewer_repository.py` | Ready | Reviewer persistence behavior |
-| `/backend/tests/test_reviewer_service.py` | Ready | Reviewer service behavior |
-| `/backend/tests/test_reviewer_source_loader.py` | Ready | File/subject source loading |
-| `/backend/tests/test_reviewer_source_admin.py` | Ready | Trusted Supabase source queries |
-| `/backend/tests/test_reviewer_prompt.py` | Ready | Prompt construction and limits |
-| `/backend/tests/test_reviewer_generation.py` | Ready | Structured AI generation and repair |
-| `/backend/tests/test_reviewer_orchestration.py` | Ready | End-to-end reviewer service orchestration |
-| `/backend/tests/test_reviewer_api_endpoint.py` | Ready | Authenticated reviewer API contract |
-
----
-
-# Phase 6B Reviewer Frontend
+# Phase 6D Large-Material Reviewer Generation
 
 | Path | Status | Owner | Purpose | Connections |
 |---|---|---|---|---|
-| `/frontend/app/(protected)/reviewers/page.tsx` | Integrated | Frontend | Protected Reviewer page | Reviewer workspace, filter options |
-| `/frontend/features/reviewers/types.ts` | Integrated | Frontend | Reviewer request, response, source, and option contracts | Reviewer API/UI |
-| `/frontend/features/reviewers/api.ts` | Integrated | Frontend | Authenticated reviewer-generation API client | `POST /api/reviewers/generate` |
-| `/frontend/features/reviewers/server/options.ts` | Integrated | Frontend | Loads authenticated subjects and ready study files | Supabase |
-| `/frontend/features/reviewers/components/ReviewerGenerationForm.tsx` | Integrated | Frontend | Reviewer scope, subject/file, and length controls | Reviewer API client |
-| `/frontend/features/reviewers/components/ReviewerGenerationForm.module.css` | Integrated | Frontend | Reviewer generation-form styling | Generation form |
-| `/frontend/features/reviewers/components/ReviewerResult.tsx` | Integrated | Frontend | Displays generated overview, topics, key points, definitions, and sources | Reviewer response |
-| `/frontend/features/reviewers/components/ReviewerResult.module.css` | Integrated | Frontend | Reviewer content/result styling | Reviewer result |
-| `/frontend/features/reviewers/components/ReviewerWorkspace.tsx` | Integrated | Frontend | Coordinates generation form and generated result | Reviewer page |
-| `/frontend/features/reviewers/components/ReviewerWorkspace.module.css` | Integrated | Frontend | Reviewer page layout | Reviewer workspace |
-| `/frontend/features/navigation/components/ProtectedAppShell.tsx` | Integrated | Frontend | Adds Reviewers to authenticated navigation | `/reviewers` |
+| `/backend/app/services/reviewer_batching.py` | Integrated | Member 3 | Splits large source bundles into bounded ordered batches | Reviewer generation |
+| `/backend/tests/test_reviewer_batching.py` | Ready | Member 3 | Batching limits and order preservation tests | Reviewer batching |
+| `/backend/tests/test_reviewer_large_generation.py` | Ready | Member 3 | Large-material generation and synthesis tests | Reviewer generation |
+| `/backend/tests/test_reviewer_prompt.py` | Ready | Member 3 | Reviewer prompt tests | Reviewer prompt builder |
+| `/docs/AI_REVIEWER_GENERATION.md` | Integrated | Member 3 | Large-material reviewer architecture | Reviewer backend |
 
-# Phase 6B Reviewer Frontend Tests
+Phase 6D does not require a new database migration.
 
-| Path | Status | Purpose |
-|---|---|---|
-| `/frontend/features/reviewers/api.test.ts` | Ready | Authenticated generation API tests |
-| `/frontend/features/reviewers/server/options.test.ts` | Ready | Subject and ready-file option loading |
-| `/frontend/features/reviewers/components/ReviewerGenerationForm.test.tsx` | Ready | Scope, material, length, generation, and error-state tests |
-| `/frontend/features/reviewers/components/ReviewerResult.test.tsx` | Ready | Overview, topics, definitions, and source rendering |
-| `/frontend/features/reviewers/components/ReviewerWorkspace.test.tsx` | Ready | Workspace generation/result integration |
+---
 
 # Important Supabase Resources
 
@@ -378,6 +417,7 @@ auth.users
 public.profiles
 public.learning_profiles
 public.learning_profile_subjects
+public.learning_output_confidences
 public.study_availability
 
 public.subjects
@@ -390,6 +430,7 @@ public.study_file_ai_chunks
 public.study_conversations
 public.study_messages
 public.reviewers
+public.academic_tasks
 
 storage bucket: study-materials
 ```
@@ -490,21 +531,3 @@ Update this map whenever:
 - A database migration is added
 - A system connection changes
 - A development phase becomes implemented
-
-### Academic Tasks
-
-| File | Purpose | Owner | Connections |
-|---|---|---|---|
-| `backend/app/schemas/academic_task.py` | Academic task CRUD request and response contracts | Backend | Academic Task API, service, repository |
-| `backend/app/schemas/academic_task_priority.py` | Explainable priority API response contracts | Backend | Priority service, Academic Task API |
-| `backend/app/repositories/academic_task_repository.py` | Student-owned academic task persistence | Backend | Supabase, Academic Task service |
-| `backend/app/repositories/academic_task_priority_context_repository.py` | Loads timezone, output confidence, and study availability for priority scoring | Backend | Supabase, priority service |
-| `backend/app/services/academic_task_errors.py` | Controlled Academic Task domain errors | Backend | Repository, service, API |
-| `backend/app/services/academic_task_service.py` | Academic task CRUD orchestration | Backend | Repository, Academic Task API |
-| `backend/app/services/academic_task_priority.py` | Pure deterministic priority scoring engine | Backend | Priority orchestration service |
-| `backend/app/services/academic_task_priority_context.py` | Resolves output confidence and available study time | Backend | Context repository, priority service |
-| `backend/app/services/academic_task_priority_service.py` | Combines tasks and student context into priority evaluations | Backend | Priority engine, context resolver, API |
-| `backend/app/api/academic_task_dependency.py` | Creates Academic Task CRUD service dependencies | Backend | FastAPI, repository |
-| `backend/app/api/academic_task_priority_dependency.py` | Creates Academic Task priority dependencies | Backend | FastAPI, priority context repository |
-| `backend/app/api/routes/academic_tasks.py` | Authenticated CRUD, status, and prioritized-task endpoints | Backend | Academic Task services |
-| `docs/ACADEMIC_TASK_PRIORITY.md` | Priority weights, rules, context sources, fallbacks, and API behavior | Documentation | Academic Task priority implementation |

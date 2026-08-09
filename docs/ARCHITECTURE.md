@@ -1,6 +1,3 @@
-<!-- File: /docs/ARCHITECTURE.md -->
-<!-- Purpose: Documents the implemented and planned architecture of the STS Capstone STUDY AI project. -->
-
 # STS Capstone — STUDY AI Architecture
 
 This document describes the current architecture of STUDY AI.
@@ -36,11 +33,16 @@ The system currently includes:
 - Large-material multi-pass reviewer generation
 - Deterministic reviewer source batching
 - Partial-reviewer synthesis into one final structured reviewer
+- Student-owned academic task CRUD
+- Academic output confidence by skill type
+- Deterministic academic-task priority scoring
+- Explainable seven-factor priority breakdowns
+- Protected Academic Tasks frontend
+- Live priority recalculation after task changes
 
-The application now also includes a protected Reviewer frontend for generating structured reviewers from a whole subject or one ready study material.
+The application includes protected Reviewer and Academic Tasks frontends.
 
-Future phases may add flashcards, quizzes, study planning, scheduling, analytics, and deployment improvements.
----
+Future phases may add flashcards, quizzes, study-plan generation, calendar scheduling, analytics, and deployment improvements.
 
 # Phase Status
 
@@ -56,6 +58,7 @@ Future phases may add flashcards, quizzes, study planning, scheduling, analytics
 | Phase 6B | Reviewer frontend, authenticated generation UI, structured result display | Implemented |
 | Phase 6C | Saved reviewer management and regeneration | Implemented |
 | Phase 6D | Large-material multi-pass reviewer generation | Implemented |
+| Phase 7A–7E | Academic task persistence, output confidence, CRUD, deterministic priority, frontend, live integration | Implemented |
 | Later phases | Flashcards, quizzes, study plans, analytics, deployment | Planned |
 
 ---
@@ -74,6 +77,7 @@ flowchart LR
         ASSISTANT["Study Assistant"]
         HISTORY["Saved Conversations"]
         REVIEWERS_UI["Reviewer Workspace"]
+        TASKS_UI["Academic Tasks Workspace"]
 
         SUPABASE_CLIENT["Supabase Clients"]
         API_CLIENT["FastAPI Clients"]
@@ -96,12 +100,18 @@ flowchart LR
         CONVERSATION["Conversation Service"]
         MEMORY["Bounded Memory"]
         SUMMARY["Deterministic Summary"]
+
         REVIEWER_API["Reviewer API"]
         REVIEWER_ORCHESTRATION["Reviewer Orchestration"]
         REVIEWER_SOURCE["Reviewer Source Loader"]
         REVIEWER_GENERATION["Reviewer Generation"]
         REVIEWER_BATCHER["Reviewer Source Batcher"]
         REVIEWER_SERVICE["Reviewer Persistence Service"]
+
+        TASK_API["Academic Task API"]
+        TASK_SERVICE["Academic Task Service"]
+        TASK_PRIORITY["Academic Task Priority Service"]
+        TASK_ENGINE["Deterministic Priority Engine"]
     end
 
     subgraph SUPABASE["Supabase"]
@@ -120,6 +130,7 @@ flowchart LR
     STUDENT --> FILE_UI
     STUDENT --> ASSISTANT
     STUDENT --> REVIEWERS_UI
+    STUDENT --> TASKS_UI
 
     AUTH_UI --> SUPABASE_CLIENT
     ONBOARDING --> SUPABASE_CLIENT
@@ -133,6 +144,7 @@ flowchart LR
     ASSISTANT --> HISTORY
     ASSISTANT --> API_CLIENT
     REVIEWERS_UI --> API_CLIENT
+    TASKS_UI --> API_CLIENT
 
     API_CLIENT --> API
     API --> AUTH_DEP
@@ -157,6 +169,7 @@ flowchart LR
     RAG --> GEMINI
 
     CONVERSATION --> DATABASE
+
     API --> REVIEWER_API
     REVIEWER_API --> REVIEWER_ORCHESTRATION
     REVIEWER_ORCHESTRATION --> REVIEWER_SOURCE
@@ -167,6 +180,13 @@ flowchart LR
     REVIEWER_GENERATION --> REVIEWER_BATCHER
     REVIEWER_GENERATION --> GEMINI
     REVIEWER_SERVICE --> DATABASE
+
+    API --> TASK_API
+    TASK_API --> TASK_SERVICE
+    TASK_API --> TASK_PRIORITY
+    TASK_SERVICE --> DATABASE
+    TASK_PRIORITY --> TASK_ENGINE
+    TASK_PRIORITY --> DATABASE
 ```
 
 ---
@@ -232,11 +252,13 @@ flowchart TD
     PROFILE["Profile"]
     LEARNING["Learning Preferences"]
     STRENGTHS["Subject Strengths"]
+    CONFIDENCE["Academic Output Confidence"]
     AVAILABILITY["Study Availability"]
 
     PROFILES[("profiles")]
     LEARNING_TABLE[("learning_profiles")]
     SUBJECT_TABLE[("learning_profile_subjects")]
+    CONFIDENCE_TABLE[("learning_output_confidences")]
     AVAILABILITY_TABLE[("study_availability")]
 
     STUDENT --> ONBOARDING
@@ -244,13 +266,39 @@ flowchart TD
     ONBOARDING --> PROFILE
     ONBOARDING --> LEARNING
     ONBOARDING --> STRENGTHS
+    ONBOARDING --> CONFIDENCE
     ONBOARDING --> AVAILABILITY
 
     PROFILE --> PROFILES
     LEARNING --> LEARNING_TABLE
     STRENGTHS --> SUBJECT_TABLE
+    CONFIDENCE --> CONFIDENCE_TABLE
     AVAILABILITY --> AVAILABILITY_TABLE
 ```
+
+Academic output confidence is stored separately from subject strength.
+
+The implemented output-confidence categories are:
+
+```text
+writing
+computation
+research
+presentation
+creative
+reading_analysis
+memorization
+```
+
+These values are stored in:
+
+```text
+public.learning_output_confidences
+```
+
+Academic-task priority uses output confidence based on the task's `output_type`.
+
+The legacy subject-level `confidence_level` is not used by the Academic Task priority engine.
 
 ---
 
@@ -637,12 +685,17 @@ The Reviewer frontend supports:
 - Key points
 - Important definitions
 - Grounded source references
+- Saved reviewer persistence
+- Saved reviewer management
+- Reviewer regeneration
 
 Only study files that have completed processing and are in the `ready` state are available for file-scope generation.
 
 Generated reviewers are persisted by the backend before being returned to the frontend.
 
-Saved-reviewer history, reopening, deletion controls, and regeneration remain deferred to the next Reviewer phase.
+Large-material reviewer generation is handled through deterministic source batching and final synthesis.
+
+---
 
 # Phase 5G Conversation Persistence
 
@@ -792,6 +845,225 @@ Conversation history is context only.
 
 ---
 
+# Academic Tasks and Deterministic Priority
+
+The protected Academic Tasks workspace is available at:
+
+```text
+/academic-tasks
+```
+
+Academic tasks are student-owned records containing:
+
+```text
+subject
+title
+description
+deadline
+estimated duration
+difficulty
+task type
+academic output type
+workflow status
+```
+
+Supported difficulty values:
+
+```text
+easy
+medium
+hard
+```
+
+Supported task types:
+
+```text
+assignment
+project
+exam
+quiz
+reading
+presentation
+research
+other
+```
+
+Supported academic output types:
+
+```text
+writing
+computation
+research
+presentation
+creative
+reading_analysis
+memorization
+mixed
+other
+```
+
+Supported statuses:
+
+```text
+pending
+in_progress
+completed
+cancelled
+```
+
+## Academic Task Architecture
+
+```mermaid
+flowchart LR
+    STUDENT["Authenticated Student"]
+    WORKSPACE["Academic Tasks Workspace"]
+    CLIENT["Authenticated Academic Task API Client"]
+
+    API["Academic Task FastAPI Routes"]
+    CRUD["Academic Task Service"]
+    REPOSITORY["Academic Task Repository"]
+
+    PRIORITY_SERVICE["Academic Task Priority Service"]
+    CONTEXT_REPOSITORY["Priority Context Repository"]
+    CONTEXT["Priority Context Resolver"]
+    ENGINE["Deterministic Priority Engine"]
+
+    TASKS[("academic_tasks")]
+    PROFILE[("profiles")]
+    CONFIDENCE[("learning_output_confidences")]
+    AVAILABILITY[("study_availability")]
+
+    STUDENT --> WORKSPACE
+    WORKSPACE --> CLIENT
+    CLIENT --> API
+
+    API --> CRUD
+    CRUD --> REPOSITORY
+    REPOSITORY --> TASKS
+
+    API --> PRIORITY_SERVICE
+    PRIORITY_SERVICE --> CONTEXT_REPOSITORY
+
+    CONTEXT_REPOSITORY --> PROFILE
+    CONTEXT_REPOSITORY --> CONFIDENCE
+    CONTEXT_REPOSITORY --> AVAILABILITY
+
+    PRIORITY_SERVICE --> CONTEXT
+    CONTEXT --> PRIORITY_SERVICE
+    PRIORITY_SERVICE --> ENGINE
+```
+
+Priority calculation is performed by deterministic backend code.
+
+It does not use Gemini or another generative AI provider.
+
+## Priority Factors
+
+The engine combines seven factors:
+
+| Factor | Weight |
+|---|---:|
+| Deadline proximity | 30% |
+| Difficulty | 20% |
+| Estimated completion time | 15% |
+| Academic output confidence | 15% |
+| Previous performance | 10% |
+| Available study time | 5% |
+| Task status | 5% |
+
+Total configured weight:
+
+```text
+100%
+```
+
+Higher factor scores mean the factor increases task urgency.
+
+Completed and cancelled tasks receive:
+
+```text
+total priority = 0
+```
+
+Previous performance currently uses a neutral fallback because a production quiz/performance data source is not yet connected.
+
+Missing confidence or unavailable context uses controlled neutral behavior rather than inventing student information.
+
+## Priority API
+
+The frontend receives authoritative ordering from:
+
+```text
+GET /api/academic-tasks/prioritized
+```
+
+The response contains the task and its complete seven-factor priority breakdown.
+
+The backend sorts by:
+
+```text
+1. Total priority score descending
+2. Deadline ascending
+3. Creation time ascending
+4. Task ID
+```
+
+The frontend does not duplicate the priority formula.
+
+## Academic Tasks Frontend
+
+The workspace supports:
+
+- Create task
+- Edit task
+- Change task status
+- Delete task
+- Display deterministic priority
+- Display urgency category
+- Expand `Why this priority?`
+- Display all seven factor scores
+- Refresh priority after successful create, edit, status change, and deletion
+- Responsive independent task columns
+
+The independent-column layout allows one task's priority explanation to expand without stretching or displacing task cards in the opposite column.
+
+After a successful mutation, the frontend requests the prioritized endpoint again so the backend remains the source of truth for score and ordering.
+
+## Live Integration
+
+Phase 7E live integration verified:
+
+```text
+Next.js frontend
+→ authenticated FastAPI request
+→ Supabase persistence and priority context
+→ deterministic priority engine
+→ prioritized API response
+→ Academic Tasks workspace
+```
+
+Live validation covered:
+
+```text
+create
+read
+edit
+status change
+priority recalculation
+priority explanation
+completed-task zero priority
+delete
+page refresh persistence
+```
+
+See:
+
+```text
+docs/ACADEMIC_TASK_PRIORITY.md
+```
+
+---
+
 # Implemented Database Resources
 
 ```text
@@ -800,6 +1072,7 @@ auth.users
 public.profiles
 public.learning_profiles
 public.learning_profile_subjects
+public.learning_output_confidences
 public.study_availability
 
 public.subjects
@@ -812,6 +1085,7 @@ public.study_file_ai_chunks
 public.study_conversations
 public.study_messages
 public.reviewers
+public.academic_tasks
 ```
 
 Private Storage:
@@ -838,6 +1112,10 @@ study-materials
 12. Raw embeddings are not returned to the browser.
 13. Raw retrieved chunks are not persisted as conversation source metadata.
 14. Public errors must not expose tokens or credentials.
+15. Academic tasks are owner-scoped through authenticated backend operations and database RLS.
+16. Academic Task requests cannot provide or override a trusted `user_id`.
+17. Priority context is loaded by the backend for the authenticated student.
+18. Clients cannot provide trusted priority scores or priority context.
 
 ---
 
@@ -873,15 +1151,13 @@ Corrections require a new timestamped migration.
 
 ```text
 20260806192800_create_study_conversations_and_messages.sql
-
 20260806200500_fix_study_message_outcome_constraint.sql
-
 20260806223000_add_study_conversation_summary_state.sql
-
 20260806234000_restrict_study_conversation_summary_updates.sql
 ```
 
 ---
+
 # Phase 6A Migrations
 
 ```text
@@ -889,7 +1165,20 @@ Corrections require a new timestamped migration.
 20260808053929_create_reviewers_foundation.sql
 ```
 
-This migration creates the owned `reviewers` table, reviewer scope and length constraints, ownership validation, timestamps, indexes, and Row Level Security policies.
+The reviewer foundation migration creates the owned `reviewers` table, reviewer scope and length constraints, ownership validation, timestamps, indexes, and Row Level Security policies.
+
+---
+
+# Phase 7 Academic Task Migrations
+
+```text
+20260809054523_create_academic_tasks.sql
+20260809153000_add_output_confidence_and_task_output_type.sql
+```
+
+The first migration creates the student-owned `academic_tasks` table, subject-ownership validation, indexes, triggers, grants, and Row Level Security.
+
+The second migration introduces academic output-confidence storage and adds `output_type` to academic tasks so deterministic priority can use confidence for the skill required by the task.
 
 ---
 
@@ -897,12 +1186,14 @@ This migration creates the owned `reviewers` table, reviewer scope and length co
 
 Phase 6A introduces the backend foundation for generated study reviewers.
 
-A reviewer can currently be generated from:
+A reviewer can be generated from:
 
 - One ready study file
 - All ready study files within one subject
 
-Reviewer generation does not use similarity-based RAG retrieval. It loads the processed source-aware chunks in deterministic file and chunk order so that the reviewer can represent the selected material broadly rather than only answering a similarity-based question.
+Reviewer generation does not use similarity-based RAG retrieval.
+
+It loads processed source-aware chunks in deterministic file and chunk order so the reviewer can represent the selected material broadly rather than only answering a similarity-based question.
 
 ```mermaid
 flowchart LR
@@ -961,30 +1252,35 @@ generated_at
 
 Reviewer sources preserve the originating study file, chunk index, and available locator metadata.
 
-Current protected endpoints are:
+Current protected endpoints include:
 
 ```text
 POST   /api/reviewers/generate
 GET    /api/reviewers
 GET    /api/reviewers/{reviewer_id}
 DELETE /api/reviewers/{reviewer_id}
+POST   /api/reviewers/{reviewer_id}/regenerate
 ```
 
-The authenticated user's identity comes from the validated bearer token. Reviewer requests cannot choose a trusted `user_id`.
+The authenticated user's identity comes from the validated bearer token.
 
-Reviewer insert and generation operations are performed through the trusted backend. Browser clients do not receive direct insert or update access to reviewer records.
+Reviewer requests cannot choose a trusted `user_id`.
 
-Phase 6A did not include a student-facing reviewer workspace. That workspace is now implemented in Phase 6B.
+Reviewer insert and generation operations are performed through the trusted backend.
+
+Browser clients do not receive direct insert or update access to reviewer records.
 
 Saved reviewer management and regeneration were implemented in Phase 6C.
 
 Large-material multi-pass reviewer generation was implemented in Phase 6D.
 
-Quiz generation remains deferred to a later Phase 6 feature.
+Quiz generation remains deferred to a later phase.
+
+---
 
 # Phase 6B Reviewer Frontend
 
-Phase 6B connects the Phase 6A Reviewer backend to the protected Next.js application.
+Phase 6B connects the Reviewer backend to the protected Next.js application.
 
 Implemented frontend route:
 
@@ -992,13 +1288,7 @@ Implemented frontend route:
 /reviewers
 ```
 
-The Reviewer workspace provides:
-
-```text
-ReviewerWorkspace
-├── ReviewerGenerationForm
-└── ReviewerResult
-```
+The Reviewer workspace provides generation controls and structured reviewer display.
 
 Generation options include:
 
@@ -1021,33 +1311,17 @@ processing_status = ready
 
 The browser sends reviewer-generation requests through the authenticated Reviewer API client using the student's Supabase access token.
 
-Live integration verified:
-
-- Single study material + Medium reviewer
-- Whole subject + Medium reviewer
-- Whole subject + Short reviewer
-- Multi-file subject generation
-- Reviewer persistence
-- Structured overview rendering
-- Topic/key-point rendering
-- Important-term rendering
-- Source-location rendering
-
-During live integration, short whole-subject generation exposed an output truncation issue. The Short generation output budget was increased from 2,048 to 4,096 tokens so the provider has enough room to complete valid structured JSON while the prompt still requests concise content.
-
-Reviewer response validation still remains strict, and malformed provider output continues to receive only one controlled repair attempt.
-
-Phase 6B originally excluded saved reviewer management, regeneration, and large-material multi-pass generation. These capabilities were implemented later in Phase 6C and Phase 6D.
-
-Quiz generation remains deferred.
+Live integration verified reviewer generation, persistence, structured display, and source rendering.
 
 ---
 
 # Phase 6D Large-Material Reviewer Generation
 
-Phase 6D extends the existing reviewer-generation pipeline so study material that exceeds the normal single-pass prompt limit can still be processed without silently truncating source content.
+Phase 6D extends reviewer generation so study material exceeding the normal single-pass prompt limit can still be processed without silently truncating source content.
 
-The existing source loader continues to load the complete authenticated source bundle. Large-material handling begins only inside the reviewer generation layer.
+The existing source loader continues to load the complete authenticated source bundle.
+
+Large-material handling begins only inside the reviewer generation layer.
 
 ## Generation Strategy
 
@@ -1074,13 +1348,15 @@ Complete source bundle
 
 The default limits are:
 
-| Limit                              |             Value |
-| ---------------------------------- | ----------------: |
-| Normal single-pass source limit    | 80,000 characters |
+| Limit | Value |
+|---|---:|
+| Normal single-pass source limit | 80,000 characters |
 | Default large-material batch limit | 60,000 characters |
-| Maximum configurable batch limit   | 80,000 characters |
+| Maximum configurable batch limit | 80,000 characters |
 
-The batcher splits only at existing source-chunk boundaries. It does not truncate a chunk, remove chunks, duplicate chunks, or change their original order.
+The batcher splits only at existing source-chunk boundaries.
+
+It does not truncate a chunk, remove chunks, duplicate chunks, or change their original order.
 
 ## Large-Material Flow
 
@@ -1132,31 +1408,31 @@ flowchart TD
     CONTENT --> SAVE
 ```
 
-Each partial batch prompt identifies itself as one ordered portion of a larger source collection. The model is instructed to use only concepts supported by that batch and not assume information from unseen batches.
+Each partial batch prompt identifies itself as one ordered portion of a larger source collection.
 
-The synthesis prompt receives the ordered validated partial reviewers and combines them into one final reviewer. It removes unnecessary repetition while preserving important distinctions between concepts.
+The model is instructed to use only concepts supported by that batch and not assume information from unseen batches.
+
+The synthesis prompt receives the ordered validated partial reviewers and combines them into one final reviewer.
 
 ## Compatibility With Existing Reviewer Generation
 
 Materials within the normal source limit continue through the original single-pass reviewer flow.
 
-This means Phase 6D does not change normal reviewer behavior simply because batching support exists.
-
 Existing behaviors remain enforced:
 
-* Short, medium, and long reviewer lengths
-* Strict JSON response validation
-* One controlled repair attempt for malformed output
-* Provider identity validation
-* Structured overview, topics, key points, and definitions
-* File-level and subject-level scopes
-* Authenticated ownership validation
-* Complete source tracking
-* Existing reviewer persistence
+- Short, medium, and long reviewer lengths
+- Strict JSON response validation
+- One controlled repair attempt for malformed output
+- Provider identity validation
+- Structured overview, topics, key points, and definitions
+- File-level and subject-level scopes
+- Authenticated ownership validation
+- Complete source tracking
+- Existing reviewer persistence
 
 ## Source Metadata
 
-Even when generation uses multiple batches, the final `ReviewerGenerationResult` reports metadata for the complete original source bundle:
+Even when generation uses multiple batches, final generation metadata reports the complete original source bundle:
 
 ```text
 source_character_count
@@ -1164,9 +1440,7 @@ source_chunk_count
 source_file_count
 ```
 
-The orchestration layer therefore continues to verify generation against the same complete source material loaded for the authenticated reviewer request.
-
-Saved reviewer source metadata also continues to reference the original source chunks rather than the generated partial reviewers.
+Saved reviewer source metadata continues to reference original source chunks rather than generated partial reviewers.
 
 ## Database Impact
 
@@ -1180,37 +1454,6 @@ study_file_chunks
 reviewers
 ```
 
-The change is contained within the backend reviewer generation pipeline.
-
-## Phase 6D Validation
-
-Phase 6D added dedicated automated coverage for:
-
-* Small-material single-pass compatibility
-* Character-bounded source batching
-* Stable batch indices
-* Preservation of every source chunk
-* Preservation of chunk order
-* Oversized individual-chunk rejection
-* Partial batch prompt generation
-* Batch metadata
-* Large-material partial generation
-* Final reviewer synthesis
-* Complete-source generation metadata
-
-Backend regression validation after Phase 6D:
-
-```text
-727 passed
-```
-
-Reviewer-focused validation:
-
-```text
-106 passed
-```
-
-Phase 6D Ruff validation also passes.
 ---
 
 # Planned Future Features
@@ -1219,7 +1462,6 @@ Future phases may introduce:
 
 - Flashcards
 - Quizzes
-- Academic tasks
 - Study-plan generation
 - Calendar scheduling
 - Study analytics
@@ -1241,62 +1483,3 @@ Update this document whenever:
 6. A planned feature becomes implemented.
 7. A security boundary changes.
 8. A development phase is completed.
-
-### Academic Tasks and Deterministic Priority
-
-Academic tasks are student-owned records containing subject, deadline,
-estimated duration, difficulty, task type, academic output type, and
-workflow status.
-
-Priority calculation is performed by a deterministic backend engine,
-not by the generative AI provider.
-
-```mermaid
-flowchart TD
-    User[Authenticated Student]
-
-    Tasks[(academic_tasks)]
-    Profile[(profiles)]
-    Confidence[(learning_output_confidences)]
-    Availability[(study_availability)]
-
-    TaskRepo[Academic Task Repository]
-    ContextRepo[Priority Context Repository]
-
-    PriorityContext[Priority Context Resolver]
-    PriorityEngine[Deterministic Priority Engine]
-    PriorityService[Academic Task Priority Service]
-
-    API[GET /api/academic-tasks/prioritized]
-
-    User --> API
-
-    Tasks --> TaskRepo
-    Profile --> ContextRepo
-    Confidence --> ContextRepo
-    Availability --> ContextRepo
-
-    TaskRepo --> PriorityService
-    ContextRepo --> PriorityContext
-    PriorityContext --> PriorityService
-
-    PriorityService --> PriorityEngine
-    PriorityEngine --> PriorityService
-    PriorityService --> API
-
-The engine currently scores:
-
-deadline proximity
-difficulty
-estimated completion time
-academic output confidence
-previous performance
-available study time
-task status
-
-Previous performance currently uses a neutral fallback until a real
-quiz/performance data source is available.
-
-See:
-
-docs/ACADEMIC_TASK_PRIORITY.md
