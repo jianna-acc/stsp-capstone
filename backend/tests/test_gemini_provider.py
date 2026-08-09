@@ -55,6 +55,16 @@ def build_vector(
 
     return [value for _ in range(EMBEDDING_DIMENSIONS)]
 
+class FakeServerError(RuntimeError):
+    """Simulate a transient Gemini server failure."""
+
+    def __init__(
+        self,
+        message: str = "Service unavailable",
+        code: int = 503,
+    ) -> None:
+        super().__init__(message)
+        self.code = code
 
 class FakeModels:
     """Record model calls and return controlled fake responses."""
@@ -65,6 +75,7 @@ class FakeModels:
         generation_response: Any | None = None,
         embedding_response: Any | None = None,
         generation_error: Exception | None = None,
+        generation_errors: list[Exception] | None = None,
         embedding_error: Exception | None = None,
     ) -> None:
         """Store responses and errors used by test requests."""
@@ -89,8 +100,11 @@ class FakeModels:
             )
         )
         self.generation_error = generation_error
+        self.generation_errors = list(
+            generation_errors or [],
+        )
         self.embedding_error = embedding_error
-
+        self.generation_call_count = 0
         self.generation_call: dict[str, Any] | None = None
         self.embedding_call: dict[str, Any] | None = None
 
@@ -101,7 +115,9 @@ class FakeModels:
         """Return a fake generation response or controlled error."""
 
         self.generation_call = kwargs
-
+        self.generation_call_count += 1
+        if self.generation_errors:
+            raise self.generation_errors.pop(0)
         if self.generation_error is not None:
             raise self.generation_error
 
@@ -334,6 +350,54 @@ def test_generation_wraps_request_errors() -> None:
             ),
         )
 
+def test_generation_retries_transient_503_errors(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Transient Gemini 503 failures should be retried."""
+
+    models = FakeModels(
+        generation_errors=[
+            FakeServerError(),
+            FakeServerError(),
+        ],
+        generation_response=SimpleNamespace(
+            text="Generated after retry.",
+            usage_metadata=None,
+        ),
+    )
+
+    provider = GeminiProvider(
+        settings=build_settings(),
+        client=FakeClient(models),
+    )
+
+    async def fake_sleep(
+        _: float,
+    ) -> None:
+        return None
+
+    monkeypatch.setattr(
+        asyncio,
+        "sleep",
+        fake_sleep,
+    )
+
+    result = asyncio.run(
+        provider.generate(
+            GenerationRequest(
+                prompt="Valid prompt",
+            ),
+        ),
+    )
+
+    assert (
+        result.text
+        == "Generated after retry."
+    )
+    assert (
+        models.generation_call_count
+        == 3
+    )
 
 def test_embedding_formats_document_inputs() -> None:
     """Document embeddings must use separate document-prefixed inputs."""
@@ -390,6 +454,56 @@ def test_embedding_formats_document_inputs() -> None:
 
     assert config.output_dimensionality == EMBEDDING_DIMENSIONS
 
+def test_generation_retries_transient_504_errors(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Transient Gemini 504 failures should be retried."""
+
+    models = FakeModels(
+        generation_errors=[
+            FakeServerError(
+                "Gateway timeout",
+                code=504,
+            ),
+        ],
+        generation_response=SimpleNamespace(
+            text="Generated after timeout retry.",
+            usage_metadata=None,
+        ),
+    )
+
+    provider = GeminiProvider(
+        settings=build_settings(),
+        client=FakeClient(models),
+    )
+
+    async def fake_sleep(
+        _: float,
+    ) -> None:
+        return None
+
+    monkeypatch.setattr(
+        asyncio,
+        "sleep",
+        fake_sleep,
+    )
+
+    result = asyncio.run(
+        provider.generate(
+            GenerationRequest(
+                prompt="Valid prompt",
+            ),
+        ),
+    )
+
+    assert (
+        result.text
+        == "Generated after timeout retry."
+    )
+    assert (
+        models.generation_call_count
+        == 2
+    )
 
 def test_embedding_formats_query_inputs() -> None:
     """Query embeddings must use the question-answering prefix."""
