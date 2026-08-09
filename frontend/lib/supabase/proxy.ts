@@ -26,6 +26,7 @@ const PROTECTED_ROUTE_PREFIXES = [
   "/assistant",
   "/analytics",
   "/settings",
+  "/academic-tasks",
 ] as const;
 
 function isProtectedPath(
