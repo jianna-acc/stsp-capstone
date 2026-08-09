@@ -11,6 +11,7 @@ import {
 } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import {
+  beforeEach,
   describe,
   expect,
   it,
@@ -98,6 +99,12 @@ ReviewerResponse = {
 
 const mocks = vi.hoisted(
   () => ({
+    deleteReviewer:
+      vi.fn(),
+    getReviewer:
+      vi.fn(),
+    listReviewers:
+      vi.fn(),
     regenerateReviewer:
       vi.fn(),
   }),
@@ -106,6 +113,12 @@ const mocks = vi.hoisted(
 vi.mock(
   "@/features/reviewers/api",
   () => ({
+    deleteReviewer:
+      mocks.deleteReviewer,
+    getReviewer:
+      mocks.getReviewer,
+    listReviewers:
+      mocks.listReviewers,
     regenerateReviewer:
       mocks.regenerateReviewer,
   }),
@@ -220,6 +233,12 @@ function renderWorkspace():
 describe(
   "ReviewerWorkspace",
   () => {
+    beforeEach(() => {
+        mocks.listReviewers
+            .mockResolvedValue({
+            items: [],
+            });
+        });
     it(
       "renders the Reviewer workspace and generation controls",
       () => {
@@ -289,6 +308,96 @@ describe(
       },
     );
     it(
+    "opens a saved reviewer from history",
+    async () => {
+        const user =
+        userEvent.setup();
+
+        mocks.listReviewers
+        .mockResolvedValue({
+            items: [
+            REVIEWER,
+            ],
+        });
+
+        mocks.getReviewer
+        .mockResolvedValue(
+            REVIEWER,
+        );
+
+        renderWorkspace();
+
+        await user.click(
+        await screen.findByRole(
+            "button",
+            {
+            name: "Open",
+            },
+        ),
+        );
+
+        expect(
+        mocks.getReviewer,
+        ).toHaveBeenCalledWith(
+        "reviewer-id",
+        );
+
+        expect(
+        await screen.findByText(
+            "Result: Biology Reviewer",
+        ),
+        ).toBeInTheDocument();
+    },
+    );
+    it(
+  "deletes a saved reviewer from history",
+  async () => {
+    const user =
+      userEvent.setup();
+
+    mocks.listReviewers
+      .mockResolvedValue({
+        items: [
+          REVIEWER,
+        ],
+      });
+
+    mocks.deleteReviewer
+      .mockResolvedValue(
+        undefined,
+      );
+
+    vi.spyOn(
+      window,
+      "confirm",
+    ).mockReturnValue(true);
+
+    renderWorkspace();
+
+    await user.click(
+      await screen.findByRole(
+        "button",
+        {
+          name: "Delete",
+        },
+      ),
+    );
+
+    expect(
+      mocks.deleteReviewer,
+    ).toHaveBeenCalledWith(
+      "reviewer-id",
+    );
+
+    expect(
+      screen.queryByText(
+        "Biology Reviewer",
+      ),
+    ).not.toBeInTheDocument();
+  },
+);
+
+    it(
         "regenerates the displayed reviewer",
         async () => {
             const user =
@@ -319,10 +428,10 @@ describe(
             );
 
             expect(
-            screen.getByText(
+            screen.getAllByText(
                 "Generation 1",
             ),
-            ).toBeInTheDocument();
+            ).toHaveLength(2);
 
             await user.click(
             screen.getByRole(
@@ -335,10 +444,10 @@ describe(
             );
 
             expect(
-            await screen.findByText(
+            await screen.findAllByText(
                 "Generation 2",
             ),
-            ).toBeInTheDocument();
+            ).toHaveLength(2);
 
             expect(
             mocks.regenerateReviewer,
