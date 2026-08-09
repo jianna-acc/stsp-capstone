@@ -25,17 +25,20 @@ Update it whenever files, APIs, migrations, owners, or major system connections 
 
 # Phase Status
 
-| Phase | Scope | Status |
-|---|---|---|
-| Phase 1 | Foundation and authentication | Integrated |
-| Phase 2 | Learning-profile onboarding | Integrated |
-| Phase 3 | Subjects and study-material processing | Integrated |
-| Phase 4 | AI provider, preparation, embeddings, vectors, retrieval | Integrated |
-| Phase 5A–5F | RAG and Study Assistant | Integrated |
-| Phase 5G | Saved conversations, memory, summaries, history UI | Integrated |
-| Phase 6A | Reviewer backend foundation | Integrated |
-| Phase 6B | Reviewer generation frontend and result display | Integrated |
-| Later | Reviewer history/regeneration, scalable multi-pass generation, flashcards, quizzes, planning, analytics | Planned |
+| Phase       | Scope                                                    | Status     |
+| ----------- | -------------------------------------------------------- | ---------- |
+| Phase 1     | Foundation and authentication                            | Integrated |
+| Phase 2     | Learning-profile onboarding                              | Integrated |
+| Phase 3     | Subjects and study-material processing                   | Integrated |
+| Phase 4     | AI provider, preparation, embeddings, vectors, retrieval | Integrated |
+| Phase 5A–5F | RAG and Study Assistant                                  | Integrated |
+| Phase 5G    | Saved conversations, memory, summaries, history UI       | Integrated |
+| Phase 6A    | Reviewer backend foundation                              | Integrated |
+| Phase 6B    | Reviewer generation frontend and result display          | Integrated |
+| Phase 6C    | Saved reviewer management and regeneration               | Integrated |
+| Phase 6D    | Large-material multi-pass reviewer generation            | Integrated |
+| Later       | Flashcards, quizzes, planning, analytics                 | Planned    |
+
 
 ---
 
@@ -83,6 +86,7 @@ Update it whenever files, APIs, migrations, owners, or major system connections 
 | `/docs/AI_RETRIEVAL_DESIGN.md` | Integrated | Members 3–5 | Retrieval design | Vector search |
 | `/docs/AI_QUERY_EMBEDDING.md` | Integrated | Member 3 | Query embedding | Retrieval |
 | `/docs/AI_RAG_API_ENDPOINT.md` | Integrated | Member 3 | RAG endpoint | FastAPI, frontend |
+| `/docs/AI_REVIEWER_GENERATION.md` | Integrated | Member 3 | Reviewer generation and large-material batching design | Gemini, reviewer services |
 
 ---
 
@@ -273,18 +277,33 @@ Update it whenever files, APIs, migrations, owners, or major system connections 
 
 | Path | Status | Owner | Purpose | Connections |
 |---|---|---|---|---|
-| `/backend/app/ai/reviewer_prompt.py` | Integrated | Member 3 | Builds bounded reviewer-generation prompts | Reviewer generation, Gemini |
+| `/backend/app/ai/reviewer_prompt.py` | Integrated | Member 3 | Builds complete, batch, and synthesis reviewer prompts | Reviewer generation, Gemini |
 | `/backend/app/schemas/reviewer.py` | Integrated | Member 3 | Reviewer API and persistence contracts | Routes, services, repository |
 | `/backend/app/repositories/reviewer_repository.py` | Integrated | Member 3 | Reviewer persistence and ownership filtering | Supabase |
 | `/backend/app/services/reviewer_errors.py` | Integrated | Member 3 | Controlled reviewer-domain errors | Reviewer services, API |
 | `/backend/app/services/reviewer_source_loader.py` | Integrated | Member 3 | Loads ordered source-aware chunks for file/subject scope | Study files, chunks |
-| `/backend/app/services/reviewer_generation.py` | Integrated | Member 3 | Structured Gemini reviewer generation, strict response validation, bounded repair, and reviewer-length output budgets | Gemini provider |
+| `/backend/app/services/reviewer_generation.py` | Integrated | Member 3 | Structured reviewer generation with single-pass and large-material multi-pass flows, strict validation, and bounded repair | Gemini provider, reviewer batching |
 | `/backend/app/services/reviewer_service.py` | Integrated | Member 3 | Reviewer save/list/get/delete operations | Reviewer repository |
 | `/backend/app/services/reviewer_orchestration.py` | Integrated | Member 3 | Coordinates source loading, generation, and persistence | Reviewer services |
 | `/backend/app/api/reviewer_dependency.py` | Integrated | Member 3 | Reviewer persistence dependency | Repository, Supabase client |
 | `/backend/app/api/reviewer_orchestration_dependency.py` | Integrated | Member 3 | Reviewer generation dependency assembly | Gemini, source loader, service |
 | `/backend/app/api/routes/reviewers.py` | Integrated | Member 3 | Protected reviewer API endpoints | Reviewer orchestration/service |
 | `/backend/app/services/supabase_admin.py` | Integrated | Member 3 | Trusted ready-file and source-chunk reads | Reviewer source loader |
+# Phase 6D Large-Material Reviewer Generation
+
+| Path                                               | Status     | Owner    | Purpose                                                                                                                 | Connections                        |
+| -------------------------------------------------- | ---------- | -------- | ----------------------------------------------------------------------------------------------------------------------- | ---------------------------------- |
+| `/backend/app/services/reviewer_batching.py`       | Integrated | Member 3 | Splits large reviewer source bundles into deterministic character-bounded batches without dropping or reordering chunks | Reviewer generation, source loader |
+| `/backend/app/ai/reviewer_prompt.py`               | Integrated | Member 3 | Builds single-pass, partial-batch, and final-synthesis reviewer prompts                                                 | Reviewer batching, Gemini          |
+| `/backend/app/services/reviewer_generation.py`     | Integrated | Member 3 | Selects single-pass or multi-pass generation and synthesizes partial reviewers into one validated reviewer              | Reviewer prompt builder, Gemini    |
+| `/backend/tests/test_reviewer_batching.py`         | Ready      | Member 3 | Verifies batching limits, order preservation, and chunk completeness                                                    | Reviewer batching                  |
+| `/backend/tests/test_reviewer_large_generation.py` | Ready      | Member 3 | Verifies small-material compatibility, batched generation, synthesis, and complete-source metadata                      | Reviewer generation                |
+| `/backend/tests/test_reviewer_prompt.py`           | Ready      | Member 3 | Verifies complete, batch, and synthesis-aware prompt behavior                                                           | Reviewer prompt builder            |
+| `/docs/AI_REVIEWER_GENERATION.md`                  | Integrated | Member 3 | Documents reviewer generation architecture and Phase 6D large-material flow                                             | Reviewer backend                   |
+
+Phase 6D does not require a new database migration. Existing reviewer persistence and source metadata continue to use the Phase 6A reviewer schema and `reviewers` table.
+
+Large-material generation preserves the complete original source bundle for ownership validation, persistence, and source metadata while sending bounded subsets of source chunks to the generation provider.
 
 ---
 

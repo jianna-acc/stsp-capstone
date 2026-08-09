@@ -1,6 +1,6 @@
 # File: /backend/app/services/reviewer_generation.py
 # Purpose: Generates and validates structured reviewer content
-# from complete study-material source bundles.
+# using single-pass or batched large-material generation.
 
 from __future__ import annotations
 
@@ -32,6 +32,9 @@ from app.schemas.reviewer import (
     ReviewerGenerateRequest,
     ReviewerLength,
 )
+from app.services.reviewer_batching import (
+    ReviewerSourceBatcher,
+)
 from app.services.reviewer_errors import (
     ReviewerGenerationError,
     ReviewerGenerationResponseError,
@@ -52,6 +55,11 @@ _REVIEWER_OUTPUT_TOKENS: Final = {
     ReviewerLength.MEDIUM: 8_192,
     ReviewerLength.LONG: 8_192,
 }
+
+_SINGLE_PASS_TOO_LARGE_MESSAGE: Final = (
+    "The selected study material is too large for "
+    "single-pass reviewer generation."
+)
 
 
 @dataclass(
@@ -133,6 +141,7 @@ class ReviewerGenerationService:
         *,
         provider: GenerationProvider,
         prompt_builder: ReviewerPromptBuilder | None = None,
+        source_batcher: ReviewerSourceBatcher | None = None,
         temperature: float = _REVIEWER_TEMPERATURE,
     ) -> None:
         if not isinstance(
@@ -152,6 +161,17 @@ class ReviewerGenerationService:
         ):
             raise ReviewerValidationError(
                 "prompt_builder must be a ReviewerPromptBuilder.",
+            )
+
+        if (
+            source_batcher is not None
+            and not isinstance(
+                source_batcher,
+                ReviewerSourceBatcher,
+            )
+        ):
+            raise ReviewerValidationError(
+                "source_batcher must be a ReviewerSourceBatcher.",
             )
 
         try:
@@ -175,6 +195,12 @@ class ReviewerGenerationService:
             prompt_builder
             if prompt_builder is not None
             else ReviewerPromptBuilder()
+        )
+
+        self._source_batcher = (
+            source_batcher
+            if source_batcher is not None
+            else ReviewerSourceBatcher()
         )
 
         self._temperature = temperature
@@ -210,15 +236,136 @@ class ReviewerGenerationService:
             )
 
         except ReviewerPromptError as exc:
+            if str(
+                exc,
+            ) != _SINGLE_PASS_TOO_LARGE_MESSAGE:
+                raise ReviewerValidationError(
+                    str(
+                        exc,
+                    ),
+                ) from exc
+
+            return await self._generate_large_material(
+                request=request,
+                source_bundle=source_bundle,
+            )
+
+        content, provider_result, attempt_count = (
+            await self._generate_from_prompt(
+                prompt=prompt,
+                reviewer_length=request.reviewer_length,
+            )
+        )
+
+        return self._build_result(
+            content=content,
+            provider_result=provider_result,
+            prompt=prompt,
+            generation_attempt_count=attempt_count,
+        )
+
+    async def _generate_large_material(
+        self,
+        *,
+        request: ReviewerGenerateRequest,
+        source_bundle: ReviewerSourceBundle,
+    ) -> ReviewerGenerationResult:
+        """Generate partial reviewers and synthesize one final result."""
+
+        batches = self._source_batcher.partition(
+            source_bundle,
+        )
+
+        partial_reviewers: list[
+            ReviewerContent
+        ] = []
+
+        total_batch_count = len(
+            batches,
+        )
+
+        for source_batch in batches:
+            try:
+                batch_prompt = (
+                    self._prompt_builder.build_batch(
+                        request=request,
+                        source_bundle=source_bundle,
+                        source_batch=source_batch,
+                        total_batch_count=total_batch_count,
+                    )
+                )
+
+            except ReviewerPromptError as exc:
+                raise ReviewerValidationError(
+                    str(
+                        exc,
+                    ),
+                ) from exc
+
+            (
+                partial_content,
+                _,
+                _,
+            ) = await self._generate_from_prompt(
+                prompt=batch_prompt,
+                reviewer_length=request.reviewer_length,
+            )
+
+            partial_reviewers.append(
+                partial_content,
+            )
+
+        try:
+            synthesis_prompt = (
+                self._prompt_builder.build_synthesis(
+                    request=request,
+                    source_bundle=source_bundle,
+                    partial_reviewers=tuple(
+                        partial_reviewers,
+                    ),
+                )
+            )
+
+        except ReviewerPromptError as exc:
             raise ReviewerValidationError(
                 str(
                     exc,
                 ),
             ) from exc
 
+        (
+            final_content,
+            final_provider_result,
+            final_attempt_count,
+        ) = await self._generate_from_prompt(
+            prompt=synthesis_prompt,
+            reviewer_length=request.reviewer_length,
+        )
+
+        return self._build_result(
+            content=final_content,
+            provider_result=final_provider_result,
+            prompt=synthesis_prompt,
+            generation_attempt_count=(
+                final_attempt_count
+            ),
+        )
+
+    async def _generate_from_prompt(
+        self,
+        *,
+        prompt: ReviewerPrompt,
+        reviewer_length: ReviewerLength,
+    ) -> tuple[
+        ReviewerContent,
+        GenerationResult,
+        int,
+    ]:
+        """Generate validated reviewer content from one prompt."""
+
         first_result = await self._generate_provider_result(
             prompt=prompt,
-            reviewer_length=request.reviewer_length,
+            reviewer_length=reviewer_length,
         )
 
         try:
@@ -241,9 +388,7 @@ class ReviewerGenerationService:
             repaired_result = (
                 await self._generate_provider_result(
                     prompt=repair_prompt,
-                    reviewer_length=(
-                        request.reviewer_length
-                    ),
+                    reviewer_length=reviewer_length,
                 )
             )
 
@@ -261,18 +406,16 @@ class ReviewerGenerationService:
 
                 raise
 
-            return self._build_result(
-                content=content,
-                provider_result=repaired_result,
-                prompt=prompt,
-                generation_attempt_count=2,
+            return (
+                content,
+                repaired_result,
+                2,
             )
 
-        return self._build_result(
-            content=content,
-            provider_result=first_result,
-            prompt=prompt,
-            generation_attempt_count=1,
+        return (
+            content,
+            first_result,
+            1,
         )
 
     async def _generate_provider_result(
@@ -346,9 +489,13 @@ class ReviewerGenerationService:
         ):
             lines = normalized.splitlines()
 
-            if len(lines) >= 3:
+            if len(
+                lines,
+            ) >= 3:
                 normalized = "\n".join(
-                    lines[1:-1],
+                    lines[
+                        1:-1
+                    ],
                 ).strip()
 
         if not normalized:
@@ -370,8 +517,12 @@ class ReviewerGenerationService:
                 exc.lineno,
                 exc.colno,
                 exc.pos,
-                len(normalized),
-                normalized.endswith("}"),
+                len(
+                    normalized,
+                ),
+                normalized.endswith(
+                    "}",
+                ),
             )
 
             raise ReviewerGenerationResponseError(
@@ -409,9 +560,9 @@ class ReviewerGenerationService:
             "\n\nREPAIR_REQUEST:\n"
             "Your previous response did not satisfy the required "
             "reviewer JSON contract. Generate the reviewer again "
-            "from the same SOURCE_DATA_JSON. Return one valid JSON "
-            "object only. Do not use Markdown code fences, comments, "
-            "or explanatory text.\n\n"
+            "using the same supplied study information. Return one "
+            "valid JSON object only. Do not use Markdown code "
+            "fences, comments, or explanatory text.\n\n"
             "INVALID_PREVIOUS_RESPONSE:\n"
             f"{invalid_response.strip()}"
         )
