@@ -30,14 +30,18 @@ import type {
 
 import classes from "./FlashcardStudyViewer.module.css";
 
+
 interface FlashcardStudyViewerProps {
   deck:
     FlashcardDeckResponse;
 }
 
+
 export function FlashcardStudyViewer({
   deck,
-}: Readonly<FlashcardStudyViewerProps>) {
+}: Readonly<
+  FlashcardStudyViewerProps
+>) {
   return (
     <FlashcardStudyViewerContent
       key={
@@ -50,18 +54,25 @@ export function FlashcardStudyViewer({
   );
 }
 
+
 function FlashcardStudyViewerContent({
   deck,
-}: Readonly<FlashcardStudyViewerProps>) {
+}: Readonly<
+  FlashcardStudyViewerProps
+>) {
   const [
     currentIndex,
     setCurrentIndex,
-  ] = useState(0);
+  ] = useState(
+    0,
+  );
 
   const [
     showingAnswer,
     setShowingAnswer,
-  ] = useState(false);
+  ] = useState(
+    false,
+  );
 
   const totalCards =
     deck.cards.length;
@@ -172,13 +183,12 @@ function FlashcardStudyViewerContent({
         <Group
           justify="space-between"
           align="flex-start"
-          gap="md"
         >
           <div>
             <Title
+              id="flashcard-deck-title"
               order={2}
               size="h3"
-              id="flashcard-deck-title"
             >
               {deck.title}
             </Title>
@@ -217,7 +227,9 @@ function FlashcardStudyViewerContent({
         <button
           type="button"
           className={
-            classes.flashcard
+            showingAnswer
+              ? `${classes.flashcard} ${classes.answerCard}`
+              : classes.flashcard
           }
           onClick={
             toggleCardSide

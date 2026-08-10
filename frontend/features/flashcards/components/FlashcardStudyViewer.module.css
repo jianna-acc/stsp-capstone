@@ -89,6 +89,14 @@
     var(--mantine-color-dimmed);
 }
 
+.answerCard {
+  background:
+    var(--mantine-color-violet-1);
+
+  border-color:
+    var(--mantine-color-violet-4);
+}
+
 @media (max-width: 36em) {
   .flashcard {
     min-height: 16rem;
