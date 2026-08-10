@@ -1,6 +1,3 @@
-<!-- File: /docs/api-contracts.md -->
-<!-- Purpose: Documents implemented communication contracts between the frontend, FastAPI backend, worker, AI services, and Supabase. -->
-
 # API Contracts
 
 This document records the implemented application API and important database RPC contracts.
@@ -211,8 +208,6 @@ A first question may omit `conversation_id`.
 
 The backend then creates a conversation and returns its ID.
 
----
-
 ## Answered Response
 
 ```json
@@ -233,8 +228,6 @@ The backend then creates a conversation and returns its ID.
   "context_available": true
 }
 ```
-
----
 
 ## No-Context Response
 
@@ -264,8 +257,6 @@ Base path:
 
 All routes require bearer authentication.
 
----
-
 ## Create Conversation
 
 ```http
@@ -288,22 +279,6 @@ Successful status:
 201 Created
 ```
 
-Representative response:
-
-```json
-{
-  "id": "conversation-uuid",
-  "title": "Biology review",
-  "subject_id": null,
-  "study_file_id": null,
-  "created_at": "2026-08-07T00:00:00Z",
-  "updated_at": "2026-08-07T00:00:00Z",
-  "last_message_at": "2026-08-07T00:00:00Z"
-}
-```
-
----
-
 ## List Conversations
 
 ```http
@@ -322,27 +297,7 @@ Allowed range:
 1 to 50
 ```
 
-Representative response:
-
-```json
-{
-  "items": [
-    {
-      "id": "conversation-uuid",
-      "title": "Biology review",
-      "subject_id": null,
-      "study_file_id": null,
-      "created_at": "2026-08-07T00:00:00Z",
-      "updated_at": "2026-08-07T00:10:00Z",
-      "last_message_at": "2026-08-07T00:10:00Z"
-    }
-  ]
-}
-```
-
 Only conversations owned by the authenticated student are returned.
-
----
 
 ## Get Conversation Detail
 
@@ -362,52 +317,19 @@ Allowed range:
 1 to 500
 ```
 
-Representative response:
-
-```json
-{
-  "conversation": {
-    "id": "conversation-uuid",
-    "title": "Biology review",
-    "subject_id": null,
-    "study_file_id": null,
-    "created_at": "2026-08-07T00:00:00Z",
-    "updated_at": "2026-08-07T00:10:00Z",
-    "last_message_at": "2026-08-07T00:10:00Z"
-  },
-  "messages": [
-    {
-      "id": "message-uuid",
-      "conversation_id": "conversation-uuid",
-      "role": "user",
-      "content": "Explain photosynthesis.",
-      "outcome": null,
-      "sources": [],
-      "created_at": "2026-08-07T00:01:00Z"
-    }
-  ]
-}
-```
-
----
-
 ## Rename Conversation
 
 ```http
 PATCH /api/study-conversations/{conversation_id}
 ```
 
-Current frontend usage:
+Representative request:
 
 ```json
 {
   "title": "Exam reviewer"
 }
 ```
-
-The backend returns the updated conversation.
-
----
 
 ## Delete Conversation
 
@@ -564,6 +486,14 @@ Persists validated backend-generated AI chunks and vectors.
 public.complete_learning_profile_onboarding()
 ```
 
+## Replace Learning Output Confidences
+
+```text
+public.replace_learning_output_confidences(...)
+```
+
+Persists the authenticated student's academic output-confidence values.
+
 ---
 
 # HTTP Security Rules
@@ -581,21 +511,20 @@ Public responses must never expose:
 - Provider tracebacks
 
 ---
+
 # Reviewer API
 
 Reviewer endpoints require authenticated Supabase bearer authentication.
 
-The backend derives the trusted student identity from the validated access token. Reviewer requests must not provide or override `user_id`.
+The backend derives the trusted student identity from the validated access token.
 
----
+Reviewer requests must not provide or override `user_id`.
 
 ## Generate Reviewer
 
 ```http
 POST /api/reviewers/generate
 ```
-
-The endpoint generates and saves one reviewer from processed study material owned by the authenticated student.
 
 Supported scopes:
 
@@ -623,14 +552,6 @@ long
 }
 ```
 
-For file scope:
-
-- `subject_id` is required.
-- `study_file_id` is required.
-- The selected file must belong to the authenticated student.
-- The file must belong to the selected subject.
-- The file must be in the `ready` processing state.
-
 ### Subject-Scope Request
 
 ```json
@@ -642,70 +563,9 @@ For file scope:
 }
 ```
 
-For subject scope:
-
-- `subject_id` is required.
-- `study_file_id` must be omitted or `null`.
-- Reviewer generation uses ready study files owned by the authenticated student within that subject.
-
 Reviewer generation loads processed source-aware chunks in deterministic file and chunk order.
 
 It does not use similarity-based RAG retrieval.
-
----
-
-## Reviewer Response
-
-Representative response:
-
-```json
-{
-  "id": "reviewer-uuid",
-  "subject_id": "subject-uuid",
-  "study_file_id": "study-file-uuid",
-  "scope_type": "file",
-  "title": "Biology Notes Reviewer",
-  "reviewer_length": "medium",
-  "content": {
-    "overview": "Overview of the selected study material.",
-    "topics": [
-      {
-        "title": "Photosynthesis",
-        "summary": "Summary of the topic.",
-        "key_points": [
-          "Plants convert light energy into chemical energy."
-        ],
-        "definitions": [
-          {
-            "term": "Photosynthesis",
-            "definition": "Definition grounded in the selected material."
-          }
-        ]
-      }
-    ]
-  },
-  "sources": [
-    {
-      "study_file_id": "study-file-uuid",
-      "source_name": "Biology Notes.pdf",
-      "chunk_index": 0,
-      "locator_type": "page",
-      "locator_label": "Page 1"
-    }
-  ],
-  "generation_model": "gemini-generation-model",
-  "generation_count": 1,
-  "generated_at": "2026-08-07T00:00:00Z",
-  "created_at": "2026-08-07T00:00:00Z",
-  "updated_at": "2026-08-07T00:00:00Z"
-}
-```
-
-The response does not expose a trusted `user_id`.
-
-The `sources` array records which processed study-file chunks were used for the reviewer.
-
----
 
 ## List Reviewers
 
@@ -725,43 +585,6 @@ Valid range:
 1 to 100
 ```
 
-Default:
-
-```text
-20
-```
-
-Representative response:
-
-```json
-{
-  "items": [
-    {
-      "id": "reviewer-uuid",
-      "subject_id": "subject-uuid",
-      "study_file_id": "study-file-uuid",
-      "scope_type": "file",
-      "title": "Biology Notes Reviewer",
-      "reviewer_length": "medium",
-      "content": {
-        "overview": "Overview.",
-        "topics": []
-      },
-      "sources": [],
-      "generation_model": "gemini-generation-model",
-      "generation_count": 1,
-      "generated_at": "2026-08-07T00:00:00Z",
-      "created_at": "2026-08-07T00:00:00Z",
-      "updated_at": "2026-08-07T00:00:00Z"
-    }
-  ]
-}
-```
-
-Only reviewers owned by the authenticated student are returned.
-
----
-
 ## Get Reviewer
 
 ```http
@@ -769,10 +592,6 @@ GET /api/reviewers/{reviewer_id}
 ```
 
 Returns one reviewer owned by the authenticated student.
-
-A reviewer that does not exist or is not owned by the authenticated student returns a safe not-found response.
-
----
 
 ## Delete Reviewer
 
@@ -786,25 +605,26 @@ Successful response:
 204 No Content
 ```
 
-The client must not attempt to parse a JSON body from the successful 204 response.
+## Regenerate Reviewer
+
+```http
+POST /api/reviewers/{reviewer_id}/regenerate
+```
+
+Regenerates an existing reviewer using its authenticated owner and persisted reviewer scope.
+
+The request cannot override the trusted owner.
 
 ---
 
 # Reviewer API Errors
 
-Controlled reviewer errors use:
+Controlled reviewer errors use safe public error responses.
 
-```json
-{
-  "error_code": "REVIEWER_NOT_FOUND",
-  "message": "The requested reviewer or study material was not found."
-}
-```
-
-Current controlled error mappings include:
+Current controlled mappings include:
 
 | HTTP | Error Code | Meaning |
-|---|---|---|
+|---:|---|---|
 | `400` | `REVIEWER_VALIDATION_FAILED` | Reviewer operation is invalid |
 | `404` | `REVIEWER_NOT_FOUND` | Reviewer or owned source material was not found |
 | `409` | `REVIEWER_SOURCE_UNAVAILABLE` | Selected source material is not ready or usable |
@@ -813,8 +633,6 @@ Current controlled error mappings include:
 | `502` | `REVIEWER_GENERATION_FAILED` | AI generation provider failed |
 | `503` | `REVIEWER_PERSISTENCE_FAILED` | Reviewer storage is temporarily unavailable |
 | `503` | `REVIEWER_SOURCE_STORAGE_FAILED` | Study-material source loading is temporarily unavailable |
-
-Authentication failures continue to use the existing protected-API authentication behavior.
 
 ---
 
@@ -829,9 +647,373 @@ Reviewer API security requirements:
 5. Reviewer source chunks are loaded through trusted backend operations.
 6. Browser clients cannot directly insert or update reviewer records.
 7. Saved reviewer reads and deletes remain ownership scoped.
-8. Generated reviewer content must be grounded in the selected processed study material.
+8. Generated reviewer content must be grounded in selected processed study material.
 9. Study-material content is treated as untrusted prompt content.
 10. Raw backend secrets, provider errors, and database details must not appear in public API errors.
+
+---
+
+# Academic Tasks API
+
+Base path:
+
+```text
+/api/academic-tasks
+```
+
+All Academic Task routes require:
+
+```http
+Authorization: Bearer <Supabase access token>
+```
+
+The backend derives the trusted student identity from the validated bearer token.
+
+Clients must not submit a trusted `user_id`.
+
+Supported difficulty values:
+
+```text
+easy
+medium
+hard
+```
+
+Supported task types:
+
+```text
+assignment
+project
+exam
+quiz
+reading
+presentation
+research
+other
+```
+
+Supported academic output types:
+
+```text
+writing
+computation
+research
+presentation
+creative
+reading_analysis
+memorization
+mixed
+other
+```
+
+Supported statuses:
+
+```text
+pending
+in_progress
+completed
+cancelled
+```
+
+## Create Academic Task
+
+```http
+POST /api/academic-tasks
+```
+
+Successful status:
+
+```text
+201 Created
+```
+
+Representative request:
+
+```json
+{
+  "subject_id": "subject-uuid",
+  "title": "Final research paper",
+  "description": "Complete the final draft.",
+  "deadline": "2026-08-20T12:00:00Z",
+  "estimated_minutes": 180,
+  "difficulty": "hard",
+  "task_type": "assignment",
+  "output_type": "writing"
+}
+```
+
+`status` is not required during creation and defaults to:
+
+```text
+pending
+```
+
+Representative response:
+
+```json
+{
+  "id": "task-uuid",
+  "subject_id": "subject-uuid",
+  "title": "Final research paper",
+  "description": "Complete the final draft.",
+  "deadline": "2026-08-20T12:00:00Z",
+  "estimated_minutes": 180,
+  "difficulty": "hard",
+  "task_type": "assignment",
+  "output_type": "writing",
+  "status": "pending",
+  "created_at": "2026-08-09T12:00:00Z",
+  "updated_at": "2026-08-09T12:00:00Z"
+}
+```
+
+The selected subject must belong to the authenticated student.
+
+---
+
+## List Academic Tasks
+
+```http
+GET /api/academic-tasks
+```
+
+Optional query parameter:
+
+| Parameter | Type | Default | Rules |
+|---|---|---:|---|
+| `limit` | integer | 100 | 1–100 |
+
+Representative response:
+
+```json
+{
+  "items": [
+    {
+      "id": "task-uuid",
+      "subject_id": "subject-uuid",
+      "title": "Final research paper",
+      "description": null,
+      "deadline": "2026-08-20T12:00:00Z",
+      "estimated_minutes": 180,
+      "difficulty": "hard",
+      "task_type": "assignment",
+      "output_type": "writing",
+      "status": "pending",
+      "created_at": "2026-08-09T12:00:00Z",
+      "updated_at": "2026-08-09T12:00:00Z"
+    }
+  ]
+}
+```
+
+Only tasks owned by the authenticated student are returned.
+
+---
+
+## List Prioritized Academic Tasks
+
+```http
+GET /api/academic-tasks/prioritized
+```
+
+Optional query parameter:
+
+| Parameter | Type | Default | Rules |
+|---|---|---:|---|
+| `limit` | integer | 100 | 1–100 |
+
+Representative response:
+
+```json
+{
+  "items": [
+    {
+      "task": {
+        "id": "task-uuid",
+        "subject_id": "subject-uuid",
+        "title": "Final research paper",
+        "description": null,
+        "deadline": "2026-08-20T12:00:00Z",
+        "estimated_minutes": 180,
+        "difficulty": "hard",
+        "task_type": "assignment",
+        "output_type": "writing",
+        "status": "pending",
+        "created_at": "2026-08-09T12:00:00Z",
+        "updated_at": "2026-08-09T12:00:00Z"
+      },
+      "priority": {
+        "total_score": 72.5,
+        "deadline_score": 85.0,
+        "difficulty_score": 100.0,
+        "estimated_time_score": 60.0,
+        "output_confidence_score": 75.0,
+        "previous_performance_score": 50.0,
+        "available_study_time_score": 80.0,
+        "status_score": 50.0
+      }
+    }
+  ]
+}
+```
+
+Tasks are sorted deterministically by:
+
+```text
+1. total_score descending
+2. deadline ascending
+3. created_at ascending
+4. task ID
+```
+
+The browser does not calculate or override the priority score.
+
+---
+
+## Get Academic Task
+
+```http
+GET /api/academic-tasks/{task_id}
+```
+
+Returns one Academic Task owned by the authenticated student.
+
+Missing or unowned tasks receive the same safe not-found response.
+
+---
+
+## Update Academic Task
+
+```http
+PATCH /api/academic-tasks/{task_id}
+```
+
+Editable fields are:
+
+```text
+subject_id
+title
+description
+deadline
+estimated_minutes
+difficulty
+task_type
+output_type
+```
+
+Representative request:
+
+```json
+{
+  "deadline": "2026-08-25T12:00:00Z",
+  "estimated_minutes": 90,
+  "difficulty": "medium",
+  "output_type": "research"
+}
+```
+
+The response is the updated Academic Task.
+
+Task status is intentionally changed through the dedicated status endpoint.
+
+---
+
+## Change Academic Task Status
+
+```http
+PATCH /api/academic-tasks/{task_id}/status
+```
+
+Representative request:
+
+```json
+{
+  "status": "in_progress"
+}
+```
+
+The response contains the updated Academic Task.
+
+The Academic Tasks frontend requests the prioritized endpoint again after a successful status change.
+
+Completed and cancelled tasks receive:
+
+```text
+total priority = 0
+```
+
+---
+
+## Delete Academic Task
+
+```http
+DELETE /api/academic-tasks/{task_id}
+```
+
+Successful response:
+
+```text
+204 No Content
+```
+
+The client must not attempt to parse JSON from the successful 204 response.
+
+---
+
+# Academic Task Priority Contract
+
+Priority calculation is deterministic and backend-owned.
+
+The configured factors are:
+
+| Factor | Weight |
+|---|---:|
+| Deadline proximity | 30% |
+| Difficulty | 20% |
+| Estimated completion time | 15% |
+| Academic output confidence | 15% |
+| Previous performance | 10% |
+| Available study time | 5% |
+| Task status | 5% |
+
+Priority context is loaded from authenticated student data.
+
+The browser cannot submit a trusted calculated priority.
+
+Previous performance currently uses a neutral fallback until a real performance subsystem is connected.
+
+---
+
+# Academic Task Error Contract
+
+Controlled Academic Task errors include:
+
+| HTTP | Error Code | Meaning |
+|---:|---|---|
+| `400` | `ACADEMIC_TASK_VALIDATION_FAILED` | Academic Task request is invalid |
+| `404` | `ACADEMIC_TASK_NOT_FOUND` | Task does not exist or is not owned by the authenticated student |
+| `500` | `ACADEMIC_TASK_RESPONSE_FAILED` | Stored Academic Task data could not be processed |
+| `500` | `ACADEMIC_TASK_FAILED` | Unexpected Academic Task operation failure |
+| `503` | `ACADEMIC_TASK_PERSISTENCE_FAILED` | Academic Task storage is temporarily unavailable |
+
+Authentication failures use the existing protected-API authentication behavior.
+
+---
+
+# Academic Task Security Contract
+
+Academic Task API security requirements:
+
+1. The bearer token determines the trusted student identity.
+2. Request bodies cannot select or override `user_id`.
+3. Academic Tasks are scoped to their authenticated owner.
+4. Selected subjects must belong to the same student.
+5. Database Row Level Security protects direct student access.
+6. Priority context is loaded by trusted backend services.
+7. The browser cannot submit a trusted priority score.
+8. The browser cannot submit trusted study availability or output-confidence context for priority calculation.
+9. Priority calculation does not call Gemini.
+10. Public errors must not expose backend credentials, tokens, SQL details, or stack traces.
 
 ---
 
@@ -863,6 +1045,15 @@ POST   /api/reviewers/generate
 GET    /api/reviewers
 GET    /api/reviewers/{reviewer_id}
 DELETE /api/reviewers/{reviewer_id}
+POST   /api/reviewers/{reviewer_id}/regenerate
+
+POST   /api/academic-tasks
+GET    /api/academic-tasks
+GET    /api/academic-tasks/prioritized
+GET    /api/academic-tasks/{task_id}
+PATCH  /api/academic-tasks/{task_id}
+PATCH  /api/academic-tasks/{task_id}/status
+DELETE /api/academic-tasks/{task_id}
 ```
 
 ---

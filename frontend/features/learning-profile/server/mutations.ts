@@ -26,6 +26,7 @@ import type {
   StudyAvailabilityInput,
   StudyChallengesInput,
   StudyPreferencesInput,
+  LearningOutputConfidenceInput,
 } from "../types";
 import {
   validateLearningSubjects,
@@ -33,6 +34,7 @@ import {
   validateStudyAvailability,
   validateStudyChallengesInput,
   validateStudyPreferencesInput,
+  validateLearningOutputConfidences,
 } from "../validation";
 import {
   requireAuthenticatedUserId,
@@ -287,8 +289,11 @@ export async function replaceLearningSubjects(
         subject.subjectName,
       subject_strength:
         subject.subjectStrength,
-      confidence_level:
-        subject.confidenceLevel,
+
+      // Legacy compatibility only.
+      // Subject confidence is no longer
+      // collected from the student.
+      confidence_level: 3,
     }),
   ) as Json;
 
@@ -317,6 +322,49 @@ export async function replaceLearningSubjects(
     ONBOARDING_STEPS
       .STUDY_AVAILABILITY,
   );
+}
+
+export async function replaceLearningOutputConfidences(
+  input:
+    readonly LearningOutputConfidenceInput[],
+): Promise<void> {
+  const normalizedConfidences =
+    validateLearningOutputConfidences(
+      input,
+    );
+
+  const {
+    supabase,
+  } = await createMutationContext();
+
+  const payload =
+    normalizedConfidences.map(
+      (confidence) => ({
+        output_type:
+          confidence.outputType,
+        confidence_level:
+          confidence.confidenceLevel,
+      }),
+    ) as Json;
+
+  const {
+    error,
+  } = await supabase.rpc(
+    "replace_learning_output_confidences",
+    {
+      p_confidences: payload,
+    },
+  );
+
+  if (error) {
+    throw new LearningProfileDataError(
+      "MUTATION_FAILED",
+      "Your output confidence ratings could not be saved.",
+      {
+        cause: error,
+      },
+    );
+  }
 }
 
 export async function replaceStudyAvailability(
