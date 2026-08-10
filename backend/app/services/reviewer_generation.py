@@ -543,6 +543,26 @@ class ReviewerGenerationService:
             )
 
         except ValidationError as exc:
+            validation_issues = [
+                {
+                    "location": ".".join(
+                        str(part)
+                        for part in issue["loc"]
+                    ),
+                    "type": issue["type"],
+                    "message": issue["msg"],
+                }
+                for issue in exc.errors(
+                    include_input=False,
+                    include_url=False,
+                )
+            ]
+
+            logger.warning(
+                "Reviewer structure validation failed: %s",
+                validation_issues,
+            )
+
             raise ReviewerGenerationResponseError(
                 "The generated reviewer did not match "
                 "the required structure.",

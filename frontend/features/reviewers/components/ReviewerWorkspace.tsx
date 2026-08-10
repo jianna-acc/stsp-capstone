@@ -18,6 +18,7 @@ import {
   IconSparkles,
 } from "@tabler/icons-react";
 import {
+  useEffect,
   useState,
 } from "react";
 
@@ -35,6 +36,13 @@ import {
 import classes from "./ReviewerWorkspace.module.css";
 
 import {
+  SavedReviewerHistory,
+} from "./SavedReviewerHistory";
+
+import {
+  deleteReviewer,
+  getReviewer,
+  listReviewers,
   regenerateReviewer,
 } from "@/features/reviewers/api";
 
@@ -65,14 +73,181 @@ export function ReviewerWorkspace({
     null,
   );
 
-  function handleGenerated(
-    reviewer: ReviewerResponse,
-  ): void {
+  const [
+  savedReviewers,
+  setSavedReviewers,
+] = useState<ReviewerResponse[]>([]);
+
+const [
+  isLoadingHistory,
+  setIsLoadingHistory,
+] = useState(true);
+
+const [
+  historyError,
+  setHistoryError,
+] = useState<string | null>(
+  null,
+);
+
+const [
+  deletingReviewerId,
+  setDeletingReviewerId,
+] = useState<string | null>(
+  null,
+);
+
+useEffect(() => {
+  const controller =
+    new AbortController();
+
+  async function loadSavedReviewers():
+    Promise<void> {
+    setIsLoadingHistory(true);
+    setHistoryError(null);
+
+    try {
+      const response =
+        await listReviewers({
+          limit: 50,
+          signal:
+            controller.signal,
+        });
+
+      setSavedReviewers(
+        response.items,
+      );
+    } catch (error) {
+      if (
+        error instanceof DOMException &&
+        error.name === "AbortError"
+      ) {
+        return;
+      }
+
+      setHistoryError(
+        error instanceof Error
+          ? error.message
+          : "Saved reviewers could not be loaded.",
+      );
+    } finally {
+      if (
+        !controller.signal.aborted
+      ) {
+        setIsLoadingHistory(false);
+      }
+    }
+  }
+
+  void loadSavedReviewers();
+
+  return () => {
+    controller.abort();
+  };
+}, []);
+
+async function handleOpenReviewer(
+  reviewerId: string,
+): Promise<void> {
+  setHistoryError(null);
+  setRegenerationError(null);
+
+  try {
+    const reviewer =
+      await getReviewer(
+        reviewerId,
+      );
+
     setGeneratedReviewer(
       reviewer,
     );
-    setRegenerationError(null);
+  } catch (error) {
+    setHistoryError(
+      error instanceof Error
+        ? error.message
+        : "The saved reviewer could not be opened.",
+    );
   }
+}
+
+async function handleDeleteReviewer(
+  reviewerId: string,
+): Promise<void> {
+  const reviewer =
+    savedReviewers.find(
+      (item) =>
+        item.id === reviewerId,
+    );
+
+  const confirmed =
+    window.confirm(
+      reviewer
+        ? `Delete "${reviewer.title}"? This cannot be undone.`
+        : "Delete this reviewer? This cannot be undone.",
+    );
+
+  if (!confirmed) {
+    return;
+  }
+
+  setDeletingReviewerId(
+    reviewerId,
+  );
+  setHistoryError(null);
+
+  try {
+    await deleteReviewer(
+      reviewerId,
+    );
+
+    setSavedReviewers(
+      (current) =>
+        current.filter(
+          (item) =>
+            item.id !==
+            reviewerId,
+        ),
+    );
+
+    setGeneratedReviewer(
+      (current) =>
+        current?.id ===
+        reviewerId
+          ? null
+          : current,
+    );
+  } catch (error) {
+    setHistoryError(
+      error instanceof Error
+        ? error.message
+        : "The reviewer could not be deleted.",
+    );
+  } finally {
+    setDeletingReviewerId(
+      null,
+    );
+  }
+}
+
+  function handleGenerated(
+    reviewer: ReviewerResponse,
+    ): void {
+    setGeneratedReviewer(
+        reviewer,
+    );
+
+    setSavedReviewers(
+        (current) => [
+        reviewer,
+        ...current.filter(
+            (item) =>
+            item.id !== reviewer.id,
+        ),
+        ],
+    );
+
+    setRegenerationError(null);
+    }
   async function handleRegenerate():
     Promise<void> {
     if (
@@ -94,6 +269,16 @@ export function ReviewerWorkspace({
       setGeneratedReviewer(
         regeneratedReviewer,
       );
+      setSavedReviewers(
+        (current) =>
+            current.map(
+            (item) =>
+                item.id ===
+                regeneratedReviewer.id
+                ? regeneratedReviewer
+                : item,
+            ),
+        );
     } catch (error) {
       setRegenerationError(
         error instanceof Error
@@ -176,6 +361,31 @@ export function ReviewerWorkspace({
               </div>
             </Group>
           </header>
+
+        <SavedReviewerHistory
+            reviewers={
+                savedReviewers
+            }
+            isLoading={
+                isLoadingHistory
+            }
+            error={
+                historyError
+            }
+            selectedReviewerId={
+                generatedReviewer?.id ??
+                null
+            }
+            deletingReviewerId={
+                deletingReviewerId
+            }
+            onOpen={
+                handleOpenReviewer
+            }
+            onDelete={
+                handleDeleteReviewer
+            }
+            />
 
           <ReviewerGenerationForm
             filterOptions={

@@ -28,7 +28,10 @@ vi.mock(
 );
 
 import {
+  deleteReviewer,
   generateReviewer,
+  getReviewer,
+  listReviewers,
   regenerateReviewer,
   ReviewerApiError,
 } from "./api";
@@ -622,5 +625,163 @@ describe(
         },
     );
 
-  },
+    it(
+  "lists saved reviewers with authentication",
+  async () => {
+    mocks.fetch.mockResolvedValue(
+      createJsonResponse(
+        {
+          items: [
+            REVIEWER_RESPONSE,
+          ],
+        },
+        200,
+      ),
+    );
+
+    const result =
+      await listReviewers({
+        limit: 50,
+      });
+
+    expect(result).toEqual({
+      items: [
+        REVIEWER_RESPONSE,
+      ],
+    });
+
+    expect(
+      mocks.fetch,
+    ).toHaveBeenCalledTimes(1);
+
+    const [
+      requestUrl,
+      requestOptions,
+    ] = mocks.fetch.mock.calls[0] as [
+      string,
+      RequestInit,
+    ];
+
+    expect(
+      requestUrl,
+    ).toBe(
+      "http://127.0.0.1:8000/api/reviewers?limit=50",
+    );
+
+    expect(
+      requestOptions.method,
+    ).toBe("GET");
+
+    expect(
+      requestOptions.cache,
+    ).toBe("no-store");
+
+    expect(
+      requestOptions.headers,
+    ).toEqual({
+      Authorization:
+        "Bearer test-access-token",
+    });
+      },
 );
+    it(
+    "gets a saved reviewer with authentication",
+    async () => {
+        mocks.fetch.mockResolvedValue(
+        createJsonResponse(
+            REVIEWER_RESPONSE,
+            200,
+        ),
+        );
+
+        const result =
+        await getReviewer(
+            "reviewer-id",
+        );
+
+        expect(result).toEqual(
+        REVIEWER_RESPONSE,
+        );
+
+        expect(
+        mocks.fetch,
+        ).toHaveBeenCalledTimes(1);
+
+        const [
+        requestUrl,
+        requestOptions,
+        ] = mocks.fetch.mock.calls[0] as [
+        string,
+        RequestInit,
+        ];
+
+        expect(
+        requestUrl,
+        ).toBe(
+        "http://127.0.0.1:8000/api/reviewers/reviewer-id",
+        );
+
+        expect(
+        requestOptions.method,
+        ).toBe("GET");
+
+        expect(
+        requestOptions.cache,
+        ).toBe("no-store");
+
+        expect(
+        requestOptions.headers,
+        ).toEqual({
+        Authorization:
+            "Bearer test-access-token",
+        });
+          },
+);
+        it(
+        "deletes a saved reviewer with authentication",
+        async () => {
+            mocks.fetch.mockResolvedValue({
+            ok: true,
+            status: 204,
+            } as Response);
+
+            await deleteReviewer(
+            "reviewer-id",
+            );
+
+            expect(
+            mocks.fetch,
+            ).toHaveBeenCalledTimes(1);
+
+            const [
+            requestUrl,
+            requestOptions,
+            ] = mocks.fetch.mock.calls[0] as [
+            string,
+            RequestInit,
+            ];
+
+            expect(
+            requestUrl,
+            ).toBe(
+            "http://127.0.0.1:8000/api/reviewers/reviewer-id",
+            );
+
+            expect(
+            requestOptions.method,
+            ).toBe("DELETE");
+
+            expect(
+            requestOptions.cache,
+            ).toBe("no-store");
+
+            expect(
+            requestOptions.headers,
+            ).toEqual({
+            Authorization:
+                "Bearer test-access-token",
+            });
+        },
+        );
+            },
+            );
