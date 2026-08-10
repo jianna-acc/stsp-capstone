@@ -1,6 +1,6 @@
 # File: /backend/app/services/flashcard_generation.py
 # Purpose: Generates validated source-grounded Flashcards through
-# the shared provider-independent AI generation contract.
+# single-pass or bounded multi-pass AI generation.
 
 from __future__ import annotations
 
@@ -19,6 +19,7 @@ from app.ai.errors import (
     AIProviderRequestError,
 )
 from app.ai.flashcard_prompt import (
+    MAX_FLASHCARD_MAX_SOURCE_CHARACTERS,
     FlashcardPrompt,
     FlashcardPromptBuilder,
     FlashcardPromptError,
@@ -26,6 +27,10 @@ from app.ai.flashcard_prompt import (
 from app.schemas.flashcard import (
     FlashcardContent,
     FlashcardGenerateRequest,
+)
+from app.services.flashcard_batching import (
+    FlashcardBatchingError,
+    FlashcardSourceBatcher,
 )
 from app.services.flashcard_errors import (
     FlashcardGenerationError,
@@ -82,6 +87,7 @@ class FlashcardGenerationService:
         *,
         provider: GenerationProvider,
         prompt_builder: FlashcardPromptBuilder | None = None,
+        source_batcher: FlashcardSourceBatcher | None = None,
     ) -> None:
         self._provider = provider
 
@@ -91,6 +97,12 @@ class FlashcardGenerationService:
             else FlashcardPromptBuilder()
         )
 
+        self._source_batcher = (
+            source_batcher
+            if source_batcher is not None
+            else FlashcardSourceBatcher()
+        )
+
     async def generate(
         self,
         *,
@@ -98,6 +110,28 @@ class FlashcardGenerationService:
         source_bundle: FlashcardSourceBundle,
     ) -> FlashcardGenerationResult:
         """Generate and validate one Flashcard deck."""
+
+        if (
+            source_bundle.character_count
+            > MAX_FLASHCARD_MAX_SOURCE_CHARACTERS
+        ):
+            return await self._generate_large_material(
+                request=request,
+                source_bundle=source_bundle,
+            )
+
+        return await self._generate_single_pass(
+            request=request,
+            source_bundle=source_bundle,
+        )
+
+    async def _generate_single_pass(
+        self,
+        *,
+        request: FlashcardGenerateRequest,
+        source_bundle: FlashcardSourceBundle,
+    ) -> FlashcardGenerationResult:
+        """Generate a deck from one complete bounded prompt."""
 
         try:
             prompt = self._prompt_builder.build(
@@ -110,79 +144,224 @@ class FlashcardGenerationService:
                 "Unable to build the Flashcard generation prompt.",
             ) from exc
 
-        max_output_tokens = self._output_token_budget(
-            request.card_count,
+        (
+            content,
+            generation_result,
+            generation_attempt_count,
+        ) = await self._generate_validated_content(
+            prompt=prompt,
+            requested_card_count=request.card_count,
         )
 
-        generation_request = GenerationRequest(
-            prompt=prompt.user_prompt,
-            system_instruction=prompt.system_instruction,
-            temperature=DEFAULT_FLASHCARD_TEMPERATURE,
-            max_output_tokens=max_output_tokens,
+        return self._build_result(
+            content=content,
+            generation_result=generation_result,
+            prompt=prompt,
+            generation_attempt_count=(
+                generation_attempt_count
+            ),
+        )
+
+    async def _generate_large_material(
+        self,
+        *,
+        request: FlashcardGenerateRequest,
+        source_bundle: FlashcardSourceBundle,
+    ) -> FlashcardGenerationResult:
+        """Generate partial decks then synthesize one final deck."""
+
+        try:
+            source_batches = (
+                self._source_batcher.partition(
+                    source_bundle,
+                )
+            )
+
+        except FlashcardBatchingError as exc:
+            raise FlashcardGenerationError(
+                "Unable to batch the Flashcard source material.",
+            ) from exc
+
+        partial_contents: list[
+            FlashcardContent
+        ] = []
+
+        total_batch_count = len(
+            source_batches,
+        )
+
+        for source_batch in source_batches:
+            try:
+                batch_prompt = (
+                    self._prompt_builder.build_batch(
+                        request=request,
+                        source_bundle=source_bundle,
+                        source_batch=source_batch,
+                        total_batch_count=(
+                            total_batch_count
+                        ),
+                    )
+                )
+
+            except FlashcardPromptError as exc:
+                raise FlashcardGenerationError(
+                    "Unable to build a Flashcard batch prompt.",
+                ) from exc
+
+            (
+                partial_content,
+                _,
+                _,
+            ) = await self._generate_validated_content(
+                prompt=batch_prompt,
+                requested_card_count=request.card_count,
+            )
+
+            partial_contents.append(
+                partial_content,
+            )
+
+        try:
+            synthesis_prompt = (
+                self._prompt_builder.build_synthesis(
+                    request=request,
+                    source_bundle=source_bundle,
+                    partial_contents=tuple(
+                        partial_contents,
+                    ),
+                )
+            )
+
+        except FlashcardPromptError as exc:
+            raise FlashcardGenerationError(
+                "Unable to build the Flashcard synthesis prompt.",
+            ) from exc
+
+        (
+            final_content,
+            final_generation_result,
+            final_attempt_count,
+        ) = await self._generate_validated_content(
+            prompt=synthesis_prompt,
+            requested_card_count=request.card_count,
+        )
+
+        return self._build_result(
+            content=final_content,
+            generation_result=(
+                final_generation_result
+            ),
+            prompt=synthesis_prompt,
+            generation_attempt_count=(
+                final_attempt_count
+            ),
+        )
+
+    async def _generate_validated_content(
+        self,
+        *,
+        prompt: FlashcardPrompt,
+        requested_card_count: int,
+    ) -> tuple[
+        FlashcardContent,
+        GenerationResult,
+        int,
+    ]:
+        """Generate one validated response with one repair maximum."""
+
+        max_output_tokens = (
+            self._output_token_budget(
+                requested_card_count,
+            )
+        )
+
+        generation_request = (
+            GenerationRequest(
+                prompt=prompt.user_prompt,
+                system_instruction=(
+                    prompt.system_instruction
+                ),
+                temperature=(
+                    DEFAULT_FLASHCARD_TEMPERATURE
+                ),
+                max_output_tokens=(
+                    max_output_tokens
+                ),
+            )
         )
 
         first_result = await self._generate_once(
             generation_request,
         )
 
-        first_error: FlashcardGenerationResponseError | None = None
-
         try:
-            content = self._validate_generation_result(
-                result=first_result,
-                requested_card_count=request.card_count,
+            content = (
+                self._validate_generation_result(
+                    result=first_result,
+                    requested_card_count=(
+                        requested_card_count
+                    ),
+                )
             )
 
-        except FlashcardGenerationResponseError as exc:
-            first_error = exc
-
-        if first_error is None:
-            return self._build_result(
-                content=content,
-                generation_result=first_result,
-                prompt=prompt,
-                generation_attempt_count=1,
+        except FlashcardGenerationResponseError:
+            repair_request = (
+                GenerationRequest(
+                    prompt=self._build_repair_prompt(
+                        original_prompt=(
+                            prompt.user_prompt
+                        ),
+                        invalid_response=(
+                            first_result.text
+                        ),
+                        requested_card_count=(
+                            requested_card_count
+                        ),
+                    ),
+                    system_instruction=(
+                        prompt.system_instruction
+                    ),
+                    temperature=(
+                        DEFAULT_FLASHCARD_TEMPERATURE
+                    ),
+                    max_output_tokens=(
+                        max_output_tokens
+                    ),
+                )
             )
 
-        repair_request = GenerationRequest(
-            prompt=self._build_repair_prompt(
-                original_prompt=prompt.user_prompt,
-                invalid_response=(
-                    first_result.text
-                    if isinstance(
-                        first_result,
-                        GenerationResult,
+            repaired_result = (
+                await self._generate_once(
+                    repair_request,
+                )
+            )
+
+            try:
+                repaired_content = (
+                    self._validate_generation_result(
+                        result=repaired_result,
+                        requested_card_count=(
+                            requested_card_count
+                        ),
                     )
-                    else ""
-                ),
-                requested_card_count=request.card_count,
-            ),
-            system_instruction=prompt.system_instruction,
-            temperature=DEFAULT_FLASHCARD_TEMPERATURE,
-            max_output_tokens=max_output_tokens,
-        )
+                )
 
-        repaired_result = await self._generate_once(
-            repair_request,
-        )
+            except FlashcardGenerationResponseError as exc:
+                raise FlashcardGenerationResponseError(
+                    "Flashcard generation returned invalid "
+                    "structured output after one repair attempt.",
+                ) from exc
 
-        try:
-            repaired_content = self._validate_generation_result(
-                result=repaired_result,
-                requested_card_count=request.card_count,
+            return (
+                repaired_content,
+                repaired_result,
+                2,
             )
 
-        except FlashcardGenerationResponseError as exc:
-            raise FlashcardGenerationResponseError(
-                "Flashcard generation returned invalid "
-                "structured output after one repair attempt.",
-            ) from exc
-
-        return self._build_result(
-            content=repaired_content,
-            generation_result=repaired_result,
-            prompt=prompt,
-            generation_attempt_count=2,
+        return (
+            content,
+            first_result,
+            1,
         )
 
     async def aclose(
@@ -231,9 +410,14 @@ class FlashcardGenerationService:
                 "generation result.",
             )
 
-        expected_provider = self._provider.provider_name
+        expected_provider = (
+            self._provider.provider_name
+        )
 
-        if result.provider != expected_provider:
+        if (
+            result.provider
+            != expected_provider
+        ):
             raise FlashcardGenerationResponseError(
                 "The AI generation provider identity "
                 "did not match the configured provider.",
@@ -254,8 +438,10 @@ class FlashcardGenerationService:
         )
 
         try:
-            content = FlashcardContent.model_validate(
-                payload,
+            content = (
+                FlashcardContent.model_validate(
+                    payload,
+                )
             )
 
         except ValidationError as exc:
@@ -305,8 +491,10 @@ class FlashcardGenerationService:
                 "The AI provider returned an empty response.",
             )
 
-        normalized = self._strip_markdown_fence(
-            normalized,
+        normalized = (
+            self._strip_markdown_fence(
+                normalized,
+            )
         )
 
         try:
@@ -350,13 +538,19 @@ class FlashcardGenerationService:
         ) < 3:
             return normalized
 
-        first_line = lines[
-            0
-        ].strip().lower()
+        first_line = (
+            lines[
+                0
+            ]
+            .strip()
+            .lower()
+        )
 
-        last_line = lines[
-            -1
-        ].strip()
+        last_line = (
+            lines[
+                -1
+            ].strip()
+        )
 
         if (
             first_line
@@ -364,7 +558,8 @@ class FlashcardGenerationService:
                 "```",
                 "```json",
             }
-            or last_line != "```"
+            or last_line
+            != "```"
         ):
             return normalized
 
@@ -427,9 +622,13 @@ class FlashcardGenerationService:
             card_count
             <= STANDARD_FLASHCARD_CARD_LIMIT
         ):
-            return STANDARD_FLASHCARD_OUTPUT_TOKENS
+            return (
+                STANDARD_FLASHCARD_OUTPUT_TOKENS
+            )
 
-        return LARGE_FLASHCARD_OUTPUT_TOKENS
+        return (
+            LARGE_FLASHCARD_OUTPUT_TOKENS
+        )
 
     def _build_repair_prompt(
         self,
@@ -467,10 +666,18 @@ class FlashcardGenerationService:
 
         return FlashcardGenerationResult(
             content=content,
-            provider=generation_result.provider,
-            model=generation_result.model,
-            input_tokens=generation_result.input_tokens,
-            output_tokens=generation_result.output_tokens,
+            provider=(
+                generation_result.provider
+            ),
+            model=(
+                generation_result.model
+            ),
+            input_tokens=(
+                generation_result.input_tokens
+            ),
+            output_tokens=(
+                generation_result.output_tokens
+            ),
             generation_attempt_count=(
                 generation_attempt_count
             ),
