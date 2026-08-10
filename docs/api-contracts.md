@@ -566,6 +566,32 @@ public.complete_learning_profile_onboarding()
 
 ---
 
+## Create Quiz With Questions
+
+```text
+public.create_quiz_with_questions(...)
+```
+
+Atomically persists Quiz metadata and its private generated questions.
+
+## Start Quiz Attempt
+
+```text
+public.start_quiz_attempt(...)
+```
+
+Creates one fresh owned Quiz attempt through the trusted backend.
+
+## Submit Quiz Attempt Answer
+
+```text
+public.submit_quiz_attempt_answer(...)
+```
+
+Atomically validates attempt state, grades the expected question, stores safe submitted-answer history, and advances or completes the attempt.
+
+---
+
 # HTTP Security Rules
 
 Public responses must never expose:
@@ -1083,6 +1109,387 @@ Flashcard API security requirements:
 
 ---
 
+# Quiz API
+
+Quiz endpoints require authenticated Supabase bearer authentication.
+
+The backend derives the trusted student identity from the validated access token. Quiz requests cannot provide or override `user_id`.
+
+## Generate Quiz
+
+```http
+POST /api/quizzes/generate
+```
+
+Representative subject-scope request:
+
+```json
+{
+  "scope_type": "subject",
+  "subject_id": "subject-uuid",
+  "study_file_id": null,
+  "quiz_type": "mixed",
+  "difficulty": "medium",
+  "question_count": 10
+}
+```
+
+Representative file-scope request:
+
+```json
+{
+  "scope_type": "file",
+  "subject_id": "subject-uuid",
+  "study_file_id": "study-file-uuid",
+  "quiz_type": "multiple_choice",
+  "difficulty": "hard",
+  "question_count": 10
+}
+```
+
+Supported Quiz types:
+
+```text
+multiple_choice
+true_false
+identification
+mixed
+```
+
+Supported difficulty:
+
+```text
+easy
+medium
+hard
+```
+
+Question count:
+
+```text
+1 to 50
+```
+
+For file scope, the selected study file must be owned by the authenticated student, belong to the selected subject, and be in the `ready` processing state.
+
+Subject scope uses owned ready study materials from the selected subject.
+
+Quiz generation loads processed source-aware chunks and generates structured Quiz content grounded in the selected material.
+
+### Student-Safe Quiz Response
+
+Representative shape:
+
+```json
+{
+  "id": "quiz-uuid",
+  "subject_id": "subject-uuid",
+  "study_file_id": null,
+  "scope_type": "subject",
+  "title": "Biology Practice Quiz",
+  "quiz_type": "mixed",
+  "difficulty": "medium",
+  "question_count": 2,
+  "questions": [
+    {
+      "id": "question-uuid",
+      "position": 1,
+      "question_type": "multiple_choice",
+      "topic": "Cells",
+      "question": "Which structure contains genetic material?",
+      "choices": [
+        "Nucleus",
+        "Cell wall",
+        "Cytoplasm",
+        "Ribosome"
+      ]
+    }
+  ],
+  "generation_model": "configured-generation-model",
+  "generation_count": 1,
+  "generated_at": "2026-08-10T00:00:00Z",
+  "created_at": "2026-08-10T00:00:00Z",
+  "updated_at": "2026-08-10T00:00:00Z"
+}
+```
+
+Normal Quiz responses deliberately exclude:
+
+```text
+correct_answer
+accepted_answers
+explanation
+```
+
+---
+
+## List Saved Quizzes
+
+```http
+GET /api/quizzes
+```
+
+Returns saved Quizzes owned by the authenticated student, newest first.
+
+Each item includes safe Quiz metadata plus:
+
+```text
+attempt_count
+latest_attempt
+```
+
+`latest_attempt` is `null` when the Quiz has never been started.
+
+---
+
+## Get Saved Quiz
+
+```http
+GET /api/quizzes/{quiz_id}
+```
+
+Returns one owned saved Quiz with public question fields.
+
+Private answer-key fields are not included.
+
+---
+
+## Delete Saved Quiz
+
+```http
+DELETE /api/quizzes/{quiz_id}
+```
+
+Successful response:
+
+```text
+204 No Content
+```
+
+Deleting a Quiz removes the related Quiz questions and attempt history through configured database cascades.
+
+The frontend requires confirmation before requesting deletion.
+
+---
+
+# Quiz Attempt API
+
+## Start Attempt
+
+```http
+POST /api/quizzes/{quiz_id}/attempts
+```
+
+Starts a fresh attempt for one owned saved Quiz.
+
+Successful status:
+
+```text
+201 Created
+```
+
+Representative response:
+
+```json
+{
+  "id": "attempt-uuid",
+  "quiz_id": "quiz-uuid",
+  "status": "in_progress",
+  "current_position": 1,
+  "correct_count": 0,
+  "question_count": 10,
+  "score_percentage": 0,
+  "started_at": "2026-08-10T00:00:00Z",
+  "completed_at": null,
+  "created_at": "2026-08-10T00:00:00Z",
+  "updated_at": "2026-08-10T00:00:00Z"
+}
+```
+
+---
+
+## List Quiz Attempts
+
+```http
+GET /api/quizzes/{quiz_id}/attempts
+```
+
+Returns attempts for one owned Quiz, newest first.
+
+Representative response:
+
+```json
+{
+  "quiz_id": "quiz-uuid",
+  "items": []
+}
+```
+
+---
+
+## Get Attempt
+
+```http
+GET /api/quiz-attempts/{attempt_id}
+```
+
+Returns the current public state of one owned Quiz attempt.
+
+---
+
+## Submit Answer
+
+```http
+POST /api/quiz-attempts/{attempt_id}/questions/{position}/answer
+```
+
+Representative request:
+
+```json
+{
+  "answer": "Nucleus"
+}
+```
+
+The backend atomically validates the expected position, grades the answer, stores the submitted-answer history, and advances the attempt.
+
+Representative response:
+
+```json
+{
+  "attempt": {
+    "id": "attempt-uuid",
+    "quiz_id": "quiz-uuid",
+    "status": "in_progress",
+    "current_position": 2,
+    "correct_count": 1,
+    "question_count": 10,
+    "score_percentage": 10,
+    "started_at": "2026-08-10T00:00:00Z",
+    "completed_at": null,
+    "created_at": "2026-08-10T00:00:00Z",
+    "updated_at": "2026-08-10T00:01:00Z"
+  },
+  "feedback": {
+    "attempt_id": "attempt-uuid",
+    "quiz_question_id": "question-uuid",
+    "position": 1,
+    "is_correct": true,
+    "correct_answer": "Nucleus",
+    "explanation": "Explanation grounded in the generated Quiz content.",
+    "next_position": 2,
+    "attempt_completed": false
+  }
+}
+```
+
+Immediate feedback is returned only after that answer has been submitted.
+
+---
+
+## Get Final Result
+
+```http
+GET /api/quiz-attempts/{attempt_id}/result
+```
+
+Results are available only for a completed owned attempt.
+
+Representative response:
+
+```json
+{
+  "attempt_id": "attempt-uuid",
+  "quiz_id": "quiz-uuid",
+  "correct_count": 8,
+  "question_count": 10,
+  "score_percentage": 80,
+  "strong_topics": [
+    {
+      "topic": "Cells",
+      "correct_count": 4,
+      "question_count": 5,
+      "accuracy_percentage": 80
+    }
+  ],
+  "weak_topics": [],
+  "completed_at": "2026-08-10T00:10:00Z"
+}
+```
+
+Topic classification threshold:
+
+```text
+Strong: accuracy >= 70%
+Weak:   accuracy < 70%
+```
+
+---
+
+## Review Completed Attempt
+
+```http
+GET /api/quiz-attempts/{attempt_id}/review
+```
+
+Review is available only after an owned attempt is completed.
+
+The response contains the completed attempt, final result, and reviewed answers including:
+
+```text
+question
+submitted_answer
+is_correct
+correct_answer
+explanation
+answered_at
+```
+
+An in-progress attempt returns a controlled conflict response instead of exposing the full answer key.
+
+---
+
+# Quiz API Errors
+
+Quiz-generation controlled errors include:
+
+| HTTP | Error Code | Meaning |
+|---|---|---|
+| `400` | `QUIZ_VALIDATION_FAILED` | Quiz operation is invalid |
+| `404` | `QUIZ_NOT_FOUND` | Quiz or owned source material was not found |
+| `409` | `QUIZ_SOURCE_UNAVAILABLE` | Selected study material is not ready |
+| `500` | `QUIZ_GENERATION_RESPONSE_FAILED` | Generated Quiz output could not be processed |
+| `500` | `QUIZ_RESPONSE_FAILED` | Quiz response could not be completed |
+| `502` | `QUIZ_GENERATION_FAILED` | AI generation failed |
+| `503` | `QUIZ_PERSISTENCE_FAILED` | Quiz storage is temporarily unavailable |
+| `503` | `QUIZ_SOURCE_STORAGE_FAILED` | Study-material loading is temporarily unavailable |
+
+Quiz-attempt controlled errors include:
+
+| HTTP | Error Code | Meaning |
+|---|---|---|
+| `400` | `QUIZ_ATTEMPT_VALIDATION_FAILED` | Attempt request is invalid |
+| `404` | `QUIZ_ATTEMPT_NOT_FOUND` | Quiz or attempt was not found |
+| `409` | `QUIZ_ATTEMPT_CONFLICT` | Attempt is not in the required state |
+| `500` | `QUIZ_ATTEMPT_RESPONSE_FAILED` | Attempt response could not be completed |
+| `503` | `QUIZ_ATTEMPT_PERSISTENCE_FAILED` | Attempt storage is temporarily unavailable |
+
+---
+
+# Quiz Security Contract
+
+1. Bearer authentication determines the trusted student identity.
+2. Quiz requests cannot choose `user_id`.
+3. File and subject source loading is ownership scoped.
+4. Normal Quiz responses exclude correct answers, accepted answers, and explanations.
+5. `quiz_questions` answer-key data is accessed through trusted backend operations.
+6. Starting and submitting attempts uses trusted RPCs rather than browser table writes.
+7. Answer submission validates the expected current question position atomically.
+8. Full attempt review is unavailable until the owned attempt is completed.
+9. Saved Quiz listing, retrieval, attempt history, review, and deletion are ownership scoped.
+10. Public errors must not expose provider traces, database details, tokens, or secrets.
+
+
 # OpenAPI Verification
 
 Start FastAPI and open:
@@ -1116,6 +1523,17 @@ POST   /api/flashcards/generate
 GET    /api/flashcards
 GET    /api/flashcards/{deck_id}
 DELETE /api/flashcards/{deck_id}
+
+POST   /api/quizzes/generate
+GET    /api/quizzes
+GET    /api/quizzes/{quiz_id}
+DELETE /api/quizzes/{quiz_id}
+GET    /api/quizzes/{quiz_id}/attempts
+POST   /api/quizzes/{quiz_id}/attempts
+GET    /api/quiz-attempts/{attempt_id}
+POST   /api/quiz-attempts/{attempt_id}/questions/{position}/answer
+GET    /api/quiz-attempts/{attempt_id}/result
+GET    /api/quiz-attempts/{attempt_id}/review
 ```
 
 ---

@@ -1,0 +1,30 @@
+/* File: /frontend/features/quizzes/components/QuizWorkspace.module.css */
+/* Purpose: Styles the protected Quiz generation workspace. */
+
+.page {
+  min-height: 100%;
+  padding:
+    clamp(1rem, 2vw, 2rem)
+    0
+    3rem;
+}
+
+.container {
+  width: 100%;
+}
+
+.header {
+  padding-top: 0.25rem;
+}
+
+.resultRegion {
+  scroll-margin-top: 1rem;
+}
+
+.quizSummary {
+  background:
+    var(--mantine-color-body);
+  box-shadow:
+    0 12px 32px
+    rgba(0, 0, 0, 0.04);
+}

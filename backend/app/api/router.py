@@ -7,6 +7,8 @@ from app.api.health import (
     router as health_router,
 )
 from app.api.routes import (
+    quiz_attempts,
+    quizzes,
     rag,
     reviewers,
     study_conversations,
@@ -39,6 +41,15 @@ api_router.include_router(
 api_router.include_router(
     reviewers.router,
 )
+
 api_router.include_router(
     flashcard_router,
+)
+
+api_router.include_router(
+    quizzes.router,
+)
+
+api_router.include_router(
+    quiz_attempts.router,
 )

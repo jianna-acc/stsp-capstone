@@ -38,7 +38,8 @@ Update it whenever files, APIs, migrations, owners, or major system connections 
 | Phase 6C    | Saved reviewer management and regeneration               | Integrated |
 | Phase 6D    | Large-material multi-pass reviewer generation            | Integrated |
 | Track A | Flashcard backend, large-material generation, frontend study UI, and saved-deck management | Integrated |
-| Later | Quizzes, planning, analytics | Planned |
+| Track B | Quiz generation, attempts, history, review, and deletion | Integrated |
+| Later | Planning, analytics | Planned |
 
 
 ---
@@ -88,6 +89,7 @@ Update it whenever files, APIs, migrations, owners, or major system connections 
 | `/docs/AI_QUERY_EMBEDDING.md` | Integrated | Member 3 | Query embedding | Retrieval |
 | `/docs/AI_RAG_API_ENDPOINT.md` | Integrated | Member 3 | RAG endpoint | FastAPI, frontend |
 | `/docs/AI_REVIEWER_GENERATION.md` | Integrated | Member 3 | Reviewer generation and large-material batching design | Gemini, reviewer services |
+| `/docs/AI_QUIZ_GENERATION.md` | Integrated | Member 3 | Quiz generation, private answer-key, attempts, scoring, history, and review design | Gemini, Quiz services |
 
 ---
 
@@ -330,6 +332,29 @@ Large-material generation preserves the complete original source bundle for owne
 
 ---
 
+# Track B — Quiz Backend
+
+| Path | Status | Owner | Purpose | Connections |
+|---|---|---|---|---|
+| `/backend/app/ai/quiz_prompt.py` | Integrated | Backend | Builds grounded Quiz-generation prompts | Quiz generation, Gemini |
+| `/backend/app/schemas/quiz.py` | Integrated | Backend | Quiz generation, attempt, history, review, and API contracts | Routes, services, repositories |
+| `/backend/app/repositories/quiz_repository.py` | Integrated | Backend | Quiz persistence, safe retrieval, listing, and deletion | Supabase |
+| `/backend/app/repositories/quiz_attempt_repository.py` | Integrated | Backend | Attempt start, grading, history, answer reads, and review-question loading | Supabase RPCs/tables |
+| `/backend/app/services/quiz_errors.py` | Integrated | Backend | Controlled Quiz-domain errors | Quiz API/services |
+| `/backend/app/services/quiz_attempt_errors.py` | Integrated | Backend | Controlled Quiz-attempt errors | Attempt API/services |
+| `/backend/app/services/quiz_source_loader.py` | Integrated | Backend | Loads owned ready source chunks for subject/file Quiz scopes | Study files/chunks |
+| `/backend/app/services/quiz_generation.py` | Integrated | Backend | Structured Quiz generation and validation | Quiz prompt, Gemini |
+| `/backend/app/services/quiz_service.py` | Integrated | Backend | Saved Quiz create/list/get/delete operations | Quiz repository |
+| `/backend/app/services/quiz_orchestration.py` | Integrated | Backend | Coordinates source loading, generation, and persistence | Quiz services |
+| `/backend/app/services/quiz_attempt_service.py` | Integrated | Backend | Attempt lifecycle, results, topic analysis, and completed review | Attempt repository |
+| `/backend/app/api/quiz_dependency.py` | Integrated | Backend | Quiz persistence/service dependency | Repository, Supabase |
+| `/backend/app/api/quiz_orchestration_dependency.py` | Integrated | Backend | Quiz-generation dependency assembly | Gemini, source loader, service |
+| `/backend/app/api/quiz_attempt_dependency.py` | Integrated | Backend | Quiz-attempt dependency assembly | Attempt repository/service |
+| `/backend/app/api/routes/quizzes.py` | Integrated | Backend | Generate/list/get/delete Quiz API | Quiz orchestration/service |
+| `/backend/app/api/routes/quiz_attempts.py` | Integrated | Backend | Attempt start/history/submit/result/review API | Quiz attempt service |
+| `/backend/app/api/router.py` | Integrated | Backend | Registers protected Quiz routers | FastAPI |
+
+
 # Phase 5G Migrations
 
 | Path | Status | Purpose |
@@ -358,6 +383,17 @@ Large-material generation preserves the complete original source bundle for owne
 | `/supabase/migrations/20260809145600_create_flashcard_persistence_rpc.sql` | Integrated | Creates the trusted atomic `create_flashcard_deck_with_cards` persistence function |
 
 ---
+
+# Track B — Quiz Migrations
+
+| Path | Status | Purpose |
+|---|---|---|
+| `/supabase/migrations/20260809204500_create_quizzes_foundation.sql` | Integrated | Owned Quiz metadata and private questions |
+| `/supabase/migrations/20260809211600_create_quiz_persistence_rpc.sql` | Integrated | Atomic Quiz/question persistence |
+| `/supabase/migrations/20260809223500_create_quiz_attempt_foundation.sql` | Integrated | Attempts and submitted-answer history |
+| `/supabase/migrations/20260809225500_create_quiz_attempt_rpcs.sql` | Integrated | Atomic attempt start and answer grading |
+
+
 
 # Phase 6A Reviewer Tests
 
@@ -396,6 +432,32 @@ Large-material generation preserves the complete original source bundle for owne
 | `/backend/tests/test_flashcard_large_generation.py` | Ready | Multi-pass generation, partial repair, final synthesis, and complete-source metadata |
 
 ---
+# Track B — Quiz Tests
+
+| Path | Status | Purpose |
+|---|---|---|
+| `/backend/tests/test_quiz_migration.py` | Ready | Quiz foundation migration contract |
+| `/backend/tests/test_quiz_persistence_rpc_migration.py` | Ready | Atomic Quiz persistence RPC migration |
+| `/backend/tests/test_quiz_attempt_migration.py` | Ready | Quiz-attempt foundation migration |
+| `/backend/tests/test_quiz_attempt_rpc_migration.py` | Ready | Attempt/grading RPC migration |
+| `/backend/tests/test_quiz_schemas.py` | Ready | Quiz-generation schema validation |
+| `/backend/tests/test_quiz_repository.py` | Ready | Quiz persistence/list/get/delete behavior |
+| `/backend/tests/test_quiz_service.py` | Ready | Quiz service behavior |
+| `/backend/tests/test_quiz_source_loader.py` | Ready | Owned file/subject source loading |
+| `/backend/tests/test_quiz_prompt.py` | Ready | Quiz prompt construction |
+| `/backend/tests/test_quiz_generation.py` | Ready | Structured Quiz generation |
+| `/backend/tests/test_quiz_orchestration.py` | Ready | End-to-end generation orchestration |
+| `/backend/tests/test_quiz_api_endpoint.py` | Ready | Authenticated Quiz API contract |
+| `/backend/tests/test_quiz_attempt_schemas.py` | Ready | Attempt/result contracts |
+| `/backend/tests/test_quiz_attempt_service.py` | Ready | Attempt grading/results/review service behavior |
+| `/backend/tests/test_quiz_attempt_api_endpoint.py` | Ready | Authenticated attempt API contract |
+| `/frontend/features/quizzes/api.test.ts` | Ready | Quiz-generation client tests |
+| `/frontend/features/quizzes/attempts-api.test.ts` | Ready | Quiz-attempt client tests |
+| `/frontend/features/quizzes/history-api.test.ts` | Ready | Saved Quiz/history/review/delete client tests |
+| `/frontend/features/quizzes/server/options.test.ts` | Ready | Quiz filter-option loader tests |
+| `/frontend/features/quizzes/components/QuizHistoryPanel.test.tsx` | Ready | Saved Quiz history/retake/delete UI tests |
+
+
 # Track A — Flashcard Frontend
 
 | Path                                                                          | Status     | Owner    | Purpose                                                                           | Connections                         |
@@ -426,6 +488,26 @@ Large-material generation preserves the complete original source bundle for owne
 | `/frontend/features/flashcards/components/FlashcardWorkspace.test.tsx`      | Ready  | Saved-list loading, generation refresh, reopening, deletion, viewer cleanup, and safe errors |
 
 ---
+
+# Track B — Quiz Frontend
+
+| Path | Status | Owner | Purpose | Connections |
+|---|---|---|---|---|
+| `/frontend/app/(protected)/quizzes/page.tsx` | Integrated | Frontend | Protected Quiz page | Quiz workspace/options |
+| `/frontend/features/quizzes/types.ts` | Integrated | Frontend | Quiz, attempt, history, review, and option contracts | Quiz clients/UI |
+| `/frontend/features/quizzes/api.ts` | Integrated | Frontend | Authenticated Quiz-generation client | `POST /api/quizzes/generate` |
+| `/frontend/features/quizzes/attempts-api.ts` | Integrated | Frontend | Attempt start/submission/result client | Quiz-attempt API |
+| `/frontend/features/quizzes/history-api.ts` | Integrated | Frontend | Saved Quiz list/get/delete, attempt-history, and review client | Quiz/history APIs |
+| `/frontend/features/quizzes/server/options.ts` | Integrated | Frontend | Loads authenticated subjects and ready study files | Supabase |
+| `/frontend/features/quizzes/components/QuizGenerationForm.tsx` | Integrated | Frontend | Scope/type/difficulty/question-count generation controls | Quiz API |
+| `/frontend/features/quizzes/components/QuizPlayer.tsx` | Integrated | Frontend | One-question-at-a-time Quiz-taking flow | Attempt API |
+| `/frontend/features/quizzes/components/QuizQuestionView.tsx` | Integrated | Frontend | Question input and immediate feedback | Quiz player |
+| `/frontend/features/quizzes/components/QuizResult.tsx` | Integrated | Frontend | Final score and strong/weak topic display | Attempt result |
+| `/frontend/features/quizzes/components/QuizHistoryPanel.tsx` | Integrated | Frontend | Saved Quiz history, retake, review, and delete controls | History API |
+| `/frontend/features/quizzes/components/QuizAttemptReview.tsx` | Integrated | Frontend | Completed-attempt answer/explanation review | Review API |
+| `/frontend/features/quizzes/components/QuizWorkspace.tsx` | Integrated | Frontend | Create/My Quizzes tabs and Quiz orchestration | Quiz feature |
+| `/frontend/features/navigation/components/ProtectedAppShell.tsx` | Integrated | Frontend | Adds Quizzes to protected navigation | `/quizzes` |
+
 
 # Phase 6B Reviewer Frontend
 
@@ -476,6 +558,11 @@ public.reviewers
 
 public.flashcard_decks
 public.flashcards
+
+public.quizzes
+public.quiz_questions
+public.quiz_attempts
+public.quiz_attempt_answers
 
 storage bucket: study-materials
 ```
