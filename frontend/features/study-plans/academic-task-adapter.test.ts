@@ -1,6 +1,6 @@
 // File: /frontend/features/study-plans/academic-task-adapter.test.ts
-// Purpose: Tests conversion from prioritized Academic Tasks
-// into Track D scheduler tasks.
+// Purpose: Tests conversion from real prioritized Academic Tasks
+// into Track D schedulable tasks.
 
 import {
   describe,
@@ -8,11 +8,73 @@ import {
   it,
 } from "vitest";
 
+import type {
+  AcademicTaskPriorityResponse,
+  AcademicTaskStatus,
+} from "@/features/academic-tasks/types";
+
 import {
   academicTasksToSchedulableTasks,
   academicTaskToSchedulableTask,
   priorityScoreToWeight,
 } from "./academic-task-adapter";
+
+
+function createPriorityItem({
+  id = "11111111-1111-4111-8111-111111111111",
+  status = "pending",
+  totalScore = 50,
+}: {
+  id?: string;
+  status?: AcademicTaskStatus;
+  totalScore?: number;
+} = {}): AcademicTaskPriorityResponse {
+  return {
+    task: {
+      id,
+      subject_id:
+        "22222222-2222-4222-8222-222222222222",
+      title:
+        "Study for Biology exam",
+      description:
+        null,
+      deadline:
+        "2026-08-20T18:00:00+08:00",
+      estimated_minutes:
+        180,
+      difficulty:
+        "hard",
+      task_type:
+        "exam",
+      output_type:
+        "memorization",
+      status,
+      created_at:
+        "2026-08-10T08:00:00Z",
+      updated_at:
+        "2026-08-10T08:00:00Z",
+    },
+
+    priority: {
+      total_score:
+        totalScore,
+      deadline_score:
+        80,
+      difficulty_score:
+        100,
+      estimated_time_score:
+        50,
+      output_confidence_score:
+        50,
+      previous_performance_score:
+        50,
+      available_study_time_score:
+        50,
+      status_score:
+        50,
+    },
+  };
+}
 
 
 describe(
@@ -22,52 +84,28 @@ describe(
       "converts priority scores into scheduler weights",
       () => {
         expect(
-          priorityScoreToWeight(
-            0,
-          ),
-        ).toBe(
-          1,
-        );
+          priorityScoreToWeight(0),
+        ).toBe(1);
 
         expect(
-          priorityScoreToWeight(
-            20,
-          ),
-        ).toBe(
-          1,
-        );
+          priorityScoreToWeight(20),
+        ).toBe(1);
 
         expect(
-          priorityScoreToWeight(
-            21,
-          ),
-        ).toBe(
-          2,
-        );
+          priorityScoreToWeight(21),
+        ).toBe(2);
 
         expect(
-          priorityScoreToWeight(
-            60,
-          ),
-        ).toBe(
-          3,
-        );
+          priorityScoreToWeight(60),
+        ).toBe(3);
 
         expect(
-          priorityScoreToWeight(
-            80,
-          ),
-        ).toBe(
-          4,
-        );
+          priorityScoreToWeight(80),
+        ).toBe(4);
 
         expect(
-          priorityScoreToWeight(
-            100,
-          ),
-        ).toBe(
-          5,
-        );
+          priorityScoreToWeight(100),
+        ).toBe(5);
       },
     );
 
@@ -76,40 +114,26 @@ describe(
       "converts a pending academic task",
       () => {
         const result =
-          academicTaskToSchedulableTask({
-            task: {
-              id:
-                "task-1",
-              subject_id:
-                "subject-1",
-              title:
-                "Finish research paper",
-              deadline:
-                "2026-08-20T23:59:00+08:00",
-              estimated_minutes:
-                360,
-              status:
-                "pending",
-            },
-            priority: {
-              total_score:
+          academicTaskToSchedulableTask(
+            createPriorityItem({
+              totalScore:
                 87,
-            },
-          });
+            }),
+          );
 
         expect(
           result,
         ).toEqual({
           task_id:
-            "task-1",
+            "11111111-1111-4111-8111-111111111111",
           subject_id:
-            "subject-1",
+            "22222222-2222-4222-8222-222222222222",
           title:
-            "Finish research paper",
+            "Study for Biology exam",
           deadline:
-            "2026-08-20T23:59:00+08:00",
+            "2026-08-20T18:00:00+08:00",
           estimated_minutes:
-            360,
+            180,
           priority_weight:
             5,
         });
@@ -121,32 +145,18 @@ describe(
       "keeps in-progress tasks schedulable",
       () => {
         const result =
-          academicTaskToSchedulableTask({
-            task: {
-              id:
-                "task-2",
-              subject_id:
-                "subject-1",
-              title:
-                "Study for exam",
-              deadline:
-                "2026-08-18T08:00:00+08:00",
-              estimated_minutes:
-                180,
+          academicTaskToSchedulableTask(
+            createPriorityItem({
               status:
                 "in_progress",
-            },
-            priority: {
-              total_score:
+              totalScore:
                 72,
-            },
-          });
+            }),
+          );
 
         expect(
           result?.priority_weight,
-        ).toBe(
-          4,
-        );
+        ).toBe(4);
       },
     );
 
@@ -156,79 +166,34 @@ describe(
       () => {
         const result =
           academicTasksToSchedulableTasks([
-            {
-              task: {
-                id:
-                  "pending-task",
-                subject_id:
-                  "subject-1",
-                title:
-                  "Pending task",
-                deadline:
-                  "2026-08-20T12:00:00+08:00",
-                estimated_minutes:
-                  60,
-                status:
-                  "pending",
-              },
-              priority: {
-                total_score:
-                  50,
-              },
-            },
-            {
-              task: {
-                id:
-                  "completed-task",
-                subject_id:
-                  "subject-1",
-                title:
-                  "Completed task",
-                deadline:
-                  "2026-08-20T12:00:00+08:00",
-                estimated_minutes:
-                  60,
-                status:
-                  "completed",
-              },
-              priority: {
-                total_score:
-                  90,
-              },
-            },
-            {
-              task: {
-                id:
-                  "cancelled-task",
-                subject_id:
-                  "subject-1",
-                title:
-                  "Cancelled task",
-                deadline:
-                  "2026-08-20T12:00:00+08:00",
-                estimated_minutes:
-                  60,
-                status:
-                  "cancelled",
-              },
-              priority: {
-                total_score:
-                  90,
-              },
-            },
+            createPriorityItem({
+              id:
+                "11111111-1111-4111-8111-111111111111",
+              status:
+                "pending",
+            }),
+            createPriorityItem({
+              id:
+                "33333333-3333-4333-8333-333333333333",
+              status:
+                "completed",
+            }),
+            createPriorityItem({
+              id:
+                "44444444-4444-4444-8444-444444444444",
+              status:
+                "cancelled",
+            }),
           ]);
 
         expect(
           result,
-        ).toHaveLength(
-          1,
-        );
+        ).toHaveLength(1);
 
         expect(
-          result[0]
-            ?.task_id,
+          result[0]?.task_id,
         ).toBe(
-          "pending-task",
+          "11111111-1111-4111-8111-111111111111",
         );
       },
     );

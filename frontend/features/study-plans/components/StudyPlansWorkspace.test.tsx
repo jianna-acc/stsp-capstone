@@ -9,6 +9,7 @@ import {
   render,
   screen,
   waitFor,
+  within,
 } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import {
@@ -35,6 +36,8 @@ const apiMocks =
         vi.fn(),
       deleteStudySession:
         vi.fn(),
+      generateStudyPlan:
+        vi.fn(),
       listStudyPlans:
         vi.fn(),
       listStudySessions:
@@ -49,6 +52,20 @@ vi.mock(
     apiMocks,
 );
 
+const academicTaskApiMocks =
+  vi.hoisted(
+    () => ({
+      listPrioritizedAcademicTasks:
+        vi.fn(),
+    }),
+  );
+
+
+vi.mock(
+  "@/features/academic-tasks/api",
+  () =>
+    academicTaskApiMocks,
+);
 
 import {
   StudyPlansWorkspace,
@@ -155,6 +172,157 @@ const RESEARCH_SESSIONS = [
   },
 ] as const;
 
+const PRIORITIZED_TASKS = [
+  {
+    task: {
+      id:
+        "55555555-5555-4555-8555-555555555555",
+      subject_id:
+        "biology-subject",
+      title:
+        "Study for Biology exam",
+      description:
+        null,
+      deadline:
+        "2026-08-20T18:00:00+08:00",
+      estimated_minutes:
+        180,
+      difficulty:
+        "hard",
+      task_type:
+        "exam",
+      output_type:
+        "memorization",
+      status:
+        "pending",
+      created_at:
+        "2026-08-10T08:00:00Z",
+      updated_at:
+        "2026-08-10T08:00:00Z",
+    },
+
+    priority: {
+      total_score:
+        92,
+      deadline_score:
+        90,
+      difficulty_score:
+        100,
+      estimated_time_score:
+        60,
+      output_confidence_score:
+        50,
+      previous_performance_score:
+        50,
+      available_study_time_score:
+        50,
+      status_score:
+        50,
+    },
+  },
+
+  {
+    task: {
+      id:
+        "66666666-6666-4666-8666-666666666666",
+      subject_id:
+        "history-subject",
+      title:
+        "Completed History reading",
+      description:
+        null,
+      deadline:
+        "2026-08-19T18:00:00+08:00",
+      estimated_minutes:
+        60,
+      difficulty:
+        "easy",
+      task_type:
+        "reading",
+      output_type:
+        "reading_analysis",
+      status:
+        "completed",
+      created_at:
+        "2026-08-10T08:00:00Z",
+      updated_at:
+        "2026-08-10T08:00:00Z",
+    },
+
+    priority: {
+      total_score:
+        80,
+      deadline_score:
+        80,
+      difficulty_score:
+        40,
+      estimated_time_score:
+        30,
+      output_confidence_score:
+        50,
+      previous_performance_score:
+        50,
+      available_study_time_score:
+        50,
+      status_score:
+        0,
+    },
+  },
+];
+
+
+const GENERATED_RESULT = {
+  plan: {
+    id:
+      "77777777-7777-4777-8777-777777777777",
+    title:
+      "Generated Finals Plan",
+    starts_on:
+      "2026-08-10",
+    ends_on:
+      "2026-08-20",
+    status:
+      "active",
+    generation_mode:
+      "generated",
+    generated_at:
+      "2026-08-10T15:00:00Z",
+    created_at:
+      "2026-08-10T15:00:00Z",
+    updated_at:
+      "2026-08-10T15:00:00Z",
+  },
+
+  sessions: [
+    {
+      id:
+        "88888888-8888-4888-8888-888888888888",
+      study_plan_id:
+        "77777777-7777-4777-8777-777777777777",
+      subject_id:
+        "biology-subject",
+      title:
+        "Study for Biology exam",
+      starts_at:
+        "2026-08-11T18:00:00+08:00",
+      ends_at:
+        "2026-08-11T19:00:00+08:00",
+      status:
+        "planned",
+      origin:
+        "generated",
+      notes:
+        null,
+      created_at:
+        "2026-08-10T15:00:00Z",
+      updated_at:
+        "2026-08-10T15:00:00Z",
+    },
+  ],
+
+  unscheduled_tasks:
+    [],
+} as const;
 
 function renderWorkspace() {
   return render(
@@ -203,9 +371,18 @@ describe(
               );
             },
           );
+          apiMocks
+            .generateStudyPlan
+            .mockReset();
+
+            academicTaskApiMocks
+            .listPrioritizedAcademicTasks
+            .mockReset()
+            .mockResolvedValue(
+                PRIORITIZED_TASKS,
+            );
       },
     );
-
 
     it(
       "loads saved plans and displays the selected plan sessions",
@@ -339,5 +516,207 @@ describe(
         ).not.toHaveBeenCalled();
       },
     );
+    it(
+        "generates a study plan from prioritized academic tasks",
+        async () => {
+            const user =
+            userEvent.setup();
+
+            apiMocks
+            .generateStudyPlan
+            .mockResolvedValue(
+                GENERATED_RESULT,
+            );
+
+            apiMocks
+            .listStudySessions
+            .mockImplementation(
+                (
+                planId:
+                    string,
+                ) => {
+                if (
+                    planId ===
+                    GENERATED_RESULT
+                    .plan.id
+                ) {
+                    return Promise.resolve(
+                    GENERATED_RESULT
+                        .sessions,
+                    );
+                }
+
+                if (
+                    planId ===
+                    "research-plan"
+                ) {
+                    return Promise.resolve(
+                    RESEARCH_SESSIONS,
+                    );
+                }
+
+                return Promise.resolve(
+                    FINALS_SESSIONS,
+                );
+                },
+            );
+
+            renderWorkspace();
+
+            await screen.findByRole(
+            "heading",
+            {
+                name:
+                "Finals Plan",
+                level:
+                2,
+            },
+            );
+
+            await user.click(
+            screen.getByRole(
+                "button",
+                {
+                name:
+                    /generate plan/i,
+                },
+            ),
+            );
+
+            await waitFor(
+            () => {
+                expect(
+                academicTaskApiMocks
+                    .listPrioritizedAcademicTasks,
+                ).toHaveBeenCalledWith({
+                limit:
+                    100,
+                });
+            },
+            );
+
+            const dialog =
+                await screen.findByRole(
+                    "dialog",
+                );
+
+                expect(
+                within(
+                    dialog,
+                ).getByText(
+                    "Generate study plan",
+                ),
+                ).toBeInTheDocument();
+
+            await user.type(
+            within(
+                dialog,
+            ).getByLabelText(
+                /plan title/i,
+            ),
+            "Generated Finals Plan",
+            );
+
+            await user.type(
+            within(
+                dialog,
+            ).getByLabelText(
+                /start date/i,
+            ),
+            "2026-08-10",
+            );
+
+            await user.type(
+            within(
+                dialog,
+            ).getByLabelText(
+                /end date/i,
+            ),
+            "2026-08-20",
+            );
+
+            await user.click(
+            within(
+                dialog,
+            ).getByRole(
+                "button",
+                {
+                name:
+                    /generate plan/i,
+                },
+            ),
+            );
+
+            await waitFor(
+            () => {
+                expect(
+                apiMocks
+                    .generateStudyPlan,
+                ).toHaveBeenCalledWith({
+                title:
+                    "Generated Finals Plan",
+                starts_on:
+                    "2026-08-10",
+                ends_on:
+                    "2026-08-20",
+                tasks: [
+                    {
+                    task_id:
+                        "55555555-5555-4555-8555-555555555555",
+                    subject_id:
+                        "biology-subject",
+                    title:
+                        "Study for Biology exam",
+                    deadline:
+                        "2026-08-20T18:00:00+08:00",
+                    estimated_minutes:
+                        180,
+                    priority_weight:
+                        5,
+                    },
+                ],
+                });
+            },
+            );
+
+            expect(
+            await within(
+                dialog,
+            ).findByText(
+                /1 study session was generated/i,
+            ),
+            ).toBeInTheDocument();
+
+            await user.click(
+            within(
+                dialog,
+            ).getByRole(
+                "button",
+                {
+                name:
+                    /done/i,
+                },
+            ),
+            );
+
+            expect(
+            await screen.findByRole(
+                "heading",
+                {
+                name:
+                    "Generated Finals Plan",
+                level:
+                    2,
+                },
+            ),
+            ).toBeInTheDocument();
+
+            expect(
+            await screen.findByText(
+                "Study for Biology exam",
+            ),
+            ).toBeInTheDocument();
+        },
+        );
   },
 );

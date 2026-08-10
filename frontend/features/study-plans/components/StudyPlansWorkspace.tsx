@@ -30,6 +30,7 @@ import {
   IconClock,
   IconPlus,
   IconRefresh,
+  IconSparkles,
   IconTrash,
 } from "@tabler/icons-react";
 import {
@@ -39,9 +40,17 @@ import {
   useState,
 } from "react";
 
+import {
+  listPrioritizedAcademicTasks,
+} from "@/features/academic-tasks/api";
+
 import type {
   SubjectSummary,
 } from "@/features/subjects/types";
+
+import {
+  academicTasksToSchedulableTasks,
+} from "../academic-task-adapter";
 
 import {
   deleteStudyPlan,
@@ -50,9 +59,15 @@ import {
   listStudySessions,
 } from "../api";
 import type {
+  SchedulableTask,
   StudyPlan,
+  StudyPlanGenerationResponse,
   StudySession,
 } from "../types";
+
+import {
+  GenerateStudyPlanModal,
+} from "./GenerateStudyPlanModal";
 
 import classes from "./StudyPlansWorkspace.module.css";
 import {
@@ -328,6 +343,30 @@ const [
   deletingSession,
   setDeletingSession,
 ] = useState(false);
+
+const [
+  generatePlanOpened,
+  setGeneratePlanOpened,
+] = useState(false);
+
+const [
+  generationTasks,
+  setGenerationTasks,
+] = useState<
+  SchedulableTask[]
+>([]);
+
+const [
+  generationTasksLoading,
+  setGenerationTasksLoading,
+] = useState(false);
+
+const [
+  generationTasksError,
+  setGenerationTasksError,
+] = useState<
+  string | null
+>(null);
 
   const subjectNames =
     useMemo(
@@ -964,6 +1003,108 @@ async function handleDeleteSession() {
   }
 }
 
+async function handleOpenGeneratePlan() {
+  setGenerationTasksLoading(
+    true,
+  );
+
+  setGenerationTasksError(
+    null,
+  );
+
+  try {
+    const prioritizedTasks =
+      await listPrioritizedAcademicTasks({
+        limit:
+          100,
+      });
+
+    const schedulableTasks =
+      academicTasksToSchedulableTasks(
+        prioritizedTasks,
+      );
+
+    setGenerationTasks(
+      schedulableTasks,
+    );
+
+    setGeneratePlanOpened(
+      true,
+    );
+  } catch (
+    error
+  ) {
+    setGenerationTasksError(
+      getErrorMessage(
+        error,
+        "Your academic tasks could not be loaded for study-plan generation.",
+      ),
+    );
+  } finally {
+    setGenerationTasksLoading(
+      false,
+    );
+  }
+}
+
+
+function handleGeneratedPlan(
+  result:
+    StudyPlanGenerationResponse,
+) {
+  setPlans(
+    (
+      currentPlans,
+    ) => [
+      result.plan,
+      ...currentPlans.filter(
+        (plan) =>
+          plan.id !==
+          result.plan.id,
+      ),
+    ],
+  );
+
+  setSelectedPlanId(
+    result.plan.id,
+  );
+
+  setSessions(
+    result.sessions,
+  );
+
+  setSessionsStatus(
+    "ready",
+  );
+
+  setSessionsError(
+    null,
+  );
+
+  setActionError(
+    null,
+  );
+
+  setWeekAnchor(
+    startOfMonday(
+      parseDateOnly(
+        result.plan.starts_on,
+      ),
+    ),
+  );
+}
+
+
+function handleCloseGeneratePlan() {
+  setGeneratePlanOpened(
+    false,
+  );
+
+  setGenerationTasks(
+    [],
+  );
+}
+
   function goToPreviousWeek() {
     setWeekAnchor(
       (
@@ -1089,6 +1230,24 @@ async function handleDeleteSession() {
     ) : null}
 
     <Button
+        size="xs"
+        variant="light"
+        leftSection={
+            <IconSparkles
+            size={15}
+            />
+        }
+        loading={
+            generationTasksLoading
+        }
+        onClick={() => {
+            void handleOpenGeneratePlan();
+        }}
+        >
+        Generate plan
+        </Button>
+
+    <Button
       size="xs"
       leftSection={
         <IconPlus
@@ -1106,6 +1265,26 @@ async function handleDeleteSession() {
   </Group>
 </Group>
 
+{generationTasksError ? (
+  <Alert
+    mt="lg"
+    color="red"
+    title="Automatic generation unavailable"
+    icon={
+      <IconAlertCircle
+        size={18}
+      />
+    }
+    withCloseButton
+    onClose={() =>
+      setGenerationTasksError(
+        null,
+      )
+    }
+  >
+    {generationTasksError}
+  </Alert>
+) : null}
 
           {plansStatus ===
           "loading" ? (
@@ -1197,12 +1376,11 @@ async function handleDeleteSession() {
                 size="sm"
                 c="dimmed"
                 ta="center"
-              >
-                Manual creation and
-                automatic plan
-                generation controls
-                will appear here.
-              </Text>
+                >
+                Create a manual plan or
+                generate one from your
+                academic tasks.
+                </Text>
             </Paper>
           ) : null}
 
@@ -1734,7 +1912,20 @@ async function handleDeleteSession() {
         </Card>
             </div>
 
-
+        <GenerateStudyPlanModal
+        opened={
+            generatePlanOpened
+        }
+        onClose={
+            handleCloseGeneratePlan
+        }
+        tasks={
+            generationTasks
+        }
+        onGenerated={
+            handleGeneratedPlan
+        }
+        />
       <CreateStudyPlanModal
         opened={
           createPlanOpened

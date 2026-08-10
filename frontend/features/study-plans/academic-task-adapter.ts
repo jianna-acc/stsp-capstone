@@ -1,34 +1,14 @@
 // File: /frontend/features/study-plans/academic-task-adapter.ts
-// Purpose: Converts prioritized Academic Task data into Track D's
-// generic scheduling contract without directly depending on Track C.
+// Purpose: Converts prioritized Academic Tasks into Track D's
+// generic schedulable-task contract.
+
+import type {
+  AcademicTaskPriorityResponse,
+} from "@/features/academic-tasks/types";
 
 import type {
   SchedulableTask,
 } from "./types";
-
-
-export type AcademicTaskSchedulingStatus =
-  | "pending"
-  | "in_progress"
-  | "completed"
-  | "cancelled";
-
-
-export interface AcademicTaskSchedulingSource {
-  task: {
-    id: string;
-    subject_id: string;
-    title: string;
-    deadline: string;
-    estimated_minutes: number;
-    status:
-      AcademicTaskSchedulingStatus;
-  };
-
-  priority: {
-    total_score: number;
-  };
-}
 
 
 export function priorityScoreToWeight(
@@ -48,8 +28,7 @@ export function priorityScoreToWeight(
     Math.max(
       1,
       Math.ceil(
-        normalizedScore /
-          20,
+        normalizedScore / 20,
       ),
     ),
   );
@@ -58,7 +37,7 @@ export function priorityScoreToWeight(
 
 function isSchedulableStatus(
   status:
-    AcademicTaskSchedulingStatus,
+    AcademicTaskPriorityResponse["task"]["status"],
 ): boolean {
   return (
     status === "pending" ||
@@ -69,7 +48,7 @@ function isSchedulableStatus(
 
 export function academicTaskToSchedulableTask(
   item:
-    AcademicTaskSchedulingSource,
+    AcademicTaskPriorityResponse,
 ): SchedulableTask | null {
   if (
     !isSchedulableStatus(
@@ -82,18 +61,22 @@ export function academicTaskToSchedulableTask(
   return {
     task_id:
       item.task.id,
+
     subject_id:
       item.task.subject_id,
+
     title:
       item.task.title,
+
     deadline:
       item.task.deadline,
+
     estimated_minutes:
       item.task.estimated_minutes,
+
     priority_weight:
       priorityScoreToWeight(
-        item.priority
-          .total_score,
+        item.priority.total_score,
       ),
   };
 }
@@ -101,7 +84,7 @@ export function academicTaskToSchedulableTask(
 
 export function academicTasksToSchedulableTasks(
   items:
-    AcademicTaskSchedulingSource[],
+    AcademicTaskPriorityResponse[],
 ): SchedulableTask[] {
   return items.flatMap(
     (item) => {
