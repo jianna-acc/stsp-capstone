@@ -37,8 +37,8 @@ Update it whenever files, APIs, migrations, owners, or major system connections 
 | Phase 6B    | Reviewer generation frontend and result display          | Integrated |
 | Phase 6C    | Saved reviewer management and regeneration               | Integrated |
 | Phase 6D    | Large-material multi-pass reviewer generation            | Integrated |
-| Track A Backend | Flashcard persistence, source loading, AI generation, orchestration, and protected API | Integrated |
-| Later | Flashcard frontend, quizzes, planning, analytics | Planned |
+| Track A | Flashcard backend, large-material generation, frontend study UI, and saved-deck management | Integrated |
+| Later | Quizzes, planning, analytics | Planned |
 
 
 ---
@@ -312,7 +312,9 @@ Large-material generation preserves the complete original source bundle for owne
 
 | Path | Status | Owner | Purpose | Connections |
 |---|---|---|---|---|
-| `/backend/app/ai/flashcard_prompt.py` | Integrated | Member 3 | Builds bounded, source-grounded Flashcard generation prompts and strict JSON output instructions | Flashcard generation, Gemini |
+| `/backend/app/ai/flashcard_prompt.py` | Integrated | Member 3 | Builds complete, partial-batch, and final-synthesis Flashcard prompts | Flashcard generation, batching, Gemini |
+| `/backend/app/services/flashcard_batching.py` | Integrated | Member 3 | Splits oversized Flashcard source bundles into ordered bounded batches without truncating or reordering chunks | Flashcard generation, source loader |
+| `/backend/app/services/flashcard_generation.py` | Integrated | Member 3 | Selects single-pass or multi-pass generation, validates candidate/final decks, and performs one controlled repair per generation pass | Flashcard prompts, batching, Gemini |
 | `/backend/app/schemas/flashcard.py` | Integrated | Member 3 | Flashcard generation requests, cards, sources, deck responses, and API error contracts | Routes, generation, repository |
 | `/backend/app/schemas/flashcard_summary.py` | Integrated | Member 3 | Lightweight saved-deck summary and list-response contracts | Flashcard repository, API |
 | `/backend/app/repositories/flashcard_repository.py` | Integrated | Member 3 | Atomic Flashcard creation, owner-scoped retrieval, listing, and deletion | Supabase, Flashcard RPC |
@@ -389,6 +391,39 @@ Large-material generation preserves the complete original source bundle for owne
 | `/backend/tests/test_flashcard_orchestration.py` | Ready | End-to-end source → generation → persistence orchestration |
 | `/backend/tests/test_flashcard_api_endpoint.py` | Ready | Authenticated Flashcard API contract and controlled error responses |
 | `/backend/tests/test_flashcard_router_registration.py` | Ready | Real FastAPI/OpenAPI Flashcard route registration |
+| `/backend/tests/test_flashcard_batching.py` | Ready | Flashcard batching limits, stable ordering, chunk preservation, and oversized-chunk validation |
+| `/backend/tests/test_flashcard_large_prompt.py` | Ready | Partial-batch and final-synthesis Flashcard prompt behavior |
+| `/backend/tests/test_flashcard_large_generation.py` | Ready | Multi-pass generation, partial repair, final synthesis, and complete-source metadata |
+
+---
+# Track A — Flashcard Frontend
+
+| Path                                                                          | Status     | Owner    | Purpose                                                                           | Connections                         |
+| ----------------------------------------------------------------------------- | ---------- | -------- | --------------------------------------------------------------------------------- | ----------------------------------- |
+| `/frontend/app/(protected)/flashcards/page.tsx`                               | Integrated | Frontend | Protected Flashcard page                                                          | Flashcard workspace, filter options |
+| `/frontend/features/flashcards/types.ts`                                      | Integrated | Frontend | Flashcard generation, saved-deck, source, and filter contracts                    | API client, UI                      |
+| `/frontend/features/flashcards/api.ts`                                        | Integrated | Frontend | Authenticated generate/list/get/delete Flashcard API client                       | Protected Flashcard API             |
+| `/frontend/features/flashcards/server/options.ts`                             | Integrated | Frontend | Loads authenticated subjects and ready study materials                            | Supabase                            |
+| `/frontend/features/flashcards/components/FlashcardGenerationForm.tsx`        | Integrated | Frontend | Subject/file scope and card-count generation controls                             | Flashcard API                       |
+| `/frontend/features/flashcards/components/FlashcardGenerationForm.module.css` | Integrated | Frontend | Generation-form styling                                                           | Flashcard generation form           |
+| `/frontend/features/flashcards/components/FlashcardStudyViewer.tsx`           | Integrated | Frontend | Interactive question/answer study viewer with navigation                          | Generated and saved decks           |
+| `/frontend/features/flashcards/components/FlashcardStudyViewer.module.css`    | Integrated | Frontend | Flashcard viewer and distinct answer-side styling                                 | Flashcard study viewer              |
+| `/frontend/features/flashcards/components/SavedFlashcardList.tsx`             | Integrated | Frontend | Lists, reopens, and requests deletion of saved Flashcard decks                    | Flashcard workspace                 |
+| `/frontend/features/flashcards/components/SavedFlashcardList.module.css`      | Integrated | Frontend | Saved-deck list styling                                                           | Saved Flashcards                    |
+| `/frontend/features/flashcards/components/FlashcardWorkspace.tsx`             | Integrated | Frontend | Coordinates generation, saved-deck loading, reopening, deletion, and study viewer | Flashcard API and components        |
+| `/frontend/features/flashcards/components/FlashcardWorkspace.module.css`      | Integrated | Frontend | Flashcard workspace layout                                                        | Flashcard page                      |
+| `/frontend/features/navigation/components/ProtectedAppShell.tsx`              | Integrated | Frontend | Adds Flashcards to authenticated navigation                                       | `/flashcards`                       |
+
+# Track A — Flashcard Frontend Tests
+
+| Path                                                                        | Status | Purpose                                                                                      |
+| --------------------------------------------------------------------------- | ------ | -------------------------------------------------------------------------------------------- |
+| `/frontend/features/flashcards/api.test.ts`                                 | Ready  | Authenticated Flashcard generate/list/get/delete API behavior                                |
+| `/frontend/features/flashcards/server/options.test.ts`                      | Ready  | Subject and ready-study-material filter loading                                              |
+| `/frontend/features/flashcards/components/FlashcardGenerationForm.test.tsx` | Ready  | Scope selection, card count, generation, and error states                                    |
+| `/frontend/features/flashcards/components/FlashcardStudyViewer.test.tsx`    | Ready  | Question/answer flipping, navigation, boundaries, and deck reset                             |
+| `/frontend/features/flashcards/components/SavedFlashcardList.test.tsx`      | Ready  | Saved list, metadata, opening, deletion callbacks, empty state, and errors                   |
+| `/frontend/features/flashcards/components/FlashcardWorkspace.test.tsx`      | Ready  | Saved-list loading, generation refresh, reopening, deletion, viewer cleanup, and safe errors |
 
 ---
 

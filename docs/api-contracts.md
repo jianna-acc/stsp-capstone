@@ -906,7 +906,20 @@ Flashcard generation loads processed source-aware chunks in deterministic file a
 
 It does not use similarity-based RAG retrieval.
 
-Current single-pass Flashcard generation accepts up to 80,000 source characters. Oversized source collections fail safely instead of being silently truncated.
+Flashcard generation supports both normal single-pass and large-material multi-pass processing.
+
+For source collections at or below 80,000 characters, generation uses one complete source-grounded prompt.
+
+For source collections above 80,000 characters, the backend partitions the complete ordered source bundle into deterministic batches with a default maximum of 60,000 source characters per batch.
+
+Batching occurs only at existing source-chunk boundaries. Source chunks are not silently truncated, dropped, duplicated, or reordered.
+
+Each batch produces validated candidate Flashcards. The backend then performs a final synthesis pass over the ordered candidate decks and returns exactly the number of Flashcards requested by the student.
+
+The final persisted deck continues to reference the complete original source bundle rather than the intermediate candidate generations.
+
+Large-material processing does not change the public `POST /api/flashcards/generate` request or response contract.
+
 
 ---
 

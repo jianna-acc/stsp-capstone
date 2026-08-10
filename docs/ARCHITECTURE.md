@@ -44,10 +44,16 @@ The system currently includes:
 - Atomic Flashcard deck-and-card creation
 - Protected FastAPI Flashcard API
 - Saved Flashcard listing, retrieval, and deletion
+- Deterministic large-material Flashcard source batching
+- Multi-pass Flashcard candidate generation and final synthesis
+- Protected student-facing Flashcard workspace
+- Interactive question-and-answer Flashcard study viewer
+- Saved Flashcard reopening and deletion UI
 
-The application now also includes a protected Reviewer frontend for generating structured reviewers from a whole subject or one ready study material.
+The application now also includes protected Reviewer and Flashcard frontends for generating and studying AI-generated learning materials from a whole subject or one ready study material.
 
-Future phases may add the student-facing Flashcard frontend, quizzes, study planning, scheduling, analytics, and deployment improvements.
+Future phases may add quizzes, study planning, scheduling, analytics, and deployment improvements.
+
 ---
 
 # Phase Status
@@ -64,8 +70,8 @@ Future phases may add the student-facing Flashcard frontend, quizzes, study plan
 | Phase 6B | Reviewer frontend, authenticated generation UI, structured result display | Implemented |
 | Phase 6C | Saved reviewer management and regeneration | Implemented |
 | Phase 6D | Large-material multi-pass reviewer generation | Implemented |
-| Track A Backend | Flashcard persistence, source loading, structured AI generation, orchestration, protected API | Implemented |
-| Later phases | Flashcard frontend, quizzes, study plans, analytics, deployment | Planned |
+| Track A | Flashcard backend, large-material generation, protected frontend, saved-deck access, and interactive study UI | Implemented |
+| Later phases | Quizzes, study plans, analytics, deployment | Planned |
 
 ---
 
@@ -1363,8 +1369,6 @@ provider identity validation
 no outside-knowledge instruction
 prompt-injection boundary for uploaded source text
 
-Material above the current single-pass source limit is rejected safely rather than silently truncated. Large-material Flashcard generation remains a later Track A phase.
-
 Flashcard Persistence
 
 Flashcards use two normalized tables:
@@ -1419,19 +1423,289 @@ A Flashcard request cannot choose a trusted user_id.
 
 Saved-deck reads and deletes remain explicitly owner-scoped.
 
-# Current Track A Boundary
+# Track A — Flashcards
 
-The Flashcard backend is implemented.
+Track A implements the complete Flashcard workflow from authenticated study-material selection through AI generation, persistence, interactive studying, and later saved-deck access.
 
-The student-facing Flashcard frontend, study/flip-card interface, saved-deck management UI, and large-material multi-pass Flashcard generation remain to be implemented in later Track A phases.
+Supported generation scopes are:
 
+```text
+One ready study file
+All ready study files within one subject
+```
+
+Flashcard generation uses complete processed source-aware chunks rather than similarity-based RAG retrieval.
+
+## Flashcard Architecture
+
+```mermaid
+flowchart TD
+    STUDENT["Student"]
+    PAGE["/flashcards"]
+    WORKSPACE["FlashcardWorkspace"]
+
+    FORM["FlashcardGenerationForm"]
+    VIEWER["FlashcardStudyViewer"]
+    SAVED["SavedFlashcardList"]
+
+    API_CLIENT["Flashcard API Client"]
+    API["Protected Flashcard API"]
+
+    ORCHESTRATION["Flashcard Orchestration"]
+    SOURCE["Flashcard Source Loader"]
+    GENERATION["Flashcard Generation"]
+    BATCHER["FlashcardSourceBatcher"]
+    PERSISTENCE["Flashcard Persistence Service"]
+
+    FILES[("study_files")]
+    CHUNKS[("study_file_chunks")]
+    RPC["create_flashcard_deck_with_cards"]
+    DECKS[("flashcard_decks")]
+    CARDS[("flashcards")]
+
+    GEMINI["Gemini Generation Provider"]
+
+    STUDENT --> PAGE
+    PAGE --> WORKSPACE
+
+    WORKSPACE --> FORM
+    WORKSPACE --> VIEWER
+    WORKSPACE --> SAVED
+
+    FORM --> API_CLIENT
+    SAVED --> API_CLIENT
+    API_CLIENT --> API
+
+    API --> ORCHESTRATION
+
+    ORCHESTRATION --> SOURCE
+    SOURCE --> FILES
+    SOURCE --> CHUNKS
+
+    ORCHESTRATION --> GENERATION
+    GENERATION --> BATCHER
+    GENERATION --> GEMINI
+
+    ORCHESTRATION --> PERSISTENCE
+    PERSISTENCE --> RPC
+
+    RPC --> DECKS
+    RPC --> CARDS
+```
+
+## Flashcard Generation Contract
+
+Generated content uses:
+
+```text
+cards
+  question
+  answer
+```
+
+Supported deck sizes are:
+
+```text
+Minimum cards: 5
+Default cards: 20
+Maximum cards: 50
+```
+
+Generation behavior includes:
+
+* File-level and subject-level generation
+* Authenticated source ownership validation
+* Ready-file validation
+* Complete ordered source loading
+* Strict JSON output validation
+* Exact requested-card-count validation
+* Duplicate-card rejection
+* One controlled repair attempt per generation pass
+* Provider identity validation
+* No outside-knowledge instruction
+* Prompt-injection boundary for uploaded source text
+
+## Large-Material Flashcard Generation
+
+Flashcard generation uses two paths.
+
+For source material at or below the normal single-pass limit:
+
+```text
+Complete source bundle
+→ Complete Flashcard prompt
+→ Gemini
+→ Validated FlashcardContent
+```
+
+For oversized source material:
+
+```text
+Complete source bundle
+→ FlashcardSourceBatcher
+→ Ordered bounded source batches
+→ Candidate Flashcard generation per batch
+→ Final synthesis prompt
+→ Gemini
+→ Validated final FlashcardContent
+```
+
+Current generation limits are:
+
+| Limit                              |             Value |
+| ---------------------------------- | ----------------: |
+| Normal single-pass source limit    | 80,000 characters |
+| Default large-material batch limit | 60,000 characters |
+| Maximum configurable batch limit   | 80,000 characters |
+
+The batcher splits only at existing source-chunk boundaries.
+
+It does not silently truncate source content, remove chunks, duplicate chunks, or change their order.
+
+Each batch generates validated candidate Flashcards. The final synthesis step receives those ordered candidate decks and produces exactly the number of Flashcards requested by the student while removing duplicate or substantially redundant cards.
+
+Materials within the normal 80,000-character limit continue through the original single-pass path.
+
+Large-material generation introduces no new database table or migration.
+
+## Flashcard Persistence
+
+Flashcards use two normalized tables:
+
+```text
+flashcard_decks
+    ↓ one-to-many
+flashcards
+```
+
+`flashcard_decks` stores:
+
+```text
+owner
+subject
+optional study file
+scope
+title
+requested card count
+safe sources
+generation model
+generation count
+timestamps
+```
+
+Each `flashcards` row stores:
+
+```text
+deck_id
+position
+question
+answer
+```
+
+The trusted backend persists the deck and all cards atomically through:
+
+```text
+create_flashcard_deck_with_cards(...)
+```
+
+Generation therefore automatically saves a validated Flashcard deck before returning it to the frontend.
+
+## Protected Flashcard API
+
+Implemented endpoints:
+
+```text
+POST   /api/flashcards/generate
+GET    /api/flashcards
+GET    /api/flashcards/{deck_id}
+DELETE /api/flashcards/{deck_id}
+```
+
+The authenticated user's UUID comes from the validated Supabase bearer token.
+
+A Flashcard request cannot choose a trusted `user_id`.
+
+Saved-deck reads and deletes remain explicitly owner-scoped.
+
+## Flashcard Frontend
+
+The protected Flashcard workspace is available at:
+
+```text
+/flashcards
+```
+
+The frontend provides:
+
+```text
+FlashcardWorkspace
+├── FlashcardGenerationForm
+├── FlashcardStudyViewer
+└── SavedFlashcardList
+```
+
+The generation form supports:
+
+* Whole-subject generation
+* Single-ready-study-material generation
+* Configurable card count
+* Authenticated filter loading
+* Loading states
+* Safe API error states
+
+The interactive study viewer supports:
+
+* Question-first presentation
+* Question/answer flipping
+* Visually distinct answer-side card styling
+* Previous and next navigation
+* Automatic return to the question side when changing cards
+* Current-card progress display
+
+Saved Flashcards support:
+
+* Automatic loading when `/flashcards` opens
+* Reopening previously generated decks
+* Studying reopened decks with the same viewer
+* Automatic saved-list refresh after generation
+* Delete confirmation
+* Owner-scoped backend deletion
+* Clearing the viewer when its currently open deck is deleted
+* Persistence across browser refreshes
+
+Generated Flashcards therefore follow this complete student flow:
+
+```text
+Select subject or file
+→ Generate Flashcards
+→ Persist deck automatically
+→ Study question and answer
+→ Reopen from Saved Flashcards later
+→ Delete when no longer needed
+```
+
+## Track A Status
+
+Track A is implemented and integration-tested.
+
+Implemented scope includes:
+
+* Flashcard persistence
+* Atomic deck/card creation
+* Protected Flashcard API
+* Complete source loading
+* Structured AI generation
+* Large-material multi-pass generation
+* Interactive Flashcard frontend
+* Saved-deck reopening
+* Saved-deck deletion
+* Automated backend and frontend coverage
+* Live end-to-end validation
 
 # Planned Future Features
 
 Future phases may introduce:
 
-- Flashcard frontend and interactive study interface
-- Large-material multi-pass Flashcard generation
 - Quizzes
 - Academic task integration
 - Study-plan generation
