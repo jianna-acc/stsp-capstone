@@ -49,10 +49,17 @@ The system currently includes:
 - Protected student-facing Flashcard workspace
 - Interactive question-and-answer Flashcard study viewer
 - Saved Flashcard reopening and deletion UI
+- AI Quiz generation from a subject or ready study file
+- Multiple-choice, true/false, identification, and mixed Quiz modes
+- Easy, medium, and hard Quiz difficulty
+- Atomic Quiz and private answer-key persistence
+- One-question-at-a-time Quiz attempts with immediate grading feedback
+- Final Quiz scoring with strong/weak topic analysis
+- Saved Quiz history, completed-attempt review, retaking, and deletion
 
-The application now also includes protected Reviewer and Flashcard frontends for generating and studying AI-generated learning materials from a whole subject or one ready study material.
+The application now includes protected Reviewer, Flashcard, and Quiz frontends for generating and studying AI-generated learning materials from a whole subject or one ready study material. Quiz generation and attempts use authenticated FastAPI endpoints while private answer keys remain backend-only until the appropriate answer feedback or completed-attempt review is returned.
 
-Future phases may add quizzes, study planning, scheduling, analytics, and deployment improvements.
+Future phases may add study planning, scheduling, analytics, and deployment improvements.
 
 ---
 
@@ -71,7 +78,8 @@ Future phases may add quizzes, study planning, scheduling, analytics, and deploy
 | Phase 6C | Saved reviewer management and regeneration | Implemented |
 | Phase 6D | Large-material multi-pass reviewer generation | Implemented |
 | Track A | Flashcard backend, large-material generation, protected frontend, saved-deck access, and interactive study UI | Implemented |
-| Later phases | Quizzes, study plans, analytics, deployment | Planned |
+| Track B | Quiz generation, attempts, scoring, history, review, retake, deletion | Implemented |
+| Later phases | Study plans, analytics, deployment | Planned |
 
 ---
 
@@ -89,6 +97,7 @@ flowchart LR
         ASSISTANT["Study Assistant"]
         HISTORY["Saved Conversations"]
         REVIEWERS_UI["Reviewer Workspace"]
+        QUIZZES_UI["Quiz Workspace"]
 
         SUPABASE_CLIENT["Supabase Clients"]
         API_CLIENT["FastAPI Clients"]
@@ -123,6 +132,13 @@ flowchart LR
         FLASHCARD_SOURCE["Flashcard Source Loader"]
         FLASHCARD_GENERATION["Flashcard Generation"]
         FLASHCARD_SERVICE["Flashcard Persistence Service"]
+
+        QUIZ_API["Quiz API"]
+        QUIZ_ORCHESTRATION["Quiz Orchestration"]
+        QUIZ_SOURCE["Quiz Source Loader"]
+        QUIZ_GENERATION["Quiz Generation"]
+        QUIZ_SERVICE["Quiz Persistence Service"]
+        QUIZ_ATTEMPTS["Quiz Attempt Service"]
     end
 
     subgraph SUPABASE["Supabase"]
@@ -141,6 +157,7 @@ flowchart LR
     STUDENT --> FILE_UI
     STUDENT --> ASSISTANT
     STUDENT --> REVIEWERS_UI
+    STUDENT --> QUIZZES_UI
 
     AUTH_UI --> SUPABASE_CLIENT
     ONBOARDING --> SUPABASE_CLIENT
@@ -154,6 +171,7 @@ flowchart LR
     ASSISTANT --> HISTORY
     ASSISTANT --> API_CLIENT
     REVIEWERS_UI --> API_CLIENT
+    QUIZZES_UI --> API_CLIENT
 
     API_CLIENT --> API
     API --> AUTH_DEP
@@ -200,6 +218,20 @@ flowchart LR
     FLASHCARD_GENERATION --> GEMINI
     FLASHCARD_SERVICE --> RPC
     FLASHCARD_SERVICE --> DATABASE
+
+    API --> QUIZ_API
+    QUIZ_API --> QUIZ_ORCHESTRATION
+    QUIZ_ORCHESTRATION --> QUIZ_SOURCE
+    QUIZ_ORCHESTRATION --> QUIZ_GENERATION
+    QUIZ_ORCHESTRATION --> QUIZ_SERVICE
+    QUIZ_API --> QUIZ_ATTEMPTS
+
+    QUIZ_SOURCE --> DATABASE
+    QUIZ_GENERATION --> GEMINI
+    QUIZ_SERVICE --> RPC
+    QUIZ_SERVICE --> DATABASE
+    QUIZ_ATTEMPTS --> RPC
+    QUIZ_ATTEMPTS --> DATABASE
 ```
 
 ---
@@ -677,6 +709,71 @@ Generated reviewers are persisted by the backend before being returned to the fr
 
 Saved-reviewer history, reopening, deletion controls, and regeneration remain deferred to the next Reviewer phase.
 
+# Quiz Frontend
+
+The protected Quiz workspace is available at:
+
+```text
+/quizzes
+```
+
+The workspace has two main views:
+
+```text
+Create Quiz
+My Quizzes
+```
+
+```mermaid
+flowchart LR
+    PAGE["/quizzes"]
+    WORKSPACE["QuizWorkspace"]
+
+    FORM["QuizGenerationForm"]
+    PLAYER["QuizPlayer"]
+    HISTORY["QuizHistoryPanel"]
+    REVIEW["QuizAttemptReview"]
+
+    OPTIONS["Quiz Filter Options"]
+    QUIZ_CLIENT["Quiz API Client"]
+    ATTEMPT_CLIENT["Attempt API Client"]
+    HISTORY_CLIENT["History API Client"]
+
+    PAGE --> WORKSPACE
+    PAGE --> OPTIONS
+
+    WORKSPACE --> FORM
+    WORKSPACE --> PLAYER
+    WORKSPACE --> HISTORY
+    HISTORY --> REVIEW
+
+    FORM --> QUIZ_CLIENT
+    PLAYER --> ATTEMPT_CLIENT
+    HISTORY --> HISTORY_CLIENT
+```
+
+The Quiz frontend supports:
+
+- Whole-subject Quiz generation
+- Single-ready-study-material Quiz generation
+- Multiple-choice, true/false, identification, and mixed Quiz types
+- Easy, medium, and hard difficulty
+- Configurable question counts from 1 to 50
+- One question displayed at a time
+- Immediate correct/incorrect feedback after submission
+- Correct answer and explanation after submission
+- Final score and strong/weak topic summaries
+- Saved Quiz history
+- Latest-attempt status and score
+- Completed-attempt review
+- Retaking a saved Quiz
+- Quiz deletion with confirmation
+
+Only student-safe question fields are returned by normal Quiz reads. Private answer-key fields are not included in `QuizResponse`.
+
+Completed-attempt review is a separate authenticated operation and is only allowed after the selected owned attempt reaches `completed`.
+
+
 # Phase 5G Conversation Persistence
 
 Implemented tables:
@@ -848,6 +945,11 @@ public.reviewers
 
 public.flashcard_decks
 public.flashcards
+
+public.quizzes
+public.quiz_questions
+public.quiz_attempts
+public.quiz_attempt_answers
 ```
 
 Private Storage:
@@ -880,6 +982,9 @@ study-materials
 18. Browser roles cannot directly call the trusted Flashcard creation RPC.
 19. Generated Flashcard decks are persisted only after successful structured AI validation.
 20. Flashcard deck deletion cascades to its individual Flashcards.
+21. Normal Quiz responses must not expose `correct_answer`, `accepted_answers`, or `explanation`.
+22. Quiz answer keys are read only through trusted backend operations.
+23. Completed-attempt review requires authenticated ownership and completed attempt state.
 
 ---
 
@@ -969,6 +1074,20 @@ Browser anon and authenticated roles cannot execute the persistence RPC directly
 
 ---
 
+# Track B Quiz Migrations
+
+```text
+20260809204500_create_quizzes_foundation.sql
+20260809211600_create_quiz_persistence_rpc.sql
+20260809223500_create_quiz_attempt_foundation.sql
+20260809225500_create_quiz_attempt_rpcs.sql
+```
+
+These migrations create owned Quiz metadata, private Quiz questions and answer keys, Quiz attempts, submitted-answer history, and trusted atomic RPCs for Quiz creation, attempt start, and answer submission.
+
+---
+
+
 # Phase 6A Reviewer Backend
 
 Phase 6A introduces the backend foundation for generated study reviewers.
@@ -1056,7 +1175,7 @@ Saved reviewer management and regeneration were implemented in Phase 6C.
 
 Large-material multi-pass reviewer generation was implemented in Phase 6D.
 
-Quiz generation remains deferred to a later Phase 6 feature.
+Quiz generation and the Quiz-taking workflow are now implemented in Track B.
 
 # Phase 6B Reviewer Frontend
 
@@ -1115,7 +1234,7 @@ Reviewer response validation still remains strict, and malformed provider output
 
 Phase 6B originally excluded saved reviewer management, regeneration, and large-material multi-pass generation. These capabilities were implemented later in Phase 6C and Phase 6D.
 
-Quiz generation remains deferred.
+Quiz generation and the Quiz-taking workflow are now implemented in Track B.
 
 ---
 
@@ -1289,7 +1408,6 @@ Reviewer-focused validation:
 Phase 6D Ruff validation also passes.
 ---
 
-```markdown
 ---
 
 # Track A — Flashcard Backend
@@ -1304,6 +1422,7 @@ All ready study files within one subject
 ```
 Flashcard generation uses the complete processed source-aware chunks rather than similarity-based RAG retrieval.
 
+```mermaid
 flowchart LR
     REQUEST["Authenticated Flashcard Request"]
 
@@ -1338,8 +1457,9 @@ flowchart LR
 
     RPC --> DECKS
     RPC --> CARDS
+```
 
-Flashcard Generation Contract
+## Flashcard Generation Contract
 
 Generated content uses:
 ```text
@@ -1369,7 +1489,7 @@ provider identity validation
 no outside-knowledge instruction
 prompt-injection boundary for uploaded source text
 
-Flashcard Persistence
+## Flashcard Persistence
 
 Flashcards use two normalized tables:
 
@@ -1702,11 +1822,237 @@ Implemented scope includes:
 * Automated backend and frontend coverage
 * Live end-to-end validation
 
+# Track B — Quiz Generation and Attempts
+
+Track B implements end-to-end Quiz generation and Quiz-taking from processed study material.
+
+A Quiz can be generated from:
+
+- One ready study file
+- All ready study files within one owned subject
+
+Supported Quiz types:
+
+```text
+multiple_choice
+true_false
+identification
+mixed
+```
+
+Supported difficulty:
+
+```text
+easy
+medium
+hard
+```
+
+Question count:
+
+```text
+1 to 50
+```
+
+## Quiz Generation Flow
+
+```mermaid
+flowchart LR
+    REQUEST["Authenticated Quiz Request"]
+    API["Quiz API"]
+    ORCHESTRATION["Quiz Orchestration"]
+    SOURCE["Quiz Source Loader"]
+    PROMPT["Quiz Prompt"]
+    GEMINI["Gemini Generation"]
+    VALIDATION["Strict Quiz Validation"]
+    RPC["create_quiz_with_questions"]
+    QUIZZES[("quizzes")]
+    QUESTIONS[("quiz_questions")]
+
+    REQUEST --> API
+    API --> ORCHESTRATION
+    ORCHESTRATION --> SOURCE
+    SOURCE --> PROMPT
+    PROMPT --> GEMINI
+    GEMINI --> VALIDATION
+    VALIDATION --> RPC
+    RPC --> QUIZZES
+    RPC --> QUESTIONS
+```
+
+Generation is grounded in the selected processed study material. The source loader validates authenticated ownership and ready-state requirements before source text reaches Quiz generation.
+
+The generated private content contains the answer key required for persistence and grading, while the public Quiz response contains only:
+
+```text
+id
+position
+question_type
+topic
+question
+choices
+```
+
+The normal browser response does not include:
+
+```text
+correct_answer
+accepted_answers
+explanation
+```
+
+## Quiz Attempt Flow
+
+```mermaid
+flowchart TD
+    START["Start Quiz Attempt"]
+    START_RPC["start_quiz_attempt"]
+    QUESTION["Display Current Question"]
+    SUBMIT["Submit Answer"]
+    GRADE_RPC["submit_quiz_attempt_answer"]
+    FEEDBACK["Immediate Feedback"]
+    MORE{"More Questions?"}
+    RESULT["Final Result"]
+    REVIEW["Completed Attempt Review"]
+
+    START --> START_RPC
+    START_RPC --> QUESTION
+    QUESTION --> SUBMIT
+    SUBMIT --> GRADE_RPC
+    GRADE_RPC --> FEEDBACK
+    FEEDBACK --> MORE
+    MORE -->|Yes| QUESTION
+    MORE -->|No| RESULT
+    RESULT --> REVIEW
+```
+
+Answer submission is atomic. The backend locks and validates the expected attempt position before grading and advancing the attempt.
+
+Grading behavior:
+
+- Multiple-choice answers use normalized exact matching.
+- True/false answers use normalized exact matching.
+- Identification answers are compared against the correct answer and configured accepted answers after whitespace/case normalization.
+
+An attempt records:
+
+```text
+status
+current_position
+correct_count
+question_count
+score_percentage
+started_at
+completed_at
+```
+
+Strong topics use an accuracy threshold of:
+
+```text
+70%
+```
+
+Topics at or above 70% are classified as strong. Topics below 70% are classified as weak.
+
+## Saved Quiz History
+
+The Quiz workspace can list saved Quizzes newest first.
+
+Each summary can include:
+
+- Quiz title
+- Scope
+- Quiz type
+- Difficulty
+- Question count
+- Attempt count
+- Latest attempt status
+- Latest score when completed
+- Creation/generation timestamps
+
+Students can:
+
+- Open a saved Quiz and start a fresh attempt
+- Review the newest completed attempt
+- Retake the same saved Quiz
+- Delete an owned Quiz
+
+Deleting a Quiz also removes its related questions, attempts, and submitted-answer history through configured foreign-key cascades.
+
+## Completed-Attempt Review
+
+Completed-attempt review returns:
+
+```text
+question
+submitted_answer
+is_correct
+correct_answer
+explanation
+answered_at
+```
+
+Review is unavailable while an attempt is still in progress.
+
+This preserves the Quiz answer-key boundary:
+
+```text
+Before answer submission or completion
+→ private answer key remains backend-only
+
+After one answer is submitted
+→ immediate feedback may reveal that question's correct answer/explanation
+
+After the attempt is completed
+→ authenticated completed-attempt review may reveal the full reviewed attempt
+```
+
+## Protected Quiz Endpoints
+
+```text
+POST   /api/quizzes/generate
+GET    /api/quizzes
+GET    /api/quizzes/{quiz_id}
+DELETE /api/quizzes/{quiz_id}
+
+POST   /api/quizzes/{quiz_id}/attempts
+GET    /api/quizzes/{quiz_id}/attempts
+
+GET    /api/quiz-attempts/{attempt_id}
+POST   /api/quiz-attempts/{attempt_id}/questions/{position}/answer
+GET    /api/quiz-attempts/{attempt_id}/result
+GET    /api/quiz-attempts/{attempt_id}/review
+```
+
+All endpoints require the existing Supabase bearer authentication pattern.
+
+The browser cannot choose a trusted `user_id`.
+
+## Track B Database Resources
+
+```text
+quizzes
+quiz_questions
+quiz_attempts
+quiz_attempt_answers
+```
+
+Trusted RPC functions:
+
+```text
+create_quiz_with_questions
+start_quiz_attempt
+submit_quiz_attempt_answer
+```
+
+Quiz history and completed-attempt review reuse these tables and require no additional migration.
+
+
+
 # Planned Future Features
 
 Future phases may introduce:
 
-- Quizzes
 - Academic task integration
 - Study-plan generation
 - Calendar scheduling

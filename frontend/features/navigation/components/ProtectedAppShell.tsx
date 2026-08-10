@@ -23,6 +23,7 @@ import {
   IconBooks,
   IconCards,
   IconLayoutDashboard,
+  IconListCheck,
   IconLogout,
   IconSchool,
   IconSparkles,
@@ -73,6 +74,13 @@ const NAVIGATION_ITEMS = [
       "Generate and study cards",
     href: "/flashcards",
     icon: IconCards,
+  },
+  {
+    label: "Quizzes",
+    description:
+      "Practice from your materials",
+    href: "/quizzes",
+    icon: IconListCheck,
   },
 ] as const;
 
