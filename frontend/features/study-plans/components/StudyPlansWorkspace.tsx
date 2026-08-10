@@ -5,12 +5,14 @@
 "use client";
 
 import {
+  ActionIcon,
   Alert,
   Badge,
   Button,
   Card,
   Group,
   Loader,
+  Modal,
   Paper,
   ScrollArea,
   Stack,
@@ -26,7 +28,9 @@ import {
   IconChevronLeft,
   IconChevronRight,
   IconClock,
+  IconPlus,
   IconRefresh,
+  IconTrash,
 } from "@tabler/icons-react";
 import {
   useCallback,
@@ -40,6 +44,8 @@ import type {
 } from "@/features/subjects/types";
 
 import {
+  deleteStudyPlan,
+  deleteStudySession,
   listStudyPlans,
   listStudySessions,
 } from "../api";
@@ -49,7 +55,12 @@ import type {
 } from "../types";
 
 import classes from "./StudyPlansWorkspace.module.css";
-
+import {
+  CreateStudyPlanModal,
+} from "./CreateStudyPlanModal";
+import {
+  CreateStudySessionModal,
+} from "./CreateStudySessionModal";
 
 interface StudyPlansWorkspaceProps {
   initialSubjects: SubjectSummary[];
@@ -279,6 +290,44 @@ export function StudyPlansWorkspace({
       ),
   );
 
+const [
+  createPlanOpened,
+  setCreatePlanOpened,
+] = useState(false);
+
+const [
+  createSessionOpened,
+  setCreateSessionOpened,
+] = useState(false);
+
+const [
+  deletePlanOpened,
+  setDeletePlanOpened,
+] = useState(false);
+
+const [
+  sessionToDelete,
+  setSessionToDelete,
+] = useState<
+  StudySession | null
+>(null);
+
+const [
+  actionError,
+  setActionError,
+] = useState<
+  string | null
+>(null);
+
+const [
+  deletingPlan,
+  setDeletingPlan,
+] = useState(false);
+
+const [
+  deletingSession,
+  setDeletingSession,
+] = useState(false);
 
   const subjectNames =
     useMemo(
@@ -746,6 +795,174 @@ export function StudyPlansWorkspace({
     );
   }
 
+  function handlePlanCreated(
+  plan: StudyPlan,
+) {
+  setPlans(
+    (
+      currentPlans,
+    ) => [
+      plan,
+      ...currentPlans,
+    ],
+  );
+
+  setSelectedPlanId(
+    plan.id,
+  );
+
+  setSessions(
+    [],
+  );
+
+  setSessionsStatus(
+    "ready",
+  );
+
+  setActionError(
+    null,
+  );
+
+  setWeekAnchor(
+    startOfMonday(
+      parseDateOnly(
+        plan.starts_on,
+      ),
+    ),
+  );
+}
+
+
+function handleSessionCreated(
+  session: StudySession,
+) {
+  setSessions(
+    (
+      currentSessions,
+    ) => [
+      ...currentSessions,
+      session,
+    ],
+  );
+
+  setActionError(
+    null,
+  );
+
+  setWeekAnchor(
+    startOfMonday(
+      new Date(
+        session.starts_at,
+      ),
+    ),
+  );
+}
+
+
+async function handleDeletePlan() {
+  if (
+    !selectedPlan
+  ) {
+    return;
+  }
+
+  setDeletingPlan(
+    true,
+  );
+
+  setActionError(
+    null,
+  );
+
+  try {
+    await deleteStudyPlan(
+      selectedPlan.id,
+    );
+
+    setDeletePlanOpened(
+      false,
+    );
+
+    setSelectedPlanId(
+      null,
+    );
+
+    setSessions(
+      [],
+    );
+
+    await loadPlans();
+  } catch (
+    error
+  ) {
+    setActionError(
+      getErrorMessage(
+        error,
+        "The study plan could not be deleted.",
+      ),
+    );
+  } finally {
+    setDeletingPlan(
+      false,
+    );
+  }
+}
+
+
+async function handleDeleteSession() {
+  if (
+    !selectedPlan ||
+    !sessionToDelete
+  ) {
+    return;
+  }
+
+  const sessionId =
+    sessionToDelete.id;
+
+  setDeletingSession(
+    true,
+  );
+
+  setActionError(
+    null,
+  );
+
+  try {
+    await deleteStudySession(
+      selectedPlan.id,
+      sessionId,
+    );
+
+    setSessions(
+      (
+        currentSessions,
+      ) =>
+        currentSessions.filter(
+          (session) =>
+            session.id !==
+            sessionId,
+        ),
+    );
+
+    setSessionToDelete(
+      null,
+    );
+  } catch (
+    error
+  ) {
+    setActionError(
+      getErrorMessage(
+        error,
+        "The study session could not be deleted.",
+      ),
+    );
+  } finally {
+    setDeletingSession(
+      false,
+    );
+  }
+}
 
   function goToPreviousWeek() {
     setWeekAnchor(
@@ -844,32 +1061,50 @@ export function StudyPlansWorkspace({
           }
         >
           <Group
-            justify="space-between"
-            align="center"
-          >
-            <div>
-              <Text fw={700}>
-                Saved plans
-              </Text>
+  justify="space-between"
+  align="center"
+>
+  <div>
+    <Text fw={700}>
+      Saved plans
+    </Text>
 
-              <Text
-                size="sm"
-                c="dimmed"
-              >
-                Choose a plan to
-                view its schedule.
-              </Text>
-            </div>
+    <Text
+      size="sm"
+      c="dimmed"
+    >
+      Choose a plan to
+      view its schedule.
+    </Text>
+  </div>
 
-            {plansStatus ===
-            "ready" ? (
-              <Badge
-                variant="light"
-              >
-                {plans.length}
-              </Badge>
-            ) : null}
-          </Group>
+  <Group gap="xs">
+    {plansStatus ===
+    "ready" ? (
+      <Badge
+        variant="light"
+      >
+        {plans.length}
+      </Badge>
+    ) : null}
+
+    <Button
+      size="xs"
+      leftSection={
+        <IconPlus
+          size={15}
+        />
+      }
+      onClick={() =>
+        setCreatePlanOpened(
+          true,
+        )
+      }
+    >
+      New plan
+    </Button>
+  </Group>
+</Group>
 
 
           {plansStatus ===
@@ -1148,6 +1383,46 @@ export function StudyPlansWorkspace({
                 </div>
 
                 <Group gap="xs">
+                    <Button
+                    size="xs"
+                    leftSection={
+                        <IconPlus
+                        size={15}
+                        />
+                    }
+                    disabled={
+                        initialSubjects.length ===
+                        0
+                    }
+                    onClick={() =>
+                        setCreateSessionOpened(
+                        true,
+                        )
+                    }
+                    >
+                    Add session
+                    </Button>
+
+                    {selectedPlan.generation_mode ===
+                    "manual" ? (
+                    <Button
+                        size="xs"
+                        color="red"
+                        variant="light"
+                        leftSection={
+                        <IconTrash
+                            size={15}
+                        />
+                        }
+                        onClick={() =>
+                        setDeletePlanOpened(
+                            true,
+                        )
+                        }
+                    >
+                        Delete plan
+                    </Button>
+                    ) : null}
                   <Button
                     variant="default"
                     size="xs"
@@ -1186,7 +1461,25 @@ export function StudyPlansWorkspace({
                 </Group>
               </Group>
 
-
+                {actionError ? (
+                    <Alert
+                        color="red"
+                        title="Study plan action failed"
+                        icon={
+                        <IconAlertCircle
+                            size={18}
+                        />
+                        }
+                        withCloseButton
+                        onClose={() =>
+                        setActionError(
+                            null,
+                        )
+                        }
+                    >
+                        {actionError}
+                    </Alert>
+                    ) : null}
               {sessionsStatus ===
               "loading" ? (
                 <Group
@@ -1387,21 +1680,44 @@ export function StudyPlansWorkspace({
                                       </Text>
                                     </Group>
 
-                                    <Badge
-                                      mt="sm"
-                                      size="xs"
-                                      variant="light"
-                                      color={
-                                        session.origin ===
-                                        "generated"
-                                          ? "violet"
-                                          : "blue"
-                                      }
-                                    >
-                                      {
-                                        session.origin
-                                      }
-                                    </Badge>
+                                    <Group
+                                        justify="space-between"
+                                        align="center"
+                                        mt="sm"
+                                        >
+                                        <Badge
+                                            size="xs"
+                                            variant="light"
+                                            color={
+                                            session.origin ===
+                                            "generated"
+                                                ? "violet"
+                                                : "blue"
+                                            }
+                                        >
+                                            {
+                                            session.origin
+                                            }
+                                        </Badge>
+
+                                        <ActionIcon
+                                            size="sm"
+                                            variant="subtle"
+                                            color="red"
+                                            aria-label={
+                                            `Delete ${session.title}`
+                                            }
+                                            onClick={() =>
+                                            setSessionToDelete(
+                                                session,
+                                            )
+                                            }
+                                        >
+                                            <IconTrash
+                                            size={14}
+                                            />
+                                        </ActionIcon>
+                                        </Group>
                                   </Card>
                                 ),
                               )
@@ -1416,7 +1732,158 @@ export function StudyPlansWorkspace({
             </Stack>
           )}
         </Card>
-      </div>
+            </div>
+
+
+      <CreateStudyPlanModal
+        opened={
+          createPlanOpened
+        }
+        onClose={() =>
+          setCreatePlanOpened(
+            false,
+          )
+        }
+        onCreated={
+          handlePlanCreated
+        }
+      />
+
+
+      {selectedPlan ? (
+        <CreateStudySessionModal
+          opened={
+            createSessionOpened
+          }
+          onClose={() =>
+            setCreateSessionOpened(
+              false,
+            )
+          }
+          studyPlan={
+            selectedPlan
+          }
+          subjects={
+            initialSubjects
+          }
+          onCreated={
+            handleSessionCreated
+          }
+        />
+      ) : null}
+
+
+      <Modal
+        opened={
+          deletePlanOpened
+        }
+        onClose={() => {
+          if (
+            !deletingPlan
+          ) {
+            setDeletePlanOpened(
+              false,
+            );
+          }
+        }}
+        title="Delete study plan?"
+        centered
+      >
+        <Stack>
+          <Text size="sm">
+            This will permanently
+            delete the study plan and
+            its scheduled sessions.
+          </Text>
+
+          <Group
+            justify="flex-end"
+          >
+            <Button
+              variant="default"
+              disabled={
+                deletingPlan
+              }
+              onClick={() =>
+                setDeletePlanOpened(
+                  false,
+                )
+              }
+            >
+              Cancel
+            </Button>
+
+            <Button
+              color="red"
+              loading={
+                deletingPlan
+              }
+              onClick={() => {
+                void handleDeletePlan();
+              }}
+            >
+              Delete plan
+            </Button>
+          </Group>
+        </Stack>
+      </Modal>
+
+
+      <Modal
+        opened={
+          sessionToDelete !==
+          null
+        }
+        onClose={() => {
+          if (
+            !deletingSession
+          ) {
+            setSessionToDelete(
+              null,
+            );
+          }
+        }}
+        title="Delete study session?"
+        centered
+      >
+        <Stack>
+          <Text size="sm">
+            This session will be
+            removed from the study
+            plan.
+          </Text>
+
+          <Group
+            justify="flex-end"
+          >
+            <Button
+              variant="default"
+              disabled={
+                deletingSession
+              }
+              onClick={() =>
+                setSessionToDelete(
+                  null,
+                )
+              }
+            >
+              Cancel
+            </Button>
+
+            <Button
+              color="red"
+              loading={
+                deletingSession
+              }
+              onClick={() => {
+                void handleDeleteSession();
+              }}
+            >
+              Delete session
+            </Button>
+          </Group>
+        </Stack>
+      </Modal>
     </main>
   );
 }

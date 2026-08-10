@@ -27,9 +27,16 @@ import type {
 const apiMocks =
   vi.hoisted(
     () => ({
+      createStudyPlan:
+        vi.fn(),
+      createStudySession:
+        vi.fn(),
+      deleteStudyPlan:
+        vi.fn(),
+      deleteStudySession:
+        vi.fn(),
       listStudyPlans:
         vi.fn(),
-
       listStudySessions:
         vi.fn(),
     }),
@@ -38,13 +45,8 @@ const apiMocks =
 
 vi.mock(
   "../api",
-  () => ({
-    listStudyPlans:
-      apiMocks.listStudyPlans,
-
-    listStudySessions:
-      apiMocks.listStudySessions,
-  }),
+  () =>
+    apiMocks,
 );
 
 
