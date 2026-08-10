@@ -1,0 +1,8 @@
+/* File: /frontend/features/flashcards/components/FlashcardWorkspace.module.css */
+/* Purpose: Styles the Flashcard generation and study workspace. */
+
+.workspace {
+  width: 100%;
+  max-width: 72rem;
+  margin-inline: auto;
+}

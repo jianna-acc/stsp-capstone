@@ -35,7 +35,9 @@ Supabase provides:
 | Conversation messages | Implemented |
 | Conversation summary state | Implemented |
 | Reviewer table | Implemented |
-| Flashcard/quiz tables | Planned |
+| Reviewer table | Implemented |
+| Flashcard decks and cards | Implemented |
+| Quiz tables | Planned |
 | Tasks/study plans | Planned |
 
 ---
@@ -495,6 +497,7 @@ fail_study_file_processing
 recover_stale_file_processing_jobs
 replace_study_file_ai_chunks
 complete_learning_profile_onboarding
+create_flashcard_deck_with_cards
 ```
 
 Applied database functions are application contracts.
@@ -535,6 +538,98 @@ topics
   summary
   key_points
   definitions
+```
+---
+
+# Saved Flashcards
+
+Flashcard persistence uses two normalized tables:
+
+```text
+public.flashcard_decks
+public.flashcards
+```
+
+## `public.flashcard_decks`
+
+Stores one generated Flashcard deck owned by an authenticated student.
+
+Important columns:
+
+| Column | Purpose |
+|---|---|
+| `id` | Flashcard deck UUID |
+| `user_id` | Authenticated owner |
+| `subject_id` | Subject used for generation |
+| `study_file_id` | Optional source file for file scope |
+| `scope_type` | `subject` or `file` |
+| `title` | Saved deck title |
+| `requested_card_count` | Number of cards requested |
+| `sources` | Safe source-file and chunk metadata |
+| `generation_model` | AI model used |
+| `generation_count` | Generation count for the deck |
+| `generated_at` | Generation timestamp |
+| `created_at` | Creation timestamp |
+| `updated_at` | Latest deck update |
+
+The database constrains Flashcard requests to the supported public card-count range.
+
+Subject/file scope is validated so the selected source remains connected to the authenticated owner.
+
+## `public.flashcards`
+
+Stores individual ordered question-and-answer cards.
+
+Important columns:
+
+| Column | Purpose |
+|---|---|
+| `id` | Flashcard UUID |
+| `deck_id` | Parent Flashcard deck |
+| `position` | Stable zero-based order within the deck |
+| `question` | Flashcard question |
+| `answer` | Flashcard answer |
+| `created_at` | Creation timestamp |
+
+The relationship is:
+
+```text
+flashcard_decks
+    1
+    |
+    | contains
+    |
+    N
+flashcards
+```
+
+Deleting a Flashcard deck cascades to its child Flashcards.
+
+## Flashcard Security
+
+Both Flashcard tables use Row Level Security.
+
+Authenticated browser clients may:
+
+```text
+read owned Flashcard data
+delete owned Flashcard decks
+```
+
+Browser clients may not directly insert generated Flashcard records.
+
+Card reads are authorized through ownership of the parent Flashcard deck.
+
+Trusted creation is performed through:
+
+```text
+create_flashcard_deck_with_cards(...)
+```
+
+The function is `SECURITY DEFINER` and is restricted to the backend `service_role`.
+
+The RPC creates the parent deck and all ordered child cards atomically so a partially created deck cannot remain after a failed operation.
+---
 
 # File Deletion Behavior
 
@@ -574,7 +669,6 @@ Deleting a conversation removes its connected messages through cascade behavior.
 |---|---|
 | `20260807230500_create_reviewers.sql` | Retained no-op migration entry matching remote migration history |
 | `20260808053929_create_reviewers_foundation.sql` | Creates reviewer table, ownership/scope validation, indexes, timestamps, triggers, privileges, and RLS |
-```
 
 ---
 
@@ -586,8 +680,6 @@ Future phases may add:
 academic_tasks
 study_plans
 study_sessions
-flashcard_sets
-flashcards
 quizzes
 quiz_questions
 quiz_attempts
@@ -606,7 +698,21 @@ Vector storage is already implemented using:
 study_file_ai_chunks
 ```
 
-Do not create duplicate `chat_*` or `document_embeddings` tables for the same purpose.
+Flashcard persistence is already implemented using:
+
+```text
+flashcard_decks
+flashcards
+```
+
+---
+
+# Track A Flashcard Migrations
+
+| Migration | Purpose |
+|---|---|
+| `20260809142000_create_flashcard_foundation.sql` | Creates `flashcard_decks`, `flashcards`, ownership/scope validation, constraints, indexes, triggers, privileges, and RLS |
+| `20260809145600_create_flashcard_persistence_rpc.sql` | Adds atomic trusted Flashcard deck-and-card creation |
 
 ---
 

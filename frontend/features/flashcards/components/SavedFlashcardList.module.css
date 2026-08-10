@@ -1,0 +1,33 @@
+/* File: /frontend/features/flashcards/components/SavedFlashcardList.module.css */
+/* Purpose: Styles the saved Flashcard deck collection and states. */
+
+.container {
+  width: 100%;
+}
+
+.deck {
+  transition:
+    transform 140ms ease,
+    box-shadow 140ms ease;
+}
+
+.deck:hover {
+  transform: translateY(-1px);
+  box-shadow: var(--mantine-shadow-xs);
+}
+
+.deckDetails {
+  min-width: 0;
+  flex: 1;
+}
+
+.title {
+  overflow-wrap: anywhere;
+}
+
+.emptyState {
+  padding: var(--mantine-spacing-xl);
+  text-align: center;
+  border: 1px dashed var(--mantine-color-default-border);
+  border-radius: var(--mantine-radius-md);
+}

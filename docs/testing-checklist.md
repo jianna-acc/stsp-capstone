@@ -556,6 +556,105 @@ Because the Study Assistant CSS layout was adjusted afterward, perform the final
 - [ ] Multi-pass generation for source collections above the single-pass limit
 - [ ] Quiz generation
 
+````markdown
+---
+
+# Track A — Flashcard Backend
+
+## Database and Security
+
+- [x] `flashcard_decks` foundation migration created
+- [x] `flashcards` child table created
+- [x] Flashcard foundation migration applied to linked Supabase
+- [x] Atomic Flashcard persistence RPC migration created and applied
+- [x] Flashcard deck ownership references authenticated users
+- [x] File/subject scope constraints are database enforced
+- [x] Requested card count is database bounded
+- [x] Flashcard text constraints are database enforced
+- [x] Flashcard deck and card tables use RLS
+- [x] Browser clients cannot directly insert generated Flashcard data
+- [x] Students can read only cards belonging to owned decks
+- [x] Trusted Flashcard creation RPC is restricted to `service_role`
+- [x] Deck deletion cascades to child Flashcards
+
+## Flashcard Source Loading
+
+- [x] File scope loads one owned ready study file
+- [x] Subject scope loads owned ready study files within one subject
+- [x] Flashcard generation uses `study_file_chunks`
+- [x] Source chunks remain deterministically ordered
+- [x] Missing chunk collections fail safely
+- [x] Non-contiguous chunk sequences fail safely
+- [x] Source/file ownership mismatches fail safely
+- [x] Flashcard sources preserve safe file/chunk locator metadata
+
+## Flashcard AI Generation
+
+- [x] Flashcard requests support 5 to 50 cards
+- [x] Default Flashcard count is 20
+- [x] Generation is grounded only in supplied study material
+- [x] Study-material text is treated as untrusted prompt content
+- [x] Flashcard prompt requires JSON-only output
+- [x] Generated output must contain exactly the requested card count
+- [x] Duplicate Flashcards are rejected
+- [x] Malformed generated output receives one controlled repair attempt
+- [x] Provider identity is validated
+- [x] Standard Flashcard generation uses a 4,096-token output budget
+- [x] Larger Flashcard requests use an 8,192-token output budget
+- [x] Source material above the current 80,000-character single-pass limit fails safely
+- [x] Source material is never silently truncated
+
+## Flashcard Persistence
+
+- [x] Deck and child cards are created atomically
+- [x] Generated Flashcards can be saved
+- [x] Saved decks can be listed
+- [x] Saved decks can be filtered by subject
+- [x] One owned saved deck can be retrieved
+- [x] One owned saved deck can be deleted
+- [x] Persistence operations remain scoped to the authenticated student
+- [x] Public deck responses do not expose `user_id`
+
+## Flashcard API
+
+- [x] `POST /api/flashcards/generate` registered
+- [x] `GET /api/flashcards` registered
+- [x] `GET /api/flashcards/{deck_id}` registered
+- [x] `DELETE /api/flashcards/{deck_id}` registered
+- [x] Real FastAPI OpenAPI schema exposes Flashcard paths
+- [x] Flashcard API derives owner identity from authentication
+- [x] Flashcard API does not accept trusted `user_id`
+- [x] Invalid card counts are rejected by request validation
+- [x] Controlled Flashcard errors use safe public responses
+- [x] Successful deletion returns `204 No Content`
+- [x] Existing Reviewer API regression remains green
+
+## Flashcard Automated Validation
+
+- [x] Flashcard schema tests pass
+- [x] Flashcard migration tests pass
+- [x] Flashcard persistence RPC migration tests pass
+- [x] Flashcard repository tests pass
+- [x] Flashcard persistence-service tests pass
+- [x] Flashcard source-loader tests pass
+- [x] Flashcard prompt tests pass
+- [x] Flashcard generation tests pass
+- [x] Flashcard orchestration tests pass
+- [x] Flashcard API endpoint tests pass
+- [x] Flashcard router/OpenAPI registration tests pass
+- [x] Full backend regression passes after protected Flashcard API integration
+- [x] Flashcard Ruff validation passes
+- [x] `git diff --check` passes
+
+## Deferred Beyond Current Track A Backend
+
+- [ ] Student-facing Flashcard page
+- [ ] Authenticated frontend Flashcard API client
+- [ ] Flashcard generation form
+- [ ] Interactive card flip/study interface
+- [ ] Saved-deck management UI
+- [ ] Multi-pass generation for materials above the current single-pass source limit
+
 # Final Documentation Checks
 
 After replacing the documentation files:
@@ -581,6 +680,11 @@ After replacing the documentation files:
 - [x] `PROJECT_FILE_MAP.md` includes Phase 6B Reviewer frontend files
 - [x] `testing-checklist.md` includes Phase 6B automated and live validation
 - [x] Reviewer API contracts remain current
+- [x] `ARCHITECTURE.md` reflects implemented Track A Flashcard backend
+- [x] `PROJECT_FILE_MAP.md` includes Track A Flashcard backend files
+- [x] `api-contracts.md` includes protected Flashcard endpoints
+- [x] `database.md` includes `flashcard_decks`, `flashcards`, and the trusted persistence RPC
+- [x] `testing-checklist.md` includes Track A Flashcard backend validation
 
 ---
 
