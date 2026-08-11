@@ -27,12 +27,15 @@ import {
   IconLogout,
   IconSchool,
   IconSparkles,
+  IconTrendingUp,
 } from "@tabler/icons-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { ReactNode } from "react";
 
-import { logoutAction } from "@/features/auth/actions/logout";
+import {
+  logoutAction,
+} from "@/features/auth/actions/logout";
 
 import classes from "./ProtectedAppShell.module.css";
 
@@ -51,13 +54,15 @@ const NAVIGATION_ITEMS = [
   },
   {
     label: "Subjects",
-    description: "Manage subjects and materials",
+    description:
+      "Manage subjects and materials",
     href: "/subjects",
     icon: IconBooks,
   },
   {
     label: "Study Assistant",
-    description: "Ask from your materials",
+    description:
+      "Ask from your materials",
     href: "/study-assistant",
     icon: IconSparkles,
   },
@@ -82,34 +87,53 @@ const NAVIGATION_ITEMS = [
     href: "/quizzes",
     icon: IconListCheck,
   },
+  {
+    label: "Analytics",
+    description:
+      "Track study performance",
+    href: "/analytics",
+    icon: IconTrendingUp,
+  },
 ] as const;
+
 
 function isRouteActive(
   pathname: string,
   href: string,
 ): boolean {
-  if (href === "/dashboard") {
+  if (
+    href === "/dashboard"
+  ) {
     return pathname === href;
   }
 
   return (
     pathname === href ||
-    pathname.startsWith(`${href}/`)
+    pathname.startsWith(
+      `${href}/`,
+    )
   );
 }
+
 
 export function ProtectedAppShell({
   children,
 }: ProtectedAppShellProps) {
-  const pathname = usePathname();
+  const pathname =
+    usePathname();
 
   const [
     mobileNavigationOpened,
     {
-      toggle: toggleMobileNavigation,
-      close: closeMobileNavigation,
+      toggle:
+        toggleMobileNavigation,
+
+      close:
+        closeMobileNavigation,
     },
-  ] = useDisclosure(false);
+  ] = useDisclosure(
+    false,
+  );
 
   return (
     <AppShell
@@ -123,14 +147,19 @@ export function ProtectedAppShell({
         width: 270,
         breakpoint: "sm",
         collapsed: {
-          mobile: !mobileNavigationOpened,
+          mobile:
+            !mobileNavigationOpened,
         },
       }}
       padding={0}
-      className={classes.shell}
+      className={
+        classes.shell
+      }
     >
       <AppShell.Header
-        className={classes.mobileHeader}
+        className={
+          classes.mobileHeader
+        }
       >
         <Group
           h="100%"
@@ -147,7 +176,9 @@ export function ProtectedAppShell({
                 to: "grape",
               }}
             >
-              <IconSchool size={21} />
+              <IconSchool
+                size={21}
+              />
             </ThemeIcon>
 
             <Text fw={750}>
@@ -156,8 +187,12 @@ export function ProtectedAppShell({
           </Group>
 
           <Burger
-            opened={mobileNavigationOpened}
-            onClick={toggleMobileNavigation}
+            opened={
+              mobileNavigationOpened
+            }
+            onClick={
+              toggleMobileNavigation
+            }
             size="sm"
             aria-label={
               mobileNavigationOpened
@@ -169,10 +204,16 @@ export function ProtectedAppShell({
       </AppShell.Header>
 
       <AppShell.Navbar
-        className={classes.navbar}
+        className={
+          classes.navbar
+        }
         p="md"
       >
-        <Box className={classes.brand}>
+        <Box
+          className={
+            classes.brand
+          }
+        >
           <Group
             gap="sm"
             wrap="nowrap"
@@ -186,11 +227,15 @@ export function ProtectedAppShell({
                 to: "grape",
               }}
             >
-              <IconSchool size={24} />
+              <IconSchool
+                size={24}
+              />
             </ThemeIcon>
 
             <div>
-              <Title order={4}>
+              <Title
+                order={4}
+              >
                 STS Capstone
               </Title>
 
@@ -210,7 +255,9 @@ export function ProtectedAppShell({
           size="xs"
           fw={700}
           c="dimmed"
-          className={classes.sectionLabel}
+          className={
+            classes.sectionLabel
+          }
         >
           MAIN MENU
         </Text>
@@ -218,36 +265,65 @@ export function ProtectedAppShell({
         <Stack
           gap={5}
           mt="sm"
-          className={classes.navigation}
+          className={
+            classes.navigation
+          }
         >
-          {NAVIGATION_ITEMS.map((item) => {
-            const Icon = item.icon;
+          {NAVIGATION_ITEMS.map(
+            (
+              item,
+            ) => {
+              const Icon =
+                item.icon;
 
-            return (
-              <NavLink
-                key={item.href}
-                component={Link}
-                href={item.href}
-                label={item.label}
-                description={item.description}
-                active={isRouteActive(
-                  pathname,
-                  item.href,
-                )}
-                leftSection={
-                  <Icon
-                    size={20}
-                    stroke={1.8}
-                  />
-                }
-                className={classes.navLink}
-                onClick={closeMobileNavigation}
-              />
-            );
-          })}
+              return (
+                <NavLink
+                  key={
+                    item.href
+                  }
+                  component={
+                    Link
+                  }
+                  href={
+                    item.href
+                  }
+                  label={
+                    item.label
+                  }
+                  description={
+                    item.description
+                  }
+                  active={
+                    isRouteActive(
+                      pathname,
+                      item.href,
+                    )
+                  }
+                  leftSection={
+                    <Icon
+                      size={20}
+                      stroke={
+                        1.8
+                      }
+                    />
+                  }
+                  className={
+                    classes.navLink
+                  }
+                  onClick={
+                    closeMobileNavigation
+                  }
+                />
+              );
+            },
+          )}
         </Stack>
 
-        <Box className={classes.navbarFooter}>
+        <Box
+          className={
+            classes.navbarFooter
+          }
+        >
           <Divider mb="md" />
 
           <Text
@@ -255,18 +331,24 @@ export function ProtectedAppShell({
             c="dimmed"
             mb="sm"
           >
-            Your authenticated student session is
-            active.
+            Your authenticated student
+            session is active.
           </Text>
 
-          <form action={logoutAction}>
+          <form
+            action={
+              logoutAction
+            }
+          >
             <Button
               type="submit"
               variant="light"
               color="red"
               fullWidth
               leftSection={
-                <IconLogout size={18} />
+                <IconLogout
+                  size={18}
+                />
               }
             >
               Sign out
@@ -275,7 +357,11 @@ export function ProtectedAppShell({
         </Box>
       </AppShell.Navbar>
 
-      <AppShell.Main className={classes.main}>
+      <AppShell.Main
+        className={
+          classes.main
+        }
+      >
         {children}
       </AppShell.Main>
     </AppShell>
