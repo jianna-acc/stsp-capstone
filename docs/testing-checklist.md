@@ -556,6 +556,85 @@ Because the Study Assistant CSS layout was adjusted afterward, perform the final
 - [ ] Multi-pass generation for source collections above the single-pass limit
 - [ ] Quiz generation
 
+# Track D — Study Plans and Scheduling
+
+## Persistence and Security
+
+- [x] Study-plan foundation migration exists
+- [x] Study plans are owner scoped
+- [x] Study sessions are owner scoped
+- [x] Study sessions validate owned subjects
+- [x] Direct student writes remain protected by database security
+- [x] Regeneration RPC is restricted to trusted backend execution
+- [x] Regeneration replaces only generated sessions
+- [x] Manual sessions are preserved during regeneration
+
+## Deterministic Scheduling
+
+- [x] Scheduling uses authenticated weekly availability
+- [x] Scheduling uses preferred study duration
+- [x] Scheduling respects student timezone
+- [x] Academic Task deadlines are respected
+- [x] Academic Task priority is converted into bounded scheduler weight
+- [x] Completed and cancelled Academic Tasks are excluded
+- [x] Work that cannot fit is returned as unscheduled
+- [x] Blocked manual-session windows are respected
+- [x] Regeneration does not create new generated sessions in the past
+
+## Study Plan API
+
+- [x] Manual study-plan creation is protected
+- [x] Study-plan listing and retrieval are ownership scoped
+- [x] Manual study-session creation is protected
+- [x] Study-session listing is ownership scoped
+- [x] Delete operations return controlled responses
+- [x] Generated study-plan creation is protected
+- [x] Generated-plan regeneration is protected
+- [x] Study Plan routers are registered in the shared FastAPI router
+- [x] OpenAPI exposes Study Plan CRUD, generation, and regeneration routes
+
+## Study Plan Frontend
+
+- [x] Protected `/study-plan` page exists
+- [x] Study Plan is available in authenticated navigation
+- [x] Saved plans can be selected
+- [x] Sessions are displayed in the calendar workspace
+- [x] Manual plans can be created
+- [x] Manual sessions can be added
+- [x] Generated plans can be created from prioritized Academic Tasks
+- [x] Completed Academic Tasks are excluded from generation
+- [x] Generated plans expose regeneration
+- [x] Manual plans do not expose regeneration
+- [x] Regeneration reloads latest Academic Tasks
+- [x] Regeneration updates the existing plan instead of creating a duplicate
+- [x] Unscheduled work is shown to the student
+
+## Track D Automated Validation
+
+- [x] Focused Study Plan API tests: 17 passed
+- [x] Track D backend selection: 70 passed
+- [x] Regeneration frontend tests: 16 passed
+- [x] Full backend regression: 981 passed
+- [x] Full frontend regression: 139 passed
+- [x] Backend Ruff validation passes
+- [x] Frontend TypeScript validation passes
+- [x] Track D and navigation ESLint validation passes
+- [x] `git diff --check` passes before documentation edits
+
+## Final Track D Regression Before Commit
+
+- [x] Full backend pytest suite passes
+- [x] Full backend Ruff validation passes
+- [x] Backend compilation passes
+- [x] Backend dependency check passes
+- [x] Full frontend Vitest suite passes
+- [x] Frontend TypeScript validation passes
+- [x] Frontend ESLint has 0 errors
+- [x] Frontend production build passes
+- [x] `git diff --check` passes
+- [x] Track D documentation contains no stale Study Plan `Planned` labels
+
+---
 # Final Documentation Checks
 
 After replacing the documentation files:
@@ -581,7 +660,11 @@ After replacing the documentation files:
 - [x] `PROJECT_FILE_MAP.md` includes Phase 6B Reviewer frontend files
 - [x] `testing-checklist.md` includes Phase 6B automated and live validation
 - [x] Reviewer API contracts remain current
-
+- [x] `ARCHITECTURE.md` reflects implemented Track D Study Plans and scheduling
+- [x] `database.md` documents `study_plans`, `study_sessions`, and the regeneration RPC
+- [x] `api-contracts.md` documents Study Plan CRUD, generation, and regeneration
+- [x] `PROJECT_FILE_MAP.md` includes Track D backend, frontend, tests, and migrations
+- [x] `testing-checklist.md` includes Track D validation
 ---
 
 # Final Database Checks

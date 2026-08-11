@@ -38,6 +38,7 @@ set search_path = public
 as $$
 declare
     v_plan public.study_plans%rowtype;
+    v_timezone text;
 begin
     -- Lock and validate the owned plan.
     select *
@@ -51,6 +52,19 @@ begin
         raise exception
             'Study plan not found.'
             using errcode = 'P0002';
+    end if;
+
+    -- Load the authenticated student's IANA timezone so plan-date
+    -- validation uses the same local calendar dates as scheduling.
+    select profile.timezone
+    into v_timezone
+    from public.profiles as profile
+    where profile.id = p_user_id;
+
+    if v_timezone is null or btrim(v_timezone) = '' then
+        raise exception
+            'Student timezone is required.'
+            using errcode = '22023';
     end if;
 
     if v_plan.generation_mode <> 'generated' then
@@ -88,10 +102,14 @@ begin
             starts_at timestamptz,
             ends_at timestamptz
         )
-        where replacement.starts_at::date
-                < v_plan.starts_on
-           or replacement.ends_at::date
-                > v_plan.ends_on
+        where (
+            replacement.starts_at
+            at time zone v_timezone
+        )::date < v_plan.starts_on
+    or (
+            replacement.ends_at
+            at time zone v_timezone
+        )::date > v_plan.ends_on
     ) then
         raise exception
             'Replacement sessions must stay inside the study-plan range.'

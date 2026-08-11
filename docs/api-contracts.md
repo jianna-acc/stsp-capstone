@@ -1016,6 +1016,236 @@ Academic Task API security requirements:
 10. Public errors must not expose backend credentials, tokens, SQL details, or stack traces.
 
 ---
+# Study Plan API
+
+All Study Plan endpoints require authenticated bearer access.
+
+The authenticated student identity is derived from the bearer token and cannot be supplied through request bodies.
+
+## Create Manual Study Plan
+
+```http
+POST /api/study-plans
+```
+
+Representative request:
+
+```json
+{
+  "title": "Finals Study Plan",
+  "starts_on": "2026-08-11",
+  "ends_on": "2026-08-17"
+}
+```
+
+Successful response:
+
+```text
+201 Created
+```
+
+---
+
+## List Study Plans
+
+```http
+GET /api/study-plans?limit=50
+```
+
+Returns the authenticated student's saved study plans.
+
+---
+
+## Get Study Plan
+
+```http
+GET /api/study-plans/{study_plan_id}
+```
+
+The plan must belong to the authenticated student.
+
+---
+
+## Delete Study Plan
+
+```http
+DELETE /api/study-plans/{study_plan_id}
+```
+
+Successful response:
+
+```text
+204 No Content
+```
+
+---
+
+## Create Manual Study Session
+
+```http
+POST /api/study-plans/{study_plan_id}/sessions
+```
+
+Representative request:
+
+```json
+{
+  "subject_id": "subject-uuid",
+  "title": "Review Chapter 4",
+  "starts_at": "2026-08-12T18:00:00+08:00",
+  "ends_at": "2026-08-12T19:00:00+08:00",
+  "notes": "Focus on cell division"
+}
+```
+
+Created sessions use:
+
+```text
+origin = manual
+status = planned
+```
+
+---
+
+## List Study Sessions
+
+```http
+GET /api/study-plans/{study_plan_id}/sessions?limit=200
+```
+
+Returns sessions belonging to one owned study plan.
+
+---
+
+## Delete Study Session
+
+```http
+DELETE /api/study-plans/{study_plan_id}/sessions/{study_session_id}
+```
+
+Successful response:
+
+```text
+204 No Content
+```
+
+---
+
+# Study Plan Generation API
+
+## Generate Study Plan
+
+```http
+POST /api/study-plan-generation
+```
+
+Representative request:
+
+```json
+{
+  "title": "Generated Finals Plan",
+  "starts_on": "2026-08-11",
+  "ends_on": "2026-08-20",
+  "tasks": [
+    {
+      "task_id": "task-uuid",
+      "subject_id": "subject-uuid",
+      "title": "Study for Biology exam",
+      "deadline": "2026-08-20T18:00:00+08:00",
+      "estimated_minutes": 180,
+      "priority_weight": 5
+    }
+  ]
+}
+```
+
+Successful response:
+
+```text
+201 Created
+```
+
+The response contains:
+
+```text
+plan
+sessions
+unscheduled_tasks
+```
+
+`unscheduled_tasks` contains work that could not fit into valid study availability before its deadline.
+
+Scheduling preferences are loaded by the backend from authenticated student data.
+
+---
+
+## Regenerate Generated Study Plan
+
+```http
+POST /api/study-plan-generation/{study_plan_id}/regenerate
+```
+
+Representative request:
+
+```json
+{
+  "tasks": [
+    {
+      "task_id": "task-uuid",
+      "subject_id": "subject-uuid",
+      "title": "Study for Biology exam",
+      "deadline": "2026-08-20T18:00:00+08:00",
+      "estimated_minutes": 180,
+      "priority_weight": 5
+    }
+  ]
+}
+```
+
+Successful response:
+
+```text
+200 OK
+```
+
+Regeneration:
+
+- keeps the existing study-plan ID
+- reloads current scheduling preferences
+- uses the latest eligible Academic Tasks
+- treats manual sessions as unavailable scheduling time
+- prevents new generated sessions from being scheduled in the past
+- replaces only generated sessions
+- preserves manual sessions
+- returns the refreshed plan, sessions, and unscheduled work
+
+---
+
+# Study Plan Error Contract
+
+| HTTP | Error Code | Meaning |
+|---:|---|---|
+| `400` | `STUDY_PLAN_VALIDATION_FAILED` | Study-plan or scheduling operation is invalid |
+| `404` | `STUDY_PLAN_NOT_FOUND` | Plan does not exist or is not owned by the authenticated student |
+| `500` | `STUDY_PLAN_RESPONSE_FAILED` | Stored Study Plan data could not be converted into a valid response |
+| `503` | `STUDY_PLAN_PERSISTENCE_FAILED` | Study Plan persistence is temporarily unavailable |
+
+---
+
+# Study Plan Security Contract
+
+1. Bearer authentication determines the trusted student identity.
+2. Requests cannot provide or override `user_id`.
+3. Study plans and sessions are ownership scoped.
+4. Subjects used by sessions must belong to the authenticated student.
+5. Scheduling context is loaded by trusted backend services.
+6. The browser cannot provide trusted timezone or availability context.
+7. Manual sessions are preserved during regeneration.
+8. Regeneration replaces only generated sessions.
+9. Transactional generated-session replacement is restricted to trusted backend execution.
+10. Public errors must not expose credentials, tokens, SQL details, or stack traces.
+
+---
 
 # OpenAPI Verification
 

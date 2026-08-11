@@ -40,9 +40,9 @@ The system currently includes:
 - Protected Academic Tasks frontend
 - Live priority recalculation after task changes
 
-The application includes protected Reviewer and Academic Tasks frontends.
+The application includes protected Reviewer, Academic Tasks, and Study Plan frontends.
 
-Future phases may add flashcards, quizzes, study-plan generation, calendar scheduling, analytics, and deployment improvements.
+Future phases may add flashcards, quizzes, analytics, and deployment improvements.
 
 # Phase Status
 
@@ -59,7 +59,8 @@ Future phases may add flashcards, quizzes, study-plan generation, calendar sched
 | Phase 6C | Saved reviewer management and regeneration | Implemented |
 | Phase 6D | Large-material multi-pass reviewer generation | Implemented |
 | Phase 7A–7E | Academic task persistence, output confidence, CRUD, deterministic priority, frontend, live integration | Implemented |
-| Later phases | Flashcards, quizzes, study plans, analytics, deployment | Planned |
+| Track D | Study-plan persistence, deterministic scheduling, Academic Task integration, calendar workspace, manual sessions, and regeneration | Implemented |
+| Later phases | Flashcards, quizzes, analytics, deployment | Planned |
 
 ---
 
@@ -1064,6 +1065,135 @@ docs/ACADEMIC_TASK_PRIORITY.md
 
 ---
 
+# Study Plans and Scheduling
+
+Track D implements persistent study plans, study sessions, deterministic scheduling, Academic Task integration, manual scheduling, and generated-plan regeneration.
+
+The protected frontend route is:
+
+```text
+/study-plan
+```
+
+The feature supports two plan modes:
+
+```text
+manual
+generated
+```
+
+Manual plans allow students to create their own plans and sessions.
+
+Generated plans use prioritized Academic Tasks together with the authenticated student's scheduling preferences.
+
+## Scheduling Context
+
+The backend loads trusted scheduling context from existing onboarding data:
+
+```text
+profiles.timezone
+learning_profiles.preferred_study_duration_minutes
+study_availability
+```
+
+The browser does not provide trusted availability or timezone values.
+
+Academic Tasks are converted into scheduler inputs containing:
+
+```text
+task_id
+subject_id
+title
+deadline
+estimated_minutes
+priority_weight
+```
+
+The Academic Task deterministic priority score is converted into a bounded scheduler priority weight from `1` to `5`.
+
+Completed and cancelled Academic Tasks are excluded from scheduling.
+
+## Generation Flow
+
+```mermaid
+flowchart LR
+    TASKS["Prioritized Academic Tasks"]
+    ADAPTER["Academic Task Adapter"]
+    CONTEXT["Scheduling Context"]
+    SCHEDULER["Deterministic Study Scheduler"]
+    PERSIST["Study Plan Persistence"]
+    CALENDAR["Study Plan Calendar"]
+
+    TASKS --> ADAPTER
+    ADAPTER --> SCHEDULER
+    CONTEXT --> SCHEDULER
+    SCHEDULER --> PERSIST
+    PERSIST --> CALENDAR
+```
+
+Generated schedules:
+
+- use the selected plan date range
+- use the student's weekly study availability
+- respect preferred study-session duration
+- schedule higher-priority work deterministically
+- stop scheduling work after its deadline
+- return remaining work as `unscheduled_tasks`
+- persist the generated plan and sessions
+
+## Manual Sessions
+
+Students may add manual sessions to a study plan.
+
+Manual sessions are stored with:
+
+```text
+origin = manual
+```
+
+Generated sessions are stored with:
+
+```text
+origin = generated
+```
+
+This distinction is important during regeneration.
+
+## Generated Plan Regeneration
+
+Generated plans can be refreshed using the latest Academic Tasks and the latest scheduling preferences.
+
+Regeneration:
+
+1. Keeps the existing `study_plan.id`.
+2. Loads the plan's manual sessions.
+3. Treats manual sessions as blocked scheduling windows.
+4. Prevents newly generated sessions from being scheduled in the past.
+5. Generates a new schedule from the latest eligible Academic Tasks.
+6. Replaces only sessions whose origin is `generated`.
+7. Preserves all manual sessions.
+8. Returns remaining unscheduled work to the frontend.
+
+The final replacement operation uses a trusted PostgreSQL RPC so deletion of the old generated sessions, insertion of the new generated sessions, and plan refresh occur transactionally.
+
+## Study Plan API Integration
+
+The main FastAPI router exposes:
+
+```text
+/api/study-plans
+/api/study-plans/{study_plan_id}
+/api/study-plans/{study_plan_id}/sessions
+/api/study-plans/{study_plan_id}/sessions/{study_session_id}
+
+/api/study-plan-generation
+/api/study-plan-generation/{study_plan_id}/regenerate
+```
+
+The Study Plan workspace is also available from the authenticated application navigation.
+
+---
+
 # Implemented Database Resources
 
 ```text
@@ -1086,6 +1216,8 @@ public.study_conversations
 public.study_messages
 public.reviewers
 public.academic_tasks
+public.study_plans
+public.study_sessions
 ```
 
 Private Storage:
@@ -1116,7 +1248,11 @@ study-materials
 16. Academic Task requests cannot provide or override a trusted `user_id`.
 17. Priority context is loaded by the backend for the authenticated student.
 18. Clients cannot provide trusted priority scores or priority context.
-
+19. Study plans and study sessions are owner-scoped to the authenticated student.
+20. Study Plan requests cannot provide or override a trusted `user_id`.
+21. Scheduling availability, timezone, and preferred duration are loaded by trusted backend services.
+22. Regeneration preserves manual sessions and replaces only generated sessions.
+23. The generated-session replacement RPC is restricted to trusted backend execution.
 ---
 
 # Migration Workflow
@@ -1179,6 +1315,21 @@ The reviewer foundation migration creates the owned `reviewers` table, reviewer 
 The first migration creates the student-owned `academic_tasks` table, subject-ownership validation, indexes, triggers, grants, and Row Level Security.
 
 The second migration introduces academic output-confidence storage and adds `output_type` to academic tasks so deterministic priority can use confidence for the skill required by the task.
+
+---
+
+# Track D Study Plan Migrations
+
+```text
+20260810002500_create_study_plans_foundation.sql
+20260811002500_add_study_plan_regeneration_rpc.sql
+```
+
+The foundation migration creates the student-owned `study_plans` and `study_sessions` tables, validation constraints, ownership relationships, indexes, timestamps, privileges, and Row Level Security.
+
+The regeneration migration adds the trusted transactional `replace_generated_study_plan_sessions` RPC and aligns generated-session titles with the 200-character Academic Task title limit.
+
+These migration files are implemented in Track D. Application to the shared linked Supabase database must be coordinated during integration.
 
 ---
 
@@ -1462,8 +1613,6 @@ Future phases may introduce:
 
 - Flashcards
 - Quizzes
-- Study-plan generation
-- Calendar scheduling
 - Study analytics
 - Deployment and monitoring improvements
 
