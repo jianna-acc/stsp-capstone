@@ -14,9 +14,15 @@ from app.ai import (
 )
 from app.core.config import Settings
 from app.services.file_extraction import (
+    ExtractedDocument,
     FileExtractionError,
     chunk_extracted_document,
     extract_document,
+)
+from app.services.image_extraction import (
+    GeminiImageExtractor,
+    ImageExtractionError,
+    is_supported_image_mime_type,
 )
 from app.services.study_material_preparer import (
     StudyMaterialPreparer,
@@ -78,6 +84,20 @@ class StudyMaterialVectorIndexerProtocol(Protocol):
         preparation: StudyMaterialPreparation,
     ) -> object:
         """Embed and persist one prepared study material."""
+
+        ...
+
+class ImageExtractorProtocol(Protocol):
+    """Image-extraction dependency required by the processor."""
+
+    async def extract(
+        self,
+        *,
+        payload: bytes,
+        mime_type: str,
+        filename: str,
+    ) -> ExtractedDocument:
+        """Extract readable study content from one image."""
 
         ...
 
@@ -144,6 +164,7 @@ class FileProcessorService:
         admin_service: SupabaseAdminService | None = None,
         preparer: StudyMaterialPreparerProtocol | None = None,
         vector_indexer: StudyMaterialVectorIndexerProtocol | None = None,
+        image_extractor: ImageExtractorProtocol | None = None,
     ) -> None:
         self._settings = settings
 
@@ -164,6 +185,7 @@ class FileProcessorService:
         )
 
         self._vector_indexer = vector_indexer
+        self._image_extractor = image_extractor
 
     async def validate_source(
         self,
@@ -309,7 +331,7 @@ class FileProcessorService:
                     "The downloaded file size does not match its database record.",
                 )
 
-            document = extract_document(
+            document = await self._extract_source_document(
                 payload=payload,
                 mime_type=mime_type,
                 filename=filename,
@@ -412,6 +434,63 @@ class FileProcessorService:
             raise FileProcessorUpstreamError(
                 str(error),
             ) from error
+
+    async def _extract_source_document(
+        self,
+        *,
+        payload: bytes,
+        mime_type: str,
+        filename: str,
+    ) -> ExtractedDocument:
+        """Extract a document through the correct source-specific path."""
+
+        if not is_supported_image_mime_type(
+            mime_type,
+        ):
+            return extract_document(
+                payload=payload,
+                mime_type=mime_type,
+                filename=filename,
+            )
+
+        extractor = self._image_extractor
+
+        owns_extractor = extractor is None
+
+        if extractor is None:
+            try:
+                extractor = GeminiImageExtractor(
+                    settings=self._settings,
+                )
+            except ImageExtractionError as error:
+                raise FileExtractionError(
+                    str(error),
+                ) from error
+
+        try:
+            return await extractor.extract(
+                payload=payload,
+                mime_type=mime_type,
+                filename=filename,
+            )
+
+        except ImageExtractionError as error:
+            raise FileExtractionError(
+                str(error),
+            ) from error
+
+        finally:
+            if owns_extractor:
+                close_method = getattr(
+                    extractor,
+                    "aclose",
+                    None,
+                )
+
+                if callable(
+                    close_method,
+                ):
+                    await close_method()
 
     def _prepare_for_embedding(
         self,

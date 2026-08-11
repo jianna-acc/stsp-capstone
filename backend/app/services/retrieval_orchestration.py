@@ -10,6 +10,8 @@ from numbers import Real
 from typing import Protocol
 from uuid import UUID
 
+FILE_RETRIEVAL_FALLBACK_SIMILARITY_THRESHOLD = 0.50
+
 from app.ai.retrieval_contracts import (
     DEFAULT_RETRIEVAL_MATCH_COUNT,
     DEFAULT_RETRIEVAL_SIMILARITY_THRESHOLD,
@@ -290,20 +292,40 @@ class RetrievalOrchestrationService:
             )
         )
 
-        if not isinstance(
-            retrieval_result,
-            RetrievalResult,
+        self._validate_retrieval_result(
+            result=retrieval_result,
+            expected_request=retrieval_request,
+        )
+
+        if (
+            not retrieval_result.chunks
+            and request.study_file_id is not None
+            and request.similarity_threshold
+            == DEFAULT_RETRIEVAL_SIMILARITY_THRESHOLD
         ):
-            raise RetrievalResponseError(
-                "The retrieval persistence layer returned "
-                "an invalid result."
+            fallback_request = RetrievalRequest(
+                user_id=request.user_id,
+                query_embedding=embedding_result.embedding,
+                match_count=request.match_count,
+                similarity_threshold=(
+                    FILE_RETRIEVAL_FALLBACK_SIMILARITY_THRESHOLD
+                ),
+                study_file_id=request.study_file_id,
+                subject_id=request.subject_id,
             )
 
-        if retrieval_result.request != retrieval_request:
-            raise RetrievalResponseError(
-                "The retrieval response does not match "
-                "the generated request."
+            fallback_result = (
+                await self._retrieval_persistence.search(
+                    fallback_request,
+                )
             )
+
+            self._validate_retrieval_result(
+                result=fallback_result,
+                expected_request=fallback_request,
+            )
+
+            retrieval_result = fallback_result
 
         return RetrievalOrchestrationResult(
             request=request,
@@ -315,6 +337,29 @@ class RetrievalOrchestrationService:
             embedding_dimensions=(
                 embedding_result.embedding_dimensions
             ),
+        )
+
+    @staticmethod
+    def _validate_retrieval_result(
+        *,
+        result: object,
+        expected_request: RetrievalRequest,
+    ) -> None:
+        """Validate one persistence retrieval response."""
+
+        if not isinstance(
+            result,
+            RetrievalResult,
+        ):
+            raise RetrievalResponseError(
+                "The retrieval persistence layer returned "
+                "an invalid result."
+            )
+
+        if result.request != expected_request:
+            raise RetrievalResponseError(
+                "The retrieval response does not match "
+                "the generated request."
         )
 
     async def aclose(self) -> None:
