@@ -5,7 +5,10 @@
 from __future__ import annotations
 
 from collections.abc import Sequence
-from datetime import date
+from datetime import (
+    date,
+    datetime,
+)
 from typing import Protocol
 from uuid import UUID
 
@@ -13,6 +16,7 @@ from pydantic import ValidationError
 
 from app.schemas.study_scheduler import (
     SchedulableTask,
+    SchedulerBlockedWindow,
     StudyScheduleRequest,
     StudyScheduleResult,
 )
@@ -64,6 +68,10 @@ class StudyScheduleGenerationService:
         tasks: Sequence[
             SchedulableTask
         ],
+        blocked_windows: Sequence[
+            SchedulerBlockedWindow
+        ] = (),
+        not_before: datetime | None = None,
     ) -> StudyScheduleResult:
         """Generate a study schedule using existing preferences."""
 
@@ -84,6 +92,11 @@ class StudyScheduleGenerationService:
                 availability=(
                     context.availability
                 ),
+                blocked_windows=tuple(
+                    blocked_windows,
+                ),
+                not_before=not_before,
+
                 preferences=(
                     context.preferences
                 ),

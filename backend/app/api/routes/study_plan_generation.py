@@ -5,6 +5,7 @@
 from __future__ import annotations
 
 from typing import Annotated
+from uuid import UUID
 
 from fastapi import (
     APIRouter,
@@ -20,6 +21,7 @@ from app.api.authenticated_user_dependency import (
 )
 from app.api.study_plan_generation_dependency import (
     get_study_plan_generation_orchestrator,
+    get_study_plan_regeneration_orchestrator,
 )
 from app.schemas.study_plan_api import (
     StudyPlanApiErrorResponse,
@@ -27,15 +29,20 @@ from app.schemas.study_plan_api import (
 from app.schemas.study_plan_generation_api import (
     StudyPlanGenerationRequest,
     StudyPlanGenerationResponse,
+    StudyPlanRegenerationRequest,
 )
 from app.services.study_plan_errors import (
     StudyPlanError,
+    StudyPlanNotFoundError,
     StudyPlanPersistenceError,
     StudyPlanResponseError,
     StudyPlanValidationError,
 )
 from app.services.study_plan_generation_orchestrator import (
     StudyPlanGenerationOrchestrator,
+)
+from app.services.study_plan_regeneration_orchestrator import (
+    StudyPlanRegenerationOrchestrator,
 )
 
 router = APIRouter(
@@ -111,12 +118,91 @@ async def generate_study_plan(
         )
 
 
+@router.post(
+    "/{study_plan_id}/regenerate",
+    response_model=StudyPlanGenerationResponse,
+    status_code=status.HTTP_200_OK,
+    responses={
+        status.HTTP_400_BAD_REQUEST: {
+            "model": StudyPlanApiErrorResponse,
+            "description": (
+                "The study plan cannot be regenerated."
+            ),
+        },
+        status.HTTP_401_UNAUTHORIZED: {
+            "description": (
+                "Missing, invalid, or expired student "
+                "authentication."
+            ),
+        },
+        status.HTTP_404_NOT_FOUND: {
+            "model": StudyPlanApiErrorResponse,
+            "description": (
+                "The requested study plan was not found."
+            ),
+        },
+        status.HTTP_503_SERVICE_UNAVAILABLE: {
+            "model": StudyPlanApiErrorResponse,
+            "description": (
+                "Study-plan storage is temporarily unavailable."
+            ),
+        },
+        status.HTTP_500_INTERNAL_SERVER_ERROR: {
+            "model": StudyPlanApiErrorResponse,
+            "description": (
+                "Study-plan regeneration could not be completed."
+            ),
+        },
+    },
+)
+async def regenerate_study_plan(
+    study_plan_id: UUID,
+    payload: StudyPlanRegenerationRequest,
+    authenticated_user: Annotated[
+        AuthenticatedUser,
+        Depends(
+            require_authenticated_user,
+        ),
+    ],
+    orchestrator: Annotated[
+        StudyPlanRegenerationOrchestrator,
+        Depends(
+            get_study_plan_regeneration_orchestrator,
+        ),
+    ],
+) -> StudyPlanGenerationResponse | JSONResponse:
+    """Regenerate one existing generated study plan."""
+
+    try:
+        return await run_in_threadpool(
+            orchestrator.regenerate,
+            user_id=authenticated_user.user_id,
+            study_plan_id=study_plan_id,
+            tasks=payload.tasks,
+        )
+
+    except StudyPlanError as exc:
+        return _build_controlled_error_response(
+            exc,
+        )
+
+
 def _build_controlled_error_response(
     error: StudyPlanError,
 ) -> JSONResponse:
     """Convert controlled generation failures into safe errors."""
 
     if isinstance(
+        error,
+        StudyPlanNotFoundError,
+    ):
+        status_code = status.HTTP_404_NOT_FOUND
+        error_code = "STUDY_PLAN_NOT_FOUND"
+        message = (
+            "The requested study plan was not found."
+        )
+
+    elif isinstance(
         error,
         StudyPlanValidationError,
     ):

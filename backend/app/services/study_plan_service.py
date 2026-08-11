@@ -40,6 +40,15 @@ class _StudyPlanRepository(
     ) -> list[
         StudyPlanResponse
     ]: ...
+    def list_manual_study_sessions(
+        self,
+        *,
+        user_id: UUID,
+        study_plan_id: UUID,
+        limit: int = 500,
+    ) -> list[
+        StudySessionResponse
+    ]: ...
 
     def get_study_plan(
         self,
@@ -226,6 +235,34 @@ class StudyPlanService:
 
         sessions = (
             self._repository.list_study_sessions(
+                user_id=user_id,
+                study_plan_id=study_plan_id,
+                limit=limit,
+            )
+        )
+
+        return StudySessionListResponse(
+            items=tuple(
+                sessions,
+            ),
+        )
+    def list_manual_study_sessions(
+        self,
+        *,
+        user_id: UUID,
+        study_plan_id: UUID,
+        limit: int = 500,
+    ) -> StudySessionListResponse:
+        """Return manual sessions that block regeneration time."""
+
+        self.get_study_plan(
+            user_id=user_id,
+            study_plan_id=study_plan_id,
+        )
+
+        sessions = (
+            self._repository
+            .list_manual_study_sessions(
                 user_id=user_id,
                 study_plan_id=study_plan_id,
                 limit=limit,

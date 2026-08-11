@@ -29,12 +29,12 @@ vi.mock(
   }),
 );
 
-
 import {
   createStudyPlan,
   deleteStudyPlan,
   generateStudyPlan,
   listStudyPlans,
+  regenerateStudyPlan,
   StudyPlanApiError,
 } from "./api";
 
@@ -315,6 +315,95 @@ describe(
       },
     );
 
+it(
+  "regenerates an existing generated study plan",
+  async () => {
+    mocks.fetch.mockResolvedValue(
+      new Response(
+        JSON.stringify(
+          {
+            plan: {
+              ...PLAN_RESPONSE,
+              generation_mode:
+                "generated",
+              generated_at:
+                "2026-08-11T01:00:00+00:00",
+            },
+            sessions: [
+              SESSION_RESPONSE,
+            ],
+            unscheduled_tasks: [],
+          },
+        ),
+        {
+          status: 200,
+          headers: {
+            "Content-Type":
+              "application/json",
+          },
+        },
+      ),
+    );
+
+    const tasks = [
+      {
+        task_id:
+          "task-id",
+        subject_id:
+          "subject-id",
+        title:
+          "Review Chapter 4",
+        deadline:
+          "2026-08-12T12:00:00+00:00",
+        estimated_minutes:
+          60,
+        priority_weight:
+          4,
+      },
+    ];
+
+    const result =
+      await regenerateStudyPlan(
+        "plan-id",
+        {
+          tasks,
+        },
+      );
+
+    expect(
+      result.sessions,
+    ).toHaveLength(
+      1,
+    );
+
+    const [
+      url,
+      init,
+    ] = mocks.fetch.mock.calls[0];
+
+    expect(
+      url,
+    ).toBe(
+      "http://localhost:8000/api/study-plan-generation/plan-id/regenerate",
+    );
+
+    expect(
+      init.method,
+    ).toBe(
+      "POST",
+    );
+
+    expect(
+      JSON.parse(
+        String(
+          init.body,
+        ),
+      ),
+    ).toEqual({
+      tasks,
+    });
+  },
+);
 
     it(
       "accepts a successful no-content delete",

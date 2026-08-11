@@ -17,6 +17,7 @@ from app.schemas.study_scheduler import (
     GeneratedStudySession,
     SchedulableTask,
     SchedulerAvailabilitySlot,
+    SchedulerBlockedWindow,
     StudyScheduleRequest,
     StudyScheduleResult,
     UnscheduledTask,
@@ -65,6 +66,28 @@ class StudyScheduler:
             starts_on=request.starts_on,
             ends_on=request.ends_on,
             availability=request.availability,
+            timezone_info=timezone_info,
+        )
+
+        windows = self._apply_not_before(
+            windows=windows,
+            not_before=request.not_before,
+            timezone_info=timezone_info,
+        )
+
+        windows = self._subtract_blocked_windows(
+            windows=windows,
+            blocked_windows=(
+                request.blocked_windows
+            ),
+            timezone_info=timezone_info,
+        )
+
+        windows = self._subtract_blocked_windows(
+            windows=windows,
+            blocked_windows=(
+                request.blocked_windows
+            ),
             timezone_info=timezone_info,
         )
 
@@ -247,6 +270,223 @@ class StudyScheduler:
             )
 
         return None
+
+    @staticmethod
+    def _apply_not_before(
+        *,
+        windows: list[
+            tuple[
+                datetime,
+                datetime,
+            ]
+        ],
+        not_before: datetime | None,
+        timezone_info: ZoneInfo,
+    ) -> list[
+        tuple[
+            datetime,
+            datetime,
+        ]
+    ]:
+        """Remove or clip availability occurring before a boundary."""
+
+        if not_before is None:
+            return windows
+
+        boundary = (
+            not_before.astimezone(
+                timezone_info,
+            )
+        )
+
+        clipped_windows: list[
+            tuple[
+                datetime,
+                datetime,
+            ]
+        ] = []
+
+        for (
+            window_start,
+            window_end,
+        ) in windows:
+            if (
+                window_end
+                <= boundary
+            ):
+                continue
+
+            clipped_windows.append(
+                (
+                    max(
+                        window_start,
+                        boundary,
+                    ),
+                    window_end,
+                )
+            )
+
+        return clipped_windows
+
+
+    @staticmethod
+    def _subtract_blocked_windows(
+        *,
+        windows: list[
+            tuple[
+                datetime,
+                datetime,
+            ]
+        ],
+        blocked_windows: tuple[
+            SchedulerBlockedWindow,
+            ...,
+        ],
+        timezone_info: ZoneInfo,
+    ) -> list[
+        tuple[
+            datetime,
+            datetime,
+        ]
+    ]:
+        """Subtract occupied manual-session time from availability."""
+
+        normalized_blocks = [
+            (
+                blocked.starts_at.astimezone(
+                    timezone_info,
+                ),
+                blocked.ends_at.astimezone(
+                    timezone_info,
+                ),
+            )
+            for blocked in blocked_windows
+        ]
+
+        normalized_blocks.sort(
+            key=lambda blocked: (
+                blocked[0],
+                blocked[1],
+            ),
+        )
+
+        available_windows: list[
+            tuple[
+                datetime,
+                datetime,
+            ]
+        ] = []
+
+        for (
+            window_start,
+            window_end,
+        ) in windows:
+            segments = [
+                (
+                    window_start,
+                    window_end,
+                )
+            ]
+
+            for (
+                blocked_start,
+                blocked_end,
+            ) in normalized_blocks:
+                if (
+                    blocked_end
+                    <= window_start
+                ):
+                    continue
+
+                if (
+                    blocked_start
+                    >= window_end
+                ):
+                    break
+
+                next_segments: list[
+                    tuple[
+                        datetime,
+                        datetime,
+                    ]
+                ] = []
+
+                for (
+                    segment_start,
+                    segment_end,
+                ) in segments:
+                    if (
+                        blocked_end
+                        <= segment_start
+                        or blocked_start
+                        >= segment_end
+                    ):
+                        next_segments.append(
+                            (
+                                segment_start,
+                                segment_end,
+                            )
+                        )
+                        continue
+
+                    if (
+                        segment_start
+                        < blocked_start
+                    ):
+                        next_segments.append(
+                            (
+                                segment_start,
+                                min(
+                                    blocked_start,
+                                    segment_end,
+                                ),
+                            )
+                        )
+
+                    if (
+                        blocked_end
+                        < segment_end
+                    ):
+                        next_segments.append(
+                            (
+                                max(
+                                    blocked_end,
+                                    segment_start,
+                                ),
+                                segment_end,
+                            )
+                        )
+
+                segments = (
+                    next_segments
+                )
+
+                if not segments:
+                    break
+
+            available_windows.extend(
+                (
+                    segment_start,
+                    segment_end,
+                )
+                for (
+                    segment_start,
+                    segment_end,
+                ) in segments
+                if (
+                    segment_start
+                    < segment_end
+                )
+            )
+
+        available_windows.sort(
+            key=lambda window: (
+                window[0],
+                window[1],
+            ),
+        )
+
+        return available_windows
 
     @staticmethod
     def _build_availability_windows(

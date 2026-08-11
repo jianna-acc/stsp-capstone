@@ -91,6 +91,21 @@ class StudyPlanGenerationRequest(BaseModel):
 
         return self
 
+class StudyPlanRegenerationRequest(BaseModel):
+    """Request to rebuild one existing generated study plan."""
+
+    model_config = ConfigDict(
+        extra="forbid",
+        frozen=True,
+    )
+
+    tasks: tuple[
+        SchedulableTask,
+        ...,
+    ] = Field(
+        min_length=1,
+        max_length=500,
+    )
 
 class StudyPlanGenerationResponse(BaseModel):
     """Saved generated plan plus any remaining unscheduled work."""

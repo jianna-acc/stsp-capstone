@@ -16,12 +16,12 @@ import type {
   StudyPlanGenerationRequest,
   StudyPlanGenerationResponse,
   StudyPlanListResponse,
+  StudyPlanRegenerationRequest,
   StudySession,
   StudySessionCreateRequest,
   StudySessionListResponse,
   UnscheduledTask,
 } from "./types";
-
 
 const STUDY_PLANS_API_PATH =
   "/api/study-plans";
@@ -473,6 +473,18 @@ function planPath(
   ].join("");
 }
 
+function regenerationPath(
+  studyPlanId: string,
+): string {
+  return [
+    STUDY_PLAN_GENERATION_API_PATH,
+    "/",
+    encodeURIComponent(
+      studyPlanId,
+    ),
+    "/regenerate",
+  ].join("");
+}
 
 function sessionsPath(
   studyPlanId: string,
@@ -765,6 +777,44 @@ export async function generateStudyPlan(
       "The study-plan generator returned an invalid response.",
       response.status,
       "INVALID_STUDY_PLAN_GENERATION_RESPONSE",
+    );
+  }
+
+  return payload;
+}
+export async function regenerateStudyPlan(
+  studyPlanId: string,
+  request: StudyPlanRegenerationRequest,
+  options: StudyPlanApiRequestOptions = {},
+): Promise<StudyPlanGenerationResponse> {
+  const response =
+    await authenticatedFetch(
+      regenerationPath(
+        studyPlanId,
+      ),
+      {
+        method: "POST",
+        body: JSON.stringify(
+          request,
+        ),
+      },
+      options,
+    );
+
+  const payload =
+    await requireSuccessfulJson(
+      response,
+    );
+
+  if (
+    !isStudyPlanGenerationResponse(
+      payload,
+    )
+  ) {
+    throw new StudyPlanApiError(
+      "The study-plan regenerator returned an invalid response.",
+      response.status,
+      "INVALID_STUDY_PLAN_REGENERATION_RESPONSE",
     );
   }
 

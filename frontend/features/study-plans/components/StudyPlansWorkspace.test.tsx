@@ -37,9 +37,11 @@ const apiMocks =
       deleteStudySession:
         vi.fn(),
       generateStudyPlan:
-        vi.fn(),
+      vi.fn(),
+      regenerateStudyPlan:
+      vi.fn(),
       listStudyPlans:
-        vi.fn(),
+      vi.fn(),
       listStudySessions:
         vi.fn(),
     }),
@@ -324,6 +326,46 @@ const GENERATED_RESULT = {
     [],
 } as const;
 
+const REGENERATED_RESULT = {
+  plan: {
+    ...PLANS[1],
+    generated_at:
+      "2026-08-11T01:00:00Z",
+    updated_at:
+      "2026-08-11T01:00:00Z",
+  },
+
+  sessions: [
+    {
+      id:
+        "regenerated-history-session",
+      study_plan_id:
+        "research-plan",
+      subject_id:
+        "biology-subject",
+      title:
+        "Study for Biology exam",
+      starts_at:
+        "2026-08-18T18:00:00+08:00",
+      ends_at:
+        "2026-08-18T19:00:00+08:00",
+      status:
+        "planned",
+      origin:
+        "generated",
+      notes:
+        null,
+      created_at:
+        "2026-08-11T01:00:00Z",
+      updated_at:
+        "2026-08-11T01:00:00Z",
+    },
+  ],
+
+  unscheduled_tasks:
+    [],
+} as const;
+
 function renderWorkspace() {
   return render(
     <MantineProvider>
@@ -381,7 +423,10 @@ describe(
             .mockResolvedValue(
                 PRIORITIZED_TASKS,
             );
-      },
+            apiMocks
+                .regenerateStudyPlan
+                .mockReset();
+                    },
     );
 
     it(
@@ -718,5 +763,190 @@ describe(
             ).toBeInTheDocument();
         },
         );
+it(
+  "regenerates an existing generated plan from latest academic tasks",
+  async () => {
+    const user =
+      userEvent.setup();
+
+    apiMocks
+      .regenerateStudyPlan
+      .mockResolvedValue(
+        REGENERATED_RESULT,
+      );
+
+    renderWorkspace();
+
+    await screen.findByRole(
+      "heading",
+      {
+        name:
+          "Finals Plan",
+        level:
+          2,
+      },
+    );
+
+    expect(
+      screen.queryByRole(
+        "button",
+        {
+          name:
+            /^regenerate$/i,
+        },
+      ),
+    ).not.toBeInTheDocument();
+
+    const researchPlan =
+      screen.getByRole(
+        "button",
+        {
+          name:
+            /Research Plan/i,
+        },
+      );
+
+    await user.click(
+      researchPlan,
+    );
+
+    expect(
+      await screen.findByText(
+        "Draft research outline",
+      ),
+    ).toBeInTheDocument();
+
+    const regenerateButton =
+      screen.getByRole(
+        "button",
+        {
+          name:
+            /^regenerate$/i,
+        },
+      );
+
+    await user.click(
+      regenerateButton,
+    );
+
+    await waitFor(
+      () => {
+        expect(
+          academicTaskApiMocks
+            .listPrioritizedAcademicTasks,
+        ).toHaveBeenCalledWith({
+          limit:
+            100,
+        });
+      },
+    );
+
+    const dialog =
+      await screen.findByRole(
+        "dialog",
+      );
+
+    expect(
+      within(
+        dialog,
+      ).getByText(
+        "Regenerate study plan",
+      ),
+    ).toBeInTheDocument();
+
+    expect(
+      within(
+        dialog,
+      ).getByText(
+        /1 eligible task is currently available/i,
+      ),
+    ).toBeInTheDocument();
+
+    await user.click(
+      within(
+        dialog,
+      ).getByRole(
+        "button",
+        {
+          name:
+            /regenerate plan/i,
+        },
+      ),
+    );
+
+    await waitFor(
+      () => {
+        expect(
+          apiMocks
+            .regenerateStudyPlan,
+        ).toHaveBeenCalledWith(
+          "research-plan",
+          {
+            tasks: [
+              {
+                task_id:
+                  "55555555-5555-4555-8555-555555555555",
+                subject_id:
+                  "biology-subject",
+                title:
+                  "Study for Biology exam",
+                deadline:
+                  "2026-08-20T18:00:00+08:00",
+                estimated_minutes:
+                  180,
+                priority_weight:
+                  5,
+              },
+            ],
+          },
+        );
+      },
+    );
+
+    expect(
+      await within(
+        dialog,
+      ).findByText(
+        /study plan regenerated/i,
+      ),
+    ).toBeInTheDocument();
+
+    await user.click(
+      within(
+        dialog,
+      ).getByRole(
+        "button",
+        {
+          name:
+            /done/i,
+        },
+      ),
+    );
+
+    expect(
+      await screen.findByRole(
+        "heading",
+        {
+          name:
+            "Research Plan",
+          level:
+            2,
+        },
+      ),
+    ).toBeInTheDocument();
+
+    expect(
+      await screen.findByText(
+        "Study for Biology exam",
+      ),
+    ).toBeInTheDocument();
+
+    expect(
+      screen.queryByText(
+        "Draft research outline",
+      ),
+    ).not.toBeInTheDocument();
+  },
+);
   },
 );

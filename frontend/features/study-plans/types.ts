@@ -100,6 +100,9 @@ export interface StudyPlanGenerationRequest {
   tasks: SchedulableTask[];
 }
 
+export interface StudyPlanRegenerationRequest {
+  tasks: SchedulableTask[];
+}
 
 export interface StudyPlanGenerationResponse {
   plan: StudyPlan;

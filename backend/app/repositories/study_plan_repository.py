@@ -50,7 +50,7 @@ _STUDY_SESSION_COLUMNS = (
 
 _MAX_STUDY_PLAN_LIST_LIMIT = 100
 _MAX_STUDY_SESSION_LIST_LIMIT = 200
-
+_MAX_MANUAL_SESSION_LIST_LIMIT = 500
 
 class _SupabaseResponse(
     Protocol,
@@ -455,7 +455,78 @@ class StudyPlanRepository:
                 response,
             )
         ]
+    def list_manual_study_sessions(
+        self,
+        *,
+        user_id: UUID,
+        study_plan_id: UUID,
+        limit: int = 500,
+    ) -> list[
+        StudySessionResponse
+    ]:
+        """Return manual sessions belonging to one owned plan."""
 
+        if (
+            isinstance(
+                limit,
+                bool,
+            )
+            or not isinstance(
+                limit,
+                int,
+            )
+            or not 1
+            <= limit
+            <= _MAX_MANUAL_SESSION_LIST_LIMIT
+        ):
+            raise StudyPlanValidationError(
+                "Manual study-session list limit must be "
+                "between 1 and 500.",
+            )
+
+        response = self._execute(
+            self._client
+            .table(
+                "study_sessions",
+            )
+            .select(
+                _STUDY_SESSION_COLUMNS,
+            )
+            .eq(
+                "study_plan_id",
+                str(
+                    study_plan_id,
+                ),
+            )
+            .eq(
+                "user_id",
+                str(
+                    user_id,
+                ),
+            )
+            .eq(
+                "origin",
+                "manual",
+            )
+            .order(
+                "starts_at",
+            )
+            .limit(
+                limit,
+            ),
+            operation=(
+                "list manual study sessions"
+            ),
+        )
+
+        return [
+            self._parse_study_session(
+                row,
+            )
+            for row in self._extract_rows(
+                response,
+            )
+        ]
     def delete_study_session(
         self,
         *,

@@ -38,6 +38,7 @@ MAX_TASK_ESTIMATE_MINUTES = 10_080
 MIN_SESSION_MINUTES = 5
 MAX_SESSION_MINUTES = 240
 
+MAX_SCHEDULER_BLOCKED_WINDOWS = 500
 
 class SchedulableTask(BaseModel):
     """One generic academic workload item accepted by Track D."""
@@ -143,6 +144,47 @@ class SchedulerAvailabilitySlot(BaseModel):
 
         return self
 
+class SchedulerBlockedWindow(BaseModel):
+    """One absolute period unavailable for generated study."""
+
+    model_config = ConfigDict(
+        extra="forbid",
+        frozen=True,
+    )
+
+    starts_at: datetime
+
+    ends_at: datetime
+
+    @model_validator(
+        mode="after",
+    )
+    def validate_blocked_window(
+        self,
+    ) -> Self:
+        """Require an aware positive blocked time range."""
+
+        if (
+            self.starts_at.tzinfo is None
+            or self.starts_at.utcoffset() is None
+            or self.ends_at.tzinfo is None
+            or self.ends_at.utcoffset() is None
+        ):
+            raise ValueError(
+                "Blocked study time must include "
+                "timezone information.",
+            )
+
+        if (
+            self.starts_at
+            >= self.ends_at
+        ):
+            raise ValueError(
+                "Blocked study time must end "
+                "after it starts.",
+            )
+
+        return self
 
 class SchedulerPreferences(BaseModel):
     """Student preferences used when dividing available time."""
@@ -247,9 +289,41 @@ class StudyScheduleRequest(BaseModel):
         max_length=MAX_SCHEDULER_AVAILABILITY_SLOTS,
     )
 
+    blocked_windows: tuple[
+        SchedulerBlockedWindow,
+        ...,
+    ] = Field(
+        default=(),
+        max_length=MAX_SCHEDULER_BLOCKED_WINDOWS,
+    )
+
+    not_before: datetime | None = None
     preferences: SchedulerPreferences = Field(
         default_factory=SchedulerPreferences,
     )
+    @field_validator(
+        "not_before",
+    )
+    @classmethod
+    def validate_not_before(
+        cls,
+        value: datetime | None,
+    ) -> datetime | None:
+        """Require an absolute lower scheduling boundary."""
+
+        if value is None:
+            return None
+
+        if (
+            value.tzinfo is None
+            or value.utcoffset() is None
+        ):
+            raise ValueError(
+                "not_before must include "
+                "timezone information.",
+            )
+
+        return value
 
     @model_validator(
         mode="after",

@@ -76,6 +76,9 @@ import {
 import {
   CreateStudySessionModal,
 } from "./CreateStudySessionModal";
+import {
+  RegenerateStudyPlanModal,
+} from "./RegenerateStudyPlanModal";
 
 interface StudyPlansWorkspaceProps {
   initialSubjects: SubjectSummary[];
@@ -347,6 +350,23 @@ const [
 const [
   generatePlanOpened,
   setGeneratePlanOpened,
+] = useState(false);
+
+const [
+  regeneratePlanOpened,
+  setRegeneratePlanOpened,
+] = useState(false);
+
+const [
+  regenerationTasks,
+  setRegenerationTasks,
+] = useState<
+  SchedulableTask[]
+>([]);
+
+const [
+  regenerationTasksLoading,
+  setRegenerationTasksLoading,
 ] = useState(false);
 
 const [
@@ -1047,6 +1067,58 @@ async function handleOpenGeneratePlan() {
   }
 }
 
+async function handleOpenRegeneratePlan():
+  Promise<void> {
+  if (
+    !selectedPlan ||
+    selectedPlan.generation_mode !==
+      "generated"
+  ) {
+    setActionError(
+      "Only generated study plans can be regenerated.",
+    );
+    return;
+  }
+
+  setRegenerationTasksLoading(
+    true,
+  );
+
+  setActionError(
+    null,
+  );
+
+  try {
+    const prioritizedTasks =
+      await listPrioritizedAcademicTasks({
+        limit: 100,
+      });
+
+    const schedulableTasks =
+      academicTasksToSchedulableTasks(
+        prioritizedTasks,
+      );
+
+    setRegenerationTasks(
+      schedulableTasks,
+    );
+
+    setRegeneratePlanOpened(
+      true,
+    );
+  } catch (error) {
+    setActionError(
+      getErrorMessage(
+        error,
+        "Academic tasks could not be loaded for regeneration.",
+      ),
+    );
+  } finally {
+    setRegenerationTasksLoading(
+      false,
+    );
+  }
+}
 
 function handleGeneratedPlan(
   result:
@@ -1094,6 +1166,43 @@ function handleGeneratedPlan(
   );
 }
 
+function handleRegeneratedPlan(
+  result:
+    StudyPlanGenerationResponse,
+): void {
+  setPlans(
+    (
+      currentPlans,
+    ) =>
+      currentPlans.map(
+        (plan) =>
+          plan.id ===
+          result.plan.id
+            ? result.plan
+            : plan,
+      ),
+  );
+
+  setSelectedPlanId(
+    result.plan.id,
+  );
+
+  setSessions(
+    result.sessions,
+  );
+
+  setSessionsStatus(
+    "ready",
+  );
+
+  setSessionsError(
+    null,
+  );
+
+  setActionError(
+    null,
+  );
+}
 
 function handleCloseGeneratePlan() {
   setGeneratePlanOpened(
@@ -1101,6 +1210,17 @@ function handleCloseGeneratePlan() {
   );
 
   setGenerationTasks(
+    [],
+  );
+}
+
+function handleCloseRegeneratePlan():
+  void {
+  setRegeneratePlanOpened(
+    false,
+  );
+
+  setRegenerationTasks(
     [],
   );
 }
@@ -1561,81 +1681,103 @@ function handleCloseGeneratePlan() {
                 </div>
 
                 <Group gap="xs">
+                {selectedPlan.generation_mode ===
+                "generated" ? (
                     <Button
                     size="xs"
+                    variant="light"
                     leftSection={
-                        <IconPlus
+                        <IconRefresh
                         size={15}
                         />
                     }
+                    loading={
+                        regenerationTasksLoading
+                    }
+                    onClick={() => {
+                        void handleOpenRegeneratePlan();
+                    }}
+                    >
+                    Regenerate
+                    </Button>
+                ) : null}
+
+                <Button
+                    size="xs"
+                    leftSection={
+                    <IconPlus
+                        size={15}
+                    />
+                    }
                     disabled={
-                        initialSubjects.length ===
-                        0
+                    initialSubjects.length ===
+                    0
                     }
                     onClick={() =>
-                        setCreateSessionOpened(
+                    setCreateSessionOpened(
+                        true,
+                    )
+                    }
+                >
+                    Add session
+                </Button>
+
+                {selectedPlan.generation_mode ===
+                "manual" ? (
+                    <Button
+                    size="xs"
+                    color="red"
+                    variant="light"
+                    leftSection={
+                        <IconTrash
+                        size={15}
+                        />
+                    }
+                    onClick={() =>
+                        setDeletePlanOpened(
                         true,
                         )
                     }
                     >
-                    Add session
+                    Delete plan
                     </Button>
+                ) : null}
 
-                    {selectedPlan.generation_mode ===
-                    "manual" ? (
-                    <Button
-                        size="xs"
-                        color="red"
-                        variant="light"
-                        leftSection={
-                        <IconTrash
-                            size={15}
-                        />
-                        }
-                        onClick={() =>
-                        setDeletePlanOpened(
-                            true,
-                        )
-                        }
-                    >
-                        Delete plan
-                    </Button>
-                    ) : null}
-                  <Button
+                <Button
                     variant="default"
                     size="xs"
                     aria-label="Previous week"
                     onClick={
-                      goToPreviousWeek
+                    goToPreviousWeek
                     }
-                  >
+                >
                     <IconChevronLeft
-                      size={17}
+                    size={17}
                     />
-                  </Button>
+                </Button>
 
-                  <Button
+                <Button
                     variant="default"
                     size="xs"
                     onClick={
-                      goToCurrentWeek
+                    goToCurrentWeek
                     }
-                  >
+                >
                     Today
-                  </Button>
+                </Button>
 
-                  <Button
+                <Button
                     variant="default"
                     size="xs"
                     aria-label="Next week"
                     onClick={
-                      goToNextWeek
+                    goToNextWeek
                     }
-                  >
+                >
                     <IconChevronRight
-                      size={17}
+                    size={17}
                     />
-                  </Button>
+                </Button>
                 </Group>
               </Group>
 
@@ -1924,6 +2066,23 @@ function handleCloseGeneratePlan() {
         }
         onGenerated={
             handleGeneratedPlan
+        }
+        />
+        <RegenerateStudyPlanModal
+        opened={
+            regeneratePlanOpened
+        }
+        onClose={
+            handleCloseRegeneratePlan
+        }
+        studyPlan={
+            selectedPlan
+        }
+        tasks={
+            regenerationTasks
+        }
+        onRegenerated={
+            handleRegeneratedPlan
         }
         />
       <CreateStudyPlanModal
