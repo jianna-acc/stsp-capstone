@@ -21,11 +21,12 @@ import { useDisclosure } from "@mantine/hooks";
 import {
   IconBook2,
   IconBooks,
+  IconCalendarWeek,
+  IconChecklist,
   IconLayoutDashboard,
   IconLogout,
   IconSchool,
   IconSparkles,
-  IconChecklist,
 } from "@tabler/icons-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -39,7 +40,6 @@ import classes from "./ProtectedAppShell.module.css";
 interface ProtectedAppShellProps {
   children: ReactNode;
 }
-
 
 const NAVIGATION_ITEMS = [
   {
@@ -55,11 +55,18 @@ const NAVIGATION_ITEMS = [
     icon: IconBooks,
   },
   {
-  label: "Academic Tasks",
-  description:
-    "Manage deadlines and priorities",
-  href: "/academic-tasks",
-  icon: IconChecklist,
+    label: "Academic Tasks",
+    description:
+      "Manage deadlines and priorities",
+    href: "/academic-tasks",
+    icon: IconChecklist,
+  },
+  {
+    label: "Study Plan",
+    description:
+      "Plan and schedule study sessions",
+    href: "/study-plan",
+    icon: IconCalendarWeek,
   },
   {
     label: "Study Assistant",

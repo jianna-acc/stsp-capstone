@@ -10,6 +10,8 @@ from app.api.routes import (
     rag,
     reviewers,
     study_conversations,
+    study_plan_generation,
+    study_plans,
 )
 from app.api.routes.academic_tasks import (
     router as academic_tasks_router,
@@ -42,4 +44,12 @@ api_router.include_router(
 
 api_router.include_router(
     academic_tasks_router,
+)
+
+api_router.include_router(
+    study_plans.router,
+)
+
+api_router.include_router(
+    study_plan_generation.router,
 )
