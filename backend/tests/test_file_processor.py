@@ -13,10 +13,14 @@ from app.core.config import Settings
 from app.services.file_extraction import (
     ExtractedChunk,
     ExtractedDocument,
+    ExtractedSection,
 )
 from app.services.file_processor import (
     FileProcessorExtractionError,
     FileProcessorService,
+)
+from app.services.image_extraction import (
+    ImageExtractionError,
 )
 from app.services.supabase_admin import (
     SupabaseAdminService,
@@ -51,6 +55,8 @@ class FakeAdminService:
         file_status: str = "queued",
         job_status: str = "queued",
         payload: bytes = TEXT_PAYLOAD,
+        mime_type: str = "text/plain",
+        filename: str = "lesson.txt",
     ) -> None:
         self.payload = payload
 
@@ -59,9 +65,9 @@ class FakeAdminService:
             "user_id": str(USER_ID),
             "subject_id": ("f5a86910-d2b0-49f4-899e-6f40bf734557"),
             "topic": "Operating Systems",
-            "original_filename": "lesson.txt",
+            "original_filename": filename,
             "storage_path": STORAGE_PATH,
-            "mime_type": "text/plain",
+            "mime_type": mime_type,
             "size_bytes": len(payload),
             "processing_status": file_status,
         }
@@ -189,6 +195,53 @@ class FakeAdminService:
         self.study_file["processing_status"] = "failed"
 
         self.processing_job["status"] = "failed"
+
+class FakeImageExtractor:
+    """Controlled image extractor for processor integration tests."""
+
+    def __init__(
+        self,
+        *,
+        document: ExtractedDocument | None = None,
+        error: ImageExtractionError | None = None,
+    ) -> None:
+        self.document = document
+        self.error = error
+
+        self.calls: list[
+            tuple[
+                bytes,
+                str,
+                str,
+            ]
+        ] = []
+
+    async def extract(
+        self,
+        *,
+        payload: bytes,
+        mime_type: str,
+        filename: str,
+    ) -> ExtractedDocument:
+        """Return the configured image extraction result."""
+
+        self.calls.append(
+            (
+                payload,
+                mime_type,
+                filename,
+            )
+        )
+
+        if self.error is not None:
+            raise self.error
+
+        if self.document is None:
+            raise AssertionError(
+                "No fake extracted document configured.",
+            )
+
+        return self.document
 
 
 def build_settings() -> Settings:
@@ -384,3 +437,152 @@ def test_process_file_records_extraction_failure() -> None:
 
     assert admin.failure_message is not None
     assert "UTF-8" in admin.failure_message
+
+def test_process_image_uses_image_extractor() -> None:
+    """Supported image files should enter the image extraction path."""
+
+    image_payload = b"fake-png-payload"
+
+    image_document = ExtractedDocument(
+        extracted_text=(
+            "Photosynthesis converts light energy "
+            "into chemical energy."
+        ),
+        sections=[
+            ExtractedSection(
+                locator_type="document",
+                locator_label="Image",
+                content=(
+                    "Photosynthesis converts light energy "
+                    "into chemical energy."
+                ),
+                metadata={
+                    "filename": "photosynthesis.png",
+                    "mime_type": "image/png",
+                    "source_type": "image",
+                },
+            ),
+        ],
+        metadata={
+            "filename": "photosynthesis.png",
+            "mime_type": "image/png",
+            "source_type": "image",
+        },
+    )
+
+    image_extractor = FakeImageExtractor(
+        document=image_document,
+    )
+
+    admin = FakeAdminService(
+        payload=image_payload,
+        mime_type="image/png",
+        filename="photosynthesis.png",
+    )
+
+    processor = FileProcessorService(
+        settings=build_settings(),
+        admin_service=cast(
+            SupabaseAdminService,
+            admin,
+        ),
+        image_extractor=image_extractor,
+    )
+
+    result = asyncio.run(
+        processor.process_file(
+            FILE_ID,
+        )
+    )
+
+    assert result.processing_status == "ready"
+    assert result.job_status == "completed"
+
+    assert result.filename == "photosynthesis.png"
+    assert result.mime_type == "image/png"
+
+    assert result.character_count > 0
+    assert result.chunk_count >= 1
+
+    assert len(
+        image_extractor.calls,
+    ) == 1
+
+    payload, mime_type, filename = (
+        image_extractor.calls[
+            0
+        ]
+    )
+
+    assert payload == image_payload
+    assert mime_type == "image/png"
+    assert filename == "photosynthesis.png"
+
+    assert admin.complete_count == 1
+    assert admin.failure_count == 0
+
+    assert admin.completed_document is not None
+
+    assert (
+        admin.completed_document.extracted_text
+        == image_document.extracted_text
+    )
+
+
+def test_image_extraction_failure_marks_processing_failed() -> None:
+    """Unreadable images should use the normal extraction failure path."""
+
+    image_payload = b"fake-unreadable-image"
+
+    image_extractor = FakeImageExtractor(
+        error=ImageExtractionError(
+            "No readable study content was found in the image.",
+        ),
+    )
+
+    admin = FakeAdminService(
+        payload=image_payload,
+        mime_type="image/jpeg",
+        filename="blank.jpg",
+    )
+
+    processor = FileProcessorService(
+        settings=build_settings(),
+        admin_service=cast(
+            SupabaseAdminService,
+            admin,
+        ),
+        image_extractor=image_extractor,
+    )
+
+    with pytest.raises(
+        FileProcessorExtractionError,
+        match="No readable study content",
+    ):
+        asyncio.run(
+            processor.process_file(
+                FILE_ID,
+            )
+        )
+
+    assert len(
+        image_extractor.calls,
+    ) == 1
+
+    assert admin.start_count == 1
+    assert admin.indexing_count == 0
+    assert admin.complete_count == 0
+
+    assert admin.failure_count == 1
+
+    assert admin.failure_code == (
+        "EXTRACTION_FAILED"
+    )
+
+    assert admin.study_file[
+        "processing_status"
+    ] == "failed"
+
+    assert admin.processing_job[
+        "status"
+    ] == "failed"
