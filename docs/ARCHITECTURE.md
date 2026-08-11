@@ -1,3 +1,6 @@
+<!-- File: /docs/ARCHITECTURE.md -->
+<!-- Purpose: Documents the implemented and planned architecture of the STS Capstone STUDY AI project. -->
+
 # STS Capstone — STUDY AI Architecture
 
 This document describes the current architecture of STUDY AI.
@@ -10,6 +13,7 @@ The system currently includes:
 - Hosted Supabase PostgreSQL
 - Private Supabase Storage
 - Student learning-profile onboarding
+- Academic output-confidence onboarding
 - Subject management
 - Study-material uploads
 - Automatic file processing
@@ -33,16 +37,38 @@ The system currently includes:
 - Large-material multi-pass reviewer generation
 - Deterministic reviewer source batching
 - Partial-reviewer synthesis into one final structured reviewer
-- Student-owned academic task CRUD
+- Flashcard generation from one ready study file or a whole subject
+- Structured question-and-answer Flashcard generation
+- Complete Flashcard source tracking
+- Saved Flashcard deck persistence
+- Individual ordered Flashcard persistence
+- Atomic Flashcard deck-and-card creation
+- Protected FastAPI Flashcard API
+- Saved Flashcard listing, retrieval, and deletion
+- Deterministic large-material Flashcard source batching
+- Multi-pass Flashcard candidate generation and final synthesis
+- Protected student-facing Flashcard workspace
+- Interactive question-and-answer Flashcard study viewer
+- Saved Flashcard reopening and deletion UI
+- AI Quiz generation from a subject or ready study file
+- Multiple-choice, true/false, identification, and mixed Quiz modes
+- Easy, medium, and hard Quiz difficulty
+- Atomic Quiz and private answer-key persistence
+- One-question-at-a-time Quiz attempts with immediate grading feedback
+- Final Quiz scoring with strong/weak topic analysis
+- Saved Quiz history, completed-attempt review, retaking, and deletion
+- Student-owned Academic Task CRUD
 - Academic output confidence by skill type
-- Deterministic academic-task priority scoring
+- Deterministic Academic Task priority scoring
 - Explainable seven-factor priority breakdowns
 - Protected Academic Tasks frontend
 - Live priority recalculation after task changes
 
-The application includes protected Reviewer, Academic Tasks, and Study Plan frontends.
+The application now includes protected Reviewer, Flashcard, Quiz, Academic Tasks, and Study Plan frontends.
 
-Future phases may add flashcards, quizzes, analytics, and deployment improvements.
+Future phases may add analytics, deployment, and monitoring improvements.
+
+---
 
 # Phase Status
 
@@ -58,9 +84,11 @@ Future phases may add flashcards, quizzes, analytics, and deployment improvement
 | Phase 6B | Reviewer frontend, authenticated generation UI, structured result display | Implemented |
 | Phase 6C | Saved reviewer management and regeneration | Implemented |
 | Phase 6D | Large-material multi-pass reviewer generation | Implemented |
-| Phase 7A–7E | Academic task persistence, output confidence, CRUD, deterministic priority, frontend, live integration | Implemented |
+| Track A | Flashcard backend, large-material generation, protected frontend, saved-deck access, and interactive study UI | Implemented |
+| Track B | Quiz generation, attempts, scoring, history, review, retake, deletion | Implemented |
+| Phase 7A–7E | Academic Task persistence, output confidence, CRUD, deterministic priority, frontend, and live integration | Implemented |
 | Track D | Study-plan persistence, deterministic scheduling, Academic Task integration, calendar workspace, manual sessions, and regeneration | Implemented |
-| Later phases | Flashcards, quizzes, analytics, deployment | Planned |
+| Later phases | Analytics, deployment, and monitoring | Planned |
 
 ---
 
@@ -78,6 +106,8 @@ flowchart LR
         ASSISTANT["Study Assistant"]
         HISTORY["Saved Conversations"]
         REVIEWERS_UI["Reviewer Workspace"]
+        FLASHCARDS_UI["Flashcard Workspace"]
+        QUIZZES_UI["Quiz Workspace"]
         TASKS_UI["Academic Tasks Workspace"]
 
         SUPABASE_CLIENT["Supabase Clients"]
@@ -109,9 +139,23 @@ flowchart LR
         REVIEWER_BATCHER["Reviewer Source Batcher"]
         REVIEWER_SERVICE["Reviewer Persistence Service"]
 
+        FLASHCARD_API["Flashcard API"]
+        FLASHCARD_ORCHESTRATION["Flashcard Orchestration"]
+        FLASHCARD_SOURCE["Flashcard Source Loader"]
+        FLASHCARD_GENERATION["Flashcard Generation"]
+        FLASHCARD_SERVICE["Flashcard Persistence Service"]
+
+        QUIZ_API["Quiz API"]
+        QUIZ_ORCHESTRATION["Quiz Orchestration"]
+        QUIZ_SOURCE["Quiz Source Loader"]
+        QUIZ_GENERATION["Quiz Generation"]
+        QUIZ_SERVICE["Quiz Persistence Service"]
+        QUIZ_ATTEMPTS["Quiz Attempt Service"]
+
         TASK_API["Academic Task API"]
         TASK_SERVICE["Academic Task Service"]
         TASK_PRIORITY["Academic Task Priority Service"]
+        TASK_CONTEXT["Priority Context Resolver"]
         TASK_ENGINE["Deterministic Priority Engine"]
     end
 
@@ -131,6 +175,8 @@ flowchart LR
     STUDENT --> FILE_UI
     STUDENT --> ASSISTANT
     STUDENT --> REVIEWERS_UI
+    STUDENT --> FLASHCARDS_UI
+    STUDENT --> QUIZZES_UI
     STUDENT --> TASKS_UI
 
     AUTH_UI --> SUPABASE_CLIENT
@@ -145,6 +191,8 @@ flowchart LR
     ASSISTANT --> HISTORY
     ASSISTANT --> API_CLIENT
     REVIEWERS_UI --> API_CLIENT
+    FLASHCARDS_UI --> API_CLIENT
+    QUIZZES_UI --> API_CLIENT
     TASKS_UI --> API_CLIENT
 
     API_CLIENT --> API
@@ -168,7 +216,6 @@ flowchart LR
     RAG --> RETRIEVAL
     RETRIEVAL --> VECTOR
     RAG --> GEMINI
-
     CONVERSATION --> DATABASE
 
     API --> REVIEWER_API
@@ -176,18 +223,41 @@ flowchart LR
     REVIEWER_ORCHESTRATION --> REVIEWER_SOURCE
     REVIEWER_ORCHESTRATION --> REVIEWER_GENERATION
     REVIEWER_ORCHESTRATION --> REVIEWER_SERVICE
-
     REVIEWER_SOURCE --> DATABASE
     REVIEWER_GENERATION --> REVIEWER_BATCHER
     REVIEWER_GENERATION --> GEMINI
     REVIEWER_SERVICE --> DATABASE
 
+    API --> FLASHCARD_API
+    FLASHCARD_API --> FLASHCARD_ORCHESTRATION
+    FLASHCARD_ORCHESTRATION --> FLASHCARD_SOURCE
+    FLASHCARD_ORCHESTRATION --> FLASHCARD_GENERATION
+    FLASHCARD_ORCHESTRATION --> FLASHCARD_SERVICE
+    FLASHCARD_SOURCE --> DATABASE
+    FLASHCARD_GENERATION --> GEMINI
+    FLASHCARD_SERVICE --> RPC
+    FLASHCARD_SERVICE --> DATABASE
+
+    API --> QUIZ_API
+    QUIZ_API --> QUIZ_ORCHESTRATION
+    QUIZ_ORCHESTRATION --> QUIZ_SOURCE
+    QUIZ_ORCHESTRATION --> QUIZ_GENERATION
+    QUIZ_ORCHESTRATION --> QUIZ_SERVICE
+    QUIZ_API --> QUIZ_ATTEMPTS
+    QUIZ_SOURCE --> DATABASE
+    QUIZ_GENERATION --> GEMINI
+    QUIZ_SERVICE --> RPC
+    QUIZ_SERVICE --> DATABASE
+    QUIZ_ATTEMPTS --> RPC
+    QUIZ_ATTEMPTS --> DATABASE
+
     API --> TASK_API
     TASK_API --> TASK_SERVICE
     TASK_API --> TASK_PRIORITY
     TASK_SERVICE --> DATABASE
+    TASK_PRIORITY --> TASK_CONTEXT
+    TASK_CONTEXT --> DATABASE
     TASK_PRIORITY --> TASK_ENGINE
-    TASK_PRIORITY --> DATABASE
 ```
 
 ---
@@ -279,7 +349,7 @@ flowchart TD
 
 Academic output confidence is stored separately from subject strength.
 
-The implemented output-confidence categories are:
+Implemented output-confidence categories:
 
 ```text
 writing
@@ -291,15 +361,9 @@ reading_analysis
 memorization
 ```
 
-These values are stored in:
+Academic Task priority uses output confidence according to the task's `output_type`.
 
-```text
-public.learning_output_confidences
-```
-
-Academic-task priority uses output confidence based on the task's `output_type`.
-
-The legacy subject-level `confidence_level` is not used by the Academic Task priority engine.
+The legacy subject-level confidence value is not used by the Academic Task priority engine.
 
 ---
 
@@ -457,51 +521,9 @@ flowchart TD
     GEMINI_PROVIDER --> GEMINI
 ```
 
-Gemini credentials remain inside `backend/.env`.
+Gemini credentials remain backend-only.
 
 Normal automated tests use fake providers and do not call live Gemini services.
-
----
-
-# AI Preparation and Vector Indexing
-
-```mermaid
-flowchart LR
-    DOCUMENT["Extracted Text"]
-    PREPARER["StudyMaterialPreparer"]
-    CHUNKER["TextChunker"]
-    BATCHER["EmbeddingBatchPreparer"]
-
-    INDEXER["StudyMaterialVectorIndexer"]
-    EMBEDDER["StudyMaterialEmbedder"]
-    GEMINI["Gemini Embedding API"]
-
-    VALIDATION["Vector Validation"]
-    RPC["replace_study_file_ai_chunks"]
-    VECTOR_TABLE[("study_file_ai_chunks")]
-
-    DOCUMENT --> PREPARER
-    PREPARER --> CHUNKER
-    CHUNKER --> BATCHER
-
-    BATCHER --> INDEXER
-    INDEXER --> EMBEDDER
-    EMBEDDER --> GEMINI
-
-    GEMINI --> VALIDATION
-    VALIDATION --> INDEXER
-
-    INDEXER --> RPC
-    RPC --> VECTOR_TABLE
-```
-
-Current vector configuration uses:
-
-```text
-Embedding dimensions: 768
-Distance strategy: cosine
-Index strategy: HNSW
-```
 
 ---
 
@@ -545,9 +567,7 @@ Retrieval supports:
 flowchart TD
     QUESTION["Question"]
     RETRIEVAL["Owned Retrieval"]
-
     CONTEXT{"Relevant Context?"}
-
     NO_CONTEXT["No-Context Result"]
     PROMPT["Grounded Prompt"]
     GEMINI["Gemini Generation"]
@@ -555,70 +575,24 @@ flowchart TD
 
     QUESTION --> RETRIEVAL
     RETRIEVAL --> CONTEXT
-
     CONTEXT -->|No| NO_CONTEXT
     CONTEXT -->|Yes| PROMPT
-
     PROMPT --> GEMINI
     GEMINI --> ANSWER
 ```
 
 Factual claims must be supported by retrieved study-material content.
 
----
-
-# Protected RAG API
-
-Main endpoint:
-
-```text
-POST /api/rag/answer
-```
-
-Authentication:
-
-```text
-Authorization: Bearer <Supabase access token>
-```
-
-The request may contain:
-
-- `question`
-- `conversation_id`
-- `subject_id`
-- `study_file_id`
-- Retrieval tuning values
-
-It must not contain a trusted `user_id`.
+Conversation history is context only and does not become factual evidence.
 
 ---
 
-# Study Assistant Frontend
+# Study Assistant
 
-```mermaid
-flowchart LR
-    PAGE["/study-assistant"]
-    WORKSPACE["StudyAssistantWorkspace"]
+The protected Study Assistant route is:
 
-    HISTORY["ConversationHistoryPanel"]
-    PANEL["StudyAssistantPanel"]
-
-    CONVERSATION_CLIENT["Conversation API Client"]
-    RAG_CLIENT["RAG API Client"]
-
-    CONVERSATION_API["/api/study-conversations"]
-    RAG_API["/api/rag/answer"]
-
-    PAGE --> WORKSPACE
-
-    WORKSPACE --> HISTORY
-    WORKSPACE --> PANEL
-
-    WORKSPACE --> CONVERSATION_CLIENT
-    CONVERSATION_CLIENT --> CONVERSATION_API
-
-    PANEL --> RAG_CLIENT
-    RAG_CLIENT --> RAG_API
+```text
+/study-assistant
 ```
 
 The Study Assistant supports:
@@ -633,228 +607,242 @@ The Study Assistant supports:
 - New conversations
 - Follow-up questions
 
----
-
-# Reviewer Frontend
-
-The protected Reviewer workspace is available at:
-
-```text
-/reviewers
-```
-
-The frontend follows the same authenticated FastAPI-client pattern used by the Study Assistant.
-
-```mermaid
-flowchart LR
-    PAGE["/reviewers"]
-    WORKSPACE["ReviewerWorkspace"]
-
-    FORM["ReviewerGenerationForm"]
-    RESULT["ReviewerResult"]
-
-    OPTIONS["Reviewer Filter Options"]
-    API_CLIENT["Reviewer API Client"]
-
-    SUPABASE["Supabase"]
-    REVIEWER_API["POST /api/reviewers/generate"]
-
-    PAGE --> WORKSPACE
-
-    WORKSPACE --> FORM
-    WORKSPACE --> RESULT
-
-    PAGE --> OPTIONS
-    OPTIONS --> SUPABASE
-
-    FORM --> API_CLIENT
-    API_CLIENT --> REVIEWER_API
-
-    REVIEWER_API --> RESULT
-```
-
-The Reviewer frontend supports:
-
-- Whole-subject reviewer generation
-- Single-study-material reviewer generation
-- `short`, `medium`, and `long` reviewer lengths
-- Authenticated subject loading
-- Ready study-material filtering
-- Loading and safe error states
-- Structured overview display
-- Topic summaries
-- Key points
-- Important definitions
-- Grounded source references
-- Saved reviewer persistence
-- Saved reviewer management
-- Reviewer regeneration
-
-Only study files that have completed processing and are in the `ready` state are available for file-scope generation.
-
-Generated reviewers are persisted by the backend before being returned to the frontend.
-
-Large-material reviewer generation is handled through deterministic source batching and final synthesis.
-
----
-
-# Phase 5G Conversation Persistence
-
-Implemented tables:
+Implemented persistence:
 
 ```text
 study_conversations
 study_messages
 ```
 
-```mermaid
-erDiagram
-    AUTH_USERS ||--o{ STUDY_CONVERSATIONS : owns
-    SUBJECTS ||--o{ STUDY_CONVERSATIONS : filters
-    STUDY_FILES ||--o{ STUDY_CONVERSATIONS : filters
-    STUDY_CONVERSATIONS ||--o{ STUDY_MESSAGES : contains
-```
+Conversation memory is bounded.
 
-A conversation stores:
-
-- Owner
-- Title
-- Optional subject
-- Optional study file
-- Summary state
-- Creation time
-- Update time
-- Last message time
-
-A saved message stores:
-
-- Role
-- Content
-- Assistant outcome
-- Safe citation metadata
-- Creation time
+Older messages may be compressed into a deterministic backend summary without calling Gemini.
 
 ---
 
-# Conversation-Aware RAG
+# Reviewer Architecture
 
-```mermaid
-sequenceDiagram
-    actor Student
-    participant Frontend as Study Assistant
-    participant API as RAG API
-    participant Service as Conversation RAG Service
-    participant Repository as Repository
-    participant RAG as RAG Service
+A reviewer can be generated from:
 
-    Student->>Frontend: Ask first question
-    Frontend->>API: Question
+- One ready study file
+- All ready study files within one subject
 
-    API->>Service: Authenticated request
-    Service->>Repository: Create conversation
-    Service->>Repository: Save user message
-    Service->>RAG: Generate grounded answer
-    RAG-->>Service: Answer
-    Service->>Repository: Save assistant message
+Reviewer generation loads processed source-aware chunks in deterministic file and chunk order rather than similarity-based RAG retrieval.
 
-    Service-->>Frontend: Answer + conversation_id
-
-    Student->>Frontend: Ask follow-up
-    Frontend->>API: Question + conversation_id
-
-    API->>Service: Continue conversation
-    Service->>Repository: Verify ownership
-    Service->>Repository: Load memory
-    Service->>RAG: Generate grounded answer
-    Service->>Repository: Save new messages
-
-    Service-->>Frontend: Updated answer
-```
-
----
-
-# Bounded Conversation Memory
-
-Current limits:
-
-| Limit | Value |
-|---|---:|
-| Maximum memory items | 10 |
-| Maximum memory characters | 8,000 |
-| Recent messages without summary | 10 |
-| Recent messages with summary | 9 |
-| Maximum summary size | 4,000 characters |
-| Summary version | 1 |
-
-When a summary exists:
+Generated reviewer content is structured as:
 
 ```text
-1 summary
-+
-9 recent messages
-=
-10 maximum memory items
+overview
+topics
+  title
+  summary
+  key_points
+  definitions
 ```
 
----
+Reviewer sources preserve the originating study file, chunk index, and available locator metadata.
 
-# Deterministic Conversation Summary
-
-Older messages may be compressed into a deterministic backend summary.
-
-The summary builder:
-
-- Does not call Gemini
-- Does not use another AI provider
-- Produces deterministic output
-- Removes citation markers
-- Has a 4,000-character limit
-- Keeps the newest relevant summary entries
-
-Internal summary fields:
+Protected endpoints include:
 
 ```text
-summary_text
-summarized_message_count
-summary_updated_at
-summary_version
+POST   /api/reviewers/generate
+GET    /api/reviewers
+GET    /api/reviewers/{reviewer_id}
+DELETE /api/reviewers/{reviewer_id}
+POST   /api/reviewers/{reviewer_id}/regenerate
 ```
 
-These fields must not be consumed or modified by the frontend.
+Large-material generation uses deterministic source batching and final synthesis.
 
 ---
 
-# Evidence Boundary
+# Track A — Flashcards
 
-Conversation memory helps interpret follow-up questions.
+Track A implements the complete Flashcard workflow from authenticated study-material selection through AI generation, persistence, interactive studying, and saved-deck management.
 
-It does not become factual evidence.
-
-Correct factual evidence flow:
+Supported generation scopes:
 
 ```text
-Question
-→ Query Embedding
-→ Owned Vector Retrieval
-→ Retrieved Study Material
-→ Grounded Prompt
-→ Gemini Answer
-→ Citations
+file
+subject
 ```
 
-Conversation history is context only.
+Supported deck sizes:
+
+```text
+Minimum cards: 5
+Default cards: 20
+Maximum cards: 50
+```
+
+Flashcard generation uses complete processed source-aware chunks rather than similarity-based RAG retrieval.
+
+For source material within the single-pass limit:
+
+```text
+Complete source bundle
+→ Flashcard prompt
+→ Gemini
+→ Validated Flashcards
+→ Persistence
+```
+
+For oversized material:
+
+```text
+Complete source bundle
+→ Deterministic source batches
+→ Candidate Flashcard generation
+→ Final synthesis
+→ Validated final deck
+→ Persistence
+```
+
+Flashcards use:
+
+```text
+flashcard_decks
+flashcards
+```
+
+Trusted persistence uses:
+
+```text
+create_flashcard_deck_with_cards(...)
+```
+
+Protected endpoints:
+
+```text
+POST   /api/flashcards/generate
+GET    /api/flashcards
+GET    /api/flashcards/{deck_id}
+DELETE /api/flashcards/{deck_id}
+```
+
+The protected Flashcard workspace is:
+
+```text
+/flashcards
+```
+
+The frontend supports:
+
+- Whole-subject generation
+- Single-ready-study-material generation
+- Configurable card count
+- Question-first presentation
+- Question/answer flipping
+- Previous/next navigation
+- Saved deck reopening
+- Saved deck deletion
 
 ---
 
-# Academic Tasks and Deterministic Priority
+# Track B — Quiz Generation and Attempts
 
-The protected Academic Tasks workspace is available at:
+Track B implements end-to-end Quiz generation and Quiz-taking from processed study material.
+
+Supported scopes:
+
+```text
+file
+subject
+```
+
+Supported Quiz types:
+
+```text
+multiple_choice
+true_false
+identification
+mixed
+```
+
+Supported difficulty:
+
+```text
+easy
+medium
+hard
+```
+
+Question count:
+
+```text
+1 to 50
+```
+
+Private answer-key fields:
+
+```text
+correct_answer
+accepted_answers
+explanation
+```
+
+are not returned through normal Quiz reads.
+
+Quiz resources:
+
+```text
+quizzes
+quiz_questions
+quiz_attempts
+quiz_attempt_answers
+```
+
+Trusted RPCs:
+
+```text
+create_quiz_with_questions
+start_quiz_attempt
+submit_quiz_attempt_answer
+```
+
+Strong topics use:
+
+```text
+accuracy >= 70%
+```
+
+Weak topics use:
+
+```text
+accuracy < 70%
+```
+
+The protected Quiz workspace is:
+
+```text
+/quizzes
+```
+
+The frontend supports:
+
+- Quiz generation
+- One-question-at-a-time attempts
+- Immediate grading feedback
+- Final score
+- Strong/weak topic analysis
+- Saved Quiz history
+- Completed-attempt review
+- Retakes
+- Deletion
+
+---
+
+# Phase 7 — Academic Tasks and Deterministic Priority
+
+Phase 7 implements student-owned Academic Task management and deterministic priority scoring.
+
+The protected Academic Tasks workspace is:
 
 ```text
 /academic-tasks
 ```
 
-Academic tasks are student-owned records containing:
+Academic Tasks contain:
 
 ```text
 subject
@@ -868,7 +856,7 @@ academic output type
 workflow status
 ```
 
-Supported difficulty values:
+Supported difficulty:
 
 ```text
 easy
@@ -912,20 +900,19 @@ completed
 cancelled
 ```
 
-## Academic Task Architecture
+## Academic Task Priority Architecture
 
 ```mermaid
 flowchart LR
     STUDENT["Authenticated Student"]
     WORKSPACE["Academic Tasks Workspace"]
-    CLIENT["Authenticated Academic Task API Client"]
-
     API["Academic Task FastAPI Routes"]
+
     CRUD["Academic Task Service"]
     REPOSITORY["Academic Task Repository"]
 
-    PRIORITY_SERVICE["Academic Task Priority Service"]
-    CONTEXT_REPOSITORY["Priority Context Repository"]
+    PRIORITY["Academic Task Priority Service"]
+    CONTEXT_REPO["Priority Context Repository"]
     CONTEXT["Priority Context Resolver"]
     ENGINE["Deterministic Priority Engine"]
 
@@ -935,32 +922,29 @@ flowchart LR
     AVAILABILITY[("study_availability")]
 
     STUDENT --> WORKSPACE
-    WORKSPACE --> CLIENT
-    CLIENT --> API
+    WORKSPACE --> API
 
     API --> CRUD
     CRUD --> REPOSITORY
     REPOSITORY --> TASKS
 
-    API --> PRIORITY_SERVICE
-    PRIORITY_SERVICE --> CONTEXT_REPOSITORY
+    API --> PRIORITY
+    PRIORITY --> CONTEXT_REPO
 
-    CONTEXT_REPOSITORY --> PROFILE
-    CONTEXT_REPOSITORY --> CONFIDENCE
-    CONTEXT_REPOSITORY --> AVAILABILITY
+    CONTEXT_REPO --> PROFILE
+    CONTEXT_REPO --> CONFIDENCE
+    CONTEXT_REPO --> AVAILABILITY
 
-    PRIORITY_SERVICE --> CONTEXT
-    CONTEXT --> PRIORITY_SERVICE
-    PRIORITY_SERVICE --> ENGINE
+    PRIORITY --> CONTEXT
+    CONTEXT --> PRIORITY
+    PRIORITY --> ENGINE
 ```
 
-Priority calculation is performed by deterministic backend code.
+Priority calculation is deterministic backend logic.
 
 It does not use Gemini or another generative AI provider.
 
 ## Priority Factors
-
-The engine combines seven factors:
 
 | Factor | Weight |
 |---|---:|
@@ -978,7 +962,7 @@ Total configured weight:
 100%
 ```
 
-Higher factor scores mean the factor increases task urgency.
+Higher factor scores increase task urgency.
 
 Completed and cancelled tasks receive:
 
@@ -986,74 +970,88 @@ Completed and cancelled tasks receive:
 total priority = 0
 ```
 
-Previous performance currently uses a neutral fallback because a production quiz/performance data source is not yet connected.
+Previous performance currently uses a neutral fallback until a production performance source is connected to the priority engine.
 
-Missing confidence or unavailable context uses controlled neutral behavior rather than inventing student information.
+Missing confidence or unavailable context uses deterministic fallback behavior rather than invented student data.
 
-## Priority API
+## Priority API and Ordering
 
-The frontend receives authoritative ordering from:
+The authoritative prioritized endpoint is:
 
 ```text
 GET /api/academic-tasks/prioritized
 ```
 
-The response contains the task and its complete seven-factor priority breakdown.
-
 The backend sorts by:
 
 ```text
-1. Total priority score descending
-2. Deadline ascending
-3. Creation time ascending
-4. Task ID
+1. total priority score descending
+2. deadline ascending
+3. creation time ascending
+4. task ID
 ```
 
 The frontend does not duplicate the priority formula.
 
-## Academic Tasks Frontend
-
-The workspace supports:
-
-- Create task
-- Edit task
-- Change task status
-- Delete task
-- Display deterministic priority
-- Display urgency category
-- Expand `Why this priority?`
-- Display all seven factor scores
-- Refresh priority after successful create, edit, status change, and deletion
-- Responsive independent task columns
-
-The independent-column layout allows one task's priority explanation to expand without stretching or displacing task cards in the opposite column.
-
-After a successful mutation, the frontend requests the prioritized endpoint again so the backend remains the source of truth for score and ordering.
-
-## Live Integration
-
-Phase 7E live integration verified:
+After successful:
 
 ```text
-Next.js frontend
-→ authenticated FastAPI request
-→ Supabase persistence and priority context
-→ deterministic priority engine
-→ prioritized API response
-→ Academic Tasks workspace
+create
+edit
+status change
+delete
 ```
+
+the frontend reloads the prioritized endpoint so ordering and scores remain backend-controlled.
+
+The frontend provides:
+
+```text
+Why this priority?
+```
+
+which displays the seven factor scores.
+
+## Academic Output Confidence
+
+Academic output confidence is stored in:
+
+```text
+public.learning_output_confidences
+```
+
+Implemented skill categories:
+
+```text
+writing
+computation
+research
+presentation
+creative
+reading_analysis
+memorization
+```
+
+For a direct output type, the corresponding confidence value is used.
+
+For `mixed`, the backend may use an aggregate when complete output-confidence data exists.
+
+For unavailable confidence data, deterministic neutral fallback behavior is used.
+
+## Phase 7 Live Integration
 
 Live validation covered:
 
 ```text
-create
-read
-edit
-status change
-priority recalculation
+create task
+load task
+edit task
+change status
+priority calculation
 priority explanation
+priority recalculation
 completed-task zero priority
-delete
+delete task
 page refresh persistence
 ```
 
@@ -1215,6 +1213,15 @@ public.study_file_ai_chunks
 public.study_conversations
 public.study_messages
 public.reviewers
+
+public.flashcard_decks
+public.flashcards
+
+public.quizzes
+public.quiz_questions
+public.quiz_attempts
+public.quiz_attempt_answers
+
 public.academic_tasks
 public.study_plans
 public.study_sessions
@@ -1236,23 +1243,30 @@ study-materials
 4. Browser code uses only publishable Supabase credentials.
 5. Student database access is protected by RLS.
 6. Study files remain private.
-7. FastAPI derives identity from bearer authentication.
+7. FastAPI derives student identity from bearer authentication.
 8. RAG requests cannot override `user_id`.
 9. Clients cannot submit arbitrary conversation memory.
 10. Clients cannot submit summary state.
-11. Conversation summaries are backend-managed.
+11. Conversation summary state is backend-managed.
 12. Raw embeddings are not returned to the browser.
 13. Raw retrieved chunks are not persisted as conversation source metadata.
-14. Public errors must not expose tokens or credentials.
-15. Academic tasks are owner-scoped through authenticated backend operations and database RLS.
-16. Academic Task requests cannot provide or override a trusted `user_id`.
-17. Priority context is loaded by the backend for the authenticated student.
-18. Clients cannot provide trusted priority scores or priority context.
-19. Study plans and study sessions are owner-scoped to the authenticated student.
-20. Study Plan requests cannot provide or override a trusted `user_id`.
-21. Scheduling availability, timezone, and preferred duration are loaded by trusted backend services.
-22. Regeneration preserves manual sessions and replaces only generated sessions.
-23. The generated-session replacement RPC is restricted to trusted backend execution.
+14. Public errors must not expose tokens, credentials, SQL details, or provider tracebacks.
+15. Flashcard requests cannot choose a trusted `user_id`.
+16. Flashcard source loading verifies authenticated ownership and readiness.
+17. Browser roles cannot directly call trusted Flashcard persistence RPCs.
+18. Normal Quiz responses do not expose private answer-key fields.
+19. Quiz grading uses trusted backend operations and RPCs.
+20. Completed-attempt review requires authenticated ownership and completed state.
+21. Academic Tasks are owner-scoped through authenticated backend operations and database RLS.
+22. Academic Task requests cannot provide or override a trusted `user_id`.
+23. Priority context is loaded by the backend for the authenticated student.
+24. Clients cannot provide trusted priority scores, availability, or output-confidence context.
+25. Study plans and study sessions are owner-scoped to the authenticated student.
+26. Study Plan requests cannot provide or override a trusted `user_id`.
+27. Scheduling availability, timezone, and preferred duration are loaded by trusted backend services.
+28. Regeneration preserves manual sessions and replaces only generated sessions.
+29. The generated-session replacement RPC is restricted to trusted backend execution.
+
 ---
 
 # Migration Workflow
@@ -1301,7 +1315,25 @@ Corrections require a new timestamped migration.
 20260808053929_create_reviewers_foundation.sql
 ```
 
-The reviewer foundation migration creates the owned `reviewers` table, reviewer scope and length constraints, ownership validation, timestamps, indexes, and Row Level Security policies.
+---
+
+# Track A Flashcard Migrations
+
+```text
+20260809142000_create_flashcard_foundation.sql
+20260809145600_create_flashcard_persistence_rpc.sql
+```
+
+---
+
+# Track B Quiz Migrations
+
+```text
+20260809204500_create_quizzes_foundation.sql
+20260809211600_create_quiz_persistence_rpc.sql
+20260809223500_create_quiz_attempt_foundation.sql
+20260809225500_create_quiz_attempt_rpcs.sql
+```
 
 ---
 
@@ -1312,7 +1344,7 @@ The reviewer foundation migration creates the owned `reviewers` table, reviewer 
 20260809153000_add_output_confidence_and_task_output_type.sql
 ```
 
-The first migration creates the student-owned `academic_tasks` table, subject-ownership validation, indexes, triggers, grants, and Row Level Security.
+The first Phase 7 migration creates the student-owned `academic_tasks` table, validation, triggers, indexes, grants, and Row Level Security.
 
 The second migration introduces academic output-confidence storage and adds `output_type` to academic tasks so deterministic priority can use confidence for the skill required by the task.
 
@@ -1329,7 +1361,7 @@ The foundation migration creates the student-owned `study_plans` and `study_sess
 
 The regeneration migration adds the trusted transactional `replace_generated_study_plan_sessions` RPC and aligns generated-session titles with the 200-character Academic Task title limit.
 
-These migration files are implemented in Track D. Application to the shared linked Supabase database must be coordinated during integration.
+These Track D migration files have been applied to the shared linked Supabase database during coordinated integration.
 
 ---
 
@@ -1424,8 +1456,6 @@ Browser clients do not receive direct insert or update access to reviewer record
 Saved reviewer management and regeneration were implemented in Phase 6C.
 
 Large-material multi-pass reviewer generation was implemented in Phase 6D.
-
-Quiz generation remains deferred to a later phase.
 
 ---
 
@@ -1611,8 +1641,10 @@ reviewers
 
 Future phases may introduce:
 
-- Flashcards
-- Quizzes
+- Study analytics
+- Deployment and monitoring improvements
+
+These features must not be documented as implemented until their code, migrations, tests, and security boundaries exist.
 - Study analytics
 - Deployment and monitoring improvements
 

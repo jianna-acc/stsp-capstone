@@ -1,3 +1,6 @@
+<!-- File: /docs/api-contracts.md -->
+<!-- Purpose: Documents implemented communication contracts between the frontend, FastAPI backend, worker, AI services, and Supabase. -->
+
 # API Contracts
 
 This document records the implemented application API and important database RPC contracts.
@@ -20,7 +23,7 @@ Protected student endpoints use:
 Authorization: Bearer <Supabase access token>
 ```
 
-The backend validates the access token and derives the authenticated user ID.
+The backend validates the access token and derives the authenticated student ID.
 
 Clients must not submit a trusted `user_id`.
 
@@ -57,19 +60,13 @@ Internal processing routes require:
 X-Processor-Key: <private configured value>
 ```
 
-The value comes from:
-
-```text
-backend/.env
-```
-
 Environment variable:
 
 ```text
 PROCESSOR_INTERNAL_KEY
 ```
 
-The key must never be sent to browser code.
+The processor key must never be sent to browser code.
 
 ---
 
@@ -95,20 +92,6 @@ The backend verifies:
 - Object is not empty
 - File does not exceed processing limits
 
-Representative response:
-
-```json
-{
-  "study_file_id": "uuid",
-  "processing_job_id": "uuid",
-  "filename": "lesson.pdf",
-  "mime_type": "application/pdf",
-  "size_bytes": 245760,
-  "processing_status": "queued",
-  "job_status": "queued"
-}
-```
-
 ---
 
 # Process Study File
@@ -123,7 +106,7 @@ Authentication:
 X-Processor-Key
 ```
 
-The processing workflow performs:
+The workflow performs:
 
 1. Study-file validation
 2. Private Storage download
@@ -135,46 +118,9 @@ The processing workflow performs:
 8. Extracted-content persistence
 9. Final status update
 
-Representative response:
-
-```json
-{
-  "study_file_id": "uuid",
-  "processing_job_id": "uuid",
-  "filename": "lesson.pdf",
-  "mime_type": "application/pdf",
-  "character_count": 12540,
-  "chunk_count": 8,
-  "page_count": 6,
-  "slide_count": null,
-  "sheet_count": null,
-  "processing_status": "ready",
-  "job_status": "completed"
-}
-```
-
----
-
-# Internal Processing Errors
-
-| Status | Meaning |
-|---:|---|
-| 401 | Processor key missing |
-| 403 | Processor key invalid |
-| 404 | File, job, or Storage object not found |
-| 409 | Invalid processing state |
-| 413 | File too large |
-| 422 | Content cannot be extracted |
-| 500 | Unexpected processing failure |
-| 502 | Supabase, Storage, or upstream dependency failure |
-
-Public error bodies must not expose secrets.
-
 ---
 
 # Study Assistant RAG Endpoint
-
-## Request
 
 ```http
 POST /api/rag/answer
@@ -195,55 +141,11 @@ Representative request:
 }
 ```
 
-| Field | Required | Description |
-|---|---:|---|
-| `question` | Yes | Student question |
-| `conversation_id` | No | Continues an owned saved conversation |
-| `subject_id` | No | Restricts retrieval to one owned subject |
-| `study_file_id` | No | Restricts retrieval to one owned ready study file |
-| `match_count` | No | Maximum retrieved chunks |
-| `similarity_threshold` | No | Minimum similarity |
+The backend derives the trusted student identity from bearer authentication.
 
 A first question may omit `conversation_id`.
 
-The backend then creates a conversation and returns its ID.
-
-## Answered Response
-
-```json
-{
-  "conversation_id": "conversation-uuid",
-  "outcome": "answered",
-  "answer": "The uploaded material explains ... [Source 1]",
-  "sources": [
-    {
-      "source_number": 1,
-      "source_name": "Biology Notes.pdf",
-      "chunk_index": 2,
-      "similarity_score": 0.91
-    }
-  ],
-  "retrieved_count": 3,
-  "source_count": 1,
-  "context_available": true
-}
-```
-
-## No-Context Response
-
-```json
-{
-  "conversation_id": "conversation-uuid",
-  "outcome": "no_context",
-  "answer": "I could not find enough relevant information in your uploaded study materials to answer this question.",
-  "sources": [],
-  "retrieved_count": 0,
-  "source_count": 0,
-  "context_available": false
-}
-```
-
-A no-context result is a normal successful application result.
+A no-context result is a normal successful result.
 
 ---
 
@@ -263,16 +165,6 @@ All routes require bearer authentication.
 POST /api/study-conversations
 ```
 
-Representative request:
-
-```json
-{
-  "title": "Biology review",
-  "subject_id": "optional-subject-uuid",
-  "study_file_id": "optional-study-file-uuid"
-}
-```
-
 Successful status:
 
 ```text
@@ -285,7 +177,7 @@ Successful status:
 GET /api/study-conversations
 ```
 
-Optional query parameter:
+Optional query:
 
 ```text
 limit
@@ -297,15 +189,13 @@ Allowed range:
 1 to 50
 ```
 
-Only conversations owned by the authenticated student are returned.
-
-## Get Conversation Detail
+## Get Conversation
 
 ```http
 GET /api/study-conversations/{conversation_id}
 ```
 
-Optional query parameter:
+Optional:
 
 ```text
 message_limit
@@ -323,192 +213,63 @@ Allowed range:
 PATCH /api/study-conversations/{conversation_id}
 ```
 
-Representative request:
-
-```json
-{
-  "title": "Exam reviewer"
-}
-```
-
 ## Delete Conversation
 
 ```http
 DELETE /api/study-conversations/{conversation_id}
 ```
 
-Successful response:
+Successful status:
 
 ```text
 204 No Content
 ```
 
-The frontend must not attempt to parse a JSON body from the 204 response.
-
----
-
-# Conversation API Errors
-
-Controlled conversation errors use a safe structure such as:
-
-```json
-{
-  "error_code": "CONVERSATION_NOT_FOUND",
-  "message": "The conversation could not be found."
-}
-```
-
-Possible controlled conditions include:
-
-- Missing conversation
-- Unowned conversation
-- Invalid filters
-- Invalid title
-- Conflicting subject/file filters
-- Authentication failure
-
----
-
-# Conversation Security Contract
-
-The frontend may send:
-
-```text
-conversation_id
-question
-subject_id
-study_file_id
-title
-```
-
-The frontend must not send:
-
-```text
-user_id
-conversation memory
-summary_text
-summarized_message_count
-summary_updated_at
-summary_version
-raw embeddings
-raw retrieved chunks
-```
-
----
-
-# File Processing Worker Contract
-
-Worker module:
-
-```text
-backend/app/workers/file_processing_worker.py
-```
-
-Typical development command:
-
-```bash
-python -m app.workers.file_processing_worker \
-  --poll-seconds 2 \
-  --recovery-interval-seconds 30 \
-  --stale-after-minutes 30 \
-  --max-attempts 3
-```
-
-Important options:
-
-| Option | Purpose |
-|---|---|
-| `--once` | Process at most one job |
-| `--poll-seconds` | Empty-queue delay |
-| `--recovery-interval-seconds` | Stale-recovery interval |
-| `--stale-after-minutes` | Stale threshold |
-| `--max-attempts` | Permanent-failure threshold |
+The client must not parse JSON from the successful 204 response.
 
 ---
 
 # Important Database RPC Contracts
 
-## Queue Processing
+## File Processing
 
 ```text
 public.queue_study_file_processing(uuid)
-```
-
-## Claim Next Job
-
-```text
 public.claim_next_file_processing_job()
-```
-
-Uses atomic locking and `SKIP LOCKED`.
-
-## Start Processing
-
-```text
 public.start_study_file_processing(uuid)
-```
-
-## Mark Indexing
-
-```text
 public.mark_study_file_indexing(uuid)
-```
-
-## Complete Processing
-
-```text
 public.complete_study_file_processing(...)
-```
-
-## Fail Processing
-
-```text
 public.fail_study_file_processing(...)
-```
-
-## Recover Stale Jobs
-
-```text
 public.recover_stale_file_processing_jobs(integer, integer)
-```
-
-## Replace AI Vector Chunks
-
-```text
 public.replace_study_file_ai_chunks(...)
 ```
 
-Persists validated backend-generated AI chunks and vectors.
-
-## Complete Learning Profile
+## Learning Profile
 
 ```text
 public.complete_learning_profile_onboarding()
-```
-
-## Replace Learning Output Confidences
-
-```text
 public.replace_learning_output_confidences(...)
 ```
 
-Persists the authenticated student's academic output-confidence values.
+`replace_learning_output_confidences` persists the authenticated student's academic output-confidence values.
 
----
+## Flashcards
 
-# HTTP Security Rules
+```text
+public.create_flashcard_deck_with_cards(...)
+```
 
-Public responses must never expose:
+The trusted backend uses this RPC to atomically create the deck and ordered cards.
 
-- Supabase secret key
-- Processor key
-- Gemini API key
-- Database password
-- Access tokens
-- Raw environment variables
-- Raw embeddings
-- Private Storage credentials
-- Provider tracebacks
+## Quizzes
+
+```text
+public.create_quiz_with_questions(...)
+public.start_quiz_attempt(...)
+public.submit_quiz_attempt_answer(...)
+```
+
+Quiz persistence and grading are trusted backend operations.
 
 ---
 
@@ -516,9 +277,9 @@ Public responses must never expose:
 
 Reviewer endpoints require authenticated Supabase bearer authentication.
 
-The backend derives the trusted student identity from the validated access token.
+The backend derives the trusted student identity from the token.
 
-Reviewer requests must not provide or override `user_id`.
+Requests cannot provide or override a trusted `user_id`.
 
 ## Generate Reviewer
 
@@ -533,7 +294,7 @@ file
 subject
 ```
 
-Supported reviewer lengths:
+Supported lengths:
 
 ```text
 short
@@ -541,29 +302,7 @@ medium
 long
 ```
 
-### File-Scope Request
-
-```json
-{
-  "scope_type": "file",
-  "subject_id": "subject-uuid",
-  "study_file_id": "study-file-uuid",
-  "reviewer_length": "medium"
-}
-```
-
-### Subject-Scope Request
-
-```json
-{
-  "scope_type": "subject",
-  "subject_id": "subject-uuid",
-  "study_file_id": null,
-  "reviewer_length": "long"
-}
-```
-
-Reviewer generation loads processed source-aware chunks in deterministic file and chunk order.
+Reviewer generation uses processed owned study material.
 
 It does not use similarity-based RAG retrieval.
 
@@ -573,25 +312,11 @@ It does not use similarity-based RAG retrieval.
 GET /api/reviewers
 ```
 
-Optional query parameter:
-
-```text
-limit
-```
-
-Valid range:
-
-```text
-1 to 100
-```
-
 ## Get Reviewer
 
 ```http
 GET /api/reviewers/{reviewer_id}
 ```
-
-Returns one reviewer owned by the authenticated student.
 
 ## Delete Reviewer
 
@@ -599,7 +324,7 @@ Returns one reviewer owned by the authenticated student.
 DELETE /api/reviewers/{reviewer_id}
 ```
 
-Successful response:
+Successful status:
 
 ```text
 204 No Content
@@ -611,45 +336,280 @@ Successful response:
 POST /api/reviewers/{reviewer_id}/regenerate
 ```
 
-Regenerates an existing reviewer using its authenticated owner and persisted reviewer scope.
+Regeneration is owner-scoped and reuses the reviewer's saved scope.
 
-The request cannot override the trusted owner.
+## Reviewer Security
 
----
-
-# Reviewer API Errors
-
-Controlled reviewer errors use safe public error responses.
-
-Current controlled mappings include:
-
-| HTTP | Error Code | Meaning |
-|---:|---|---|
-| `400` | `REVIEWER_VALIDATION_FAILED` | Reviewer operation is invalid |
-| `404` | `REVIEWER_NOT_FOUND` | Reviewer or owned source material was not found |
-| `409` | `REVIEWER_SOURCE_UNAVAILABLE` | Selected source material is not ready or usable |
-| `500` | `REVIEWER_GENERATION_RESPONSE_FAILED` | Generated reviewer output could not be processed |
-| `500` | `REVIEWER_RESPONSE_FAILED` | Reviewer response could not be completed |
-| `502` | `REVIEWER_GENERATION_FAILED` | AI generation provider failed |
-| `503` | `REVIEWER_PERSISTENCE_FAILED` | Reviewer storage is temporarily unavailable |
-| `503` | `REVIEWER_SOURCE_STORAGE_FAILED` | Study-material source loading is temporarily unavailable |
+1. Bearer authentication determines the trusted student.
+2. Requests cannot choose `user_id`.
+3. Source loading is ownership scoped.
+4. File-scope source material must be ready.
+5. Browser clients cannot directly insert trusted reviewer records.
+6. Public errors must not expose secrets, provider traces, or database details.
 
 ---
 
-# Reviewer Security Contract
+# Flashcard API
 
-Reviewer API security requirements:
+Flashcard endpoints require authenticated Supabase bearer authentication.
 
-1. The authenticated bearer token determines the trusted student identity.
-2. The request body cannot choose `user_id`.
-3. File-scope reviewers must use a study file owned by the authenticated student.
-4. Subject-scope reviewers only load ready files owned by the authenticated student.
-5. Reviewer source chunks are loaded through trusted backend operations.
-6. Browser clients cannot directly insert or update reviewer records.
-7. Saved reviewer reads and deletes remain ownership scoped.
-8. Generated reviewer content must be grounded in selected processed study material.
-9. Study-material content is treated as untrusted prompt content.
-10. Raw backend secrets, provider errors, and database details must not appear in public API errors.
+Requests cannot provide or override a trusted `user_id`.
+
+## Generate Flashcards
+
+```http
+POST /api/flashcards/generate
+```
+
+Supported scopes:
+
+```text
+file
+subject
+```
+
+Supported card count:
+
+```text
+minimum: 5
+default: 20
+maximum: 50
+```
+
+Representative file-scope request:
+
+```json
+{
+  "scope_type": "file",
+  "subject_id": "subject-uuid",
+  "study_file_id": "study-file-uuid",
+  "card_count": 20
+}
+```
+
+For file scope:
+
+- `subject_id` is required.
+- `study_file_id` is required.
+- The file must belong to the authenticated student.
+- The file must belong to the selected subject.
+- The file must be `ready`.
+
+For subject scope:
+
+- `subject_id` is required.
+- `study_file_id` must be `null` or omitted.
+- Generation uses owned ready study files in the subject.
+
+Large-material generation uses deterministic ordered source batches and final synthesis.
+
+## List Flashcard Decks
+
+```http
+GET /api/flashcards
+```
+
+Optional query:
+
+```text
+subject_id
+```
+
+## Get Flashcard Deck
+
+```http
+GET /api/flashcards/{deck_id}
+```
+
+## Delete Flashcard Deck
+
+```http
+DELETE /api/flashcards/{deck_id}
+```
+
+Successful status:
+
+```text
+204 No Content
+```
+
+Deleting the deck cascades to its child Flashcards.
+
+## Flashcard Security
+
+1. Bearer authentication determines trusted student identity.
+2. Requests cannot choose `user_id`.
+3. Source loading is ownership scoped.
+4. Only ready material may be used.
+5. Browser clients cannot call the trusted persistence RPC.
+6. Generated output must pass validation before persistence.
+7. Saved reads and deletes are owner-scoped.
+
+---
+
+# Quiz API
+
+Quiz endpoints require authenticated Supabase bearer authentication.
+
+Requests cannot provide or override a trusted `user_id`.
+
+## Generate Quiz
+
+```http
+POST /api/quizzes/generate
+```
+
+Representative request:
+
+```json
+{
+  "scope_type": "subject",
+  "subject_id": "subject-uuid",
+  "study_file_id": null,
+  "quiz_type": "mixed",
+  "difficulty": "medium",
+  "question_count": 10
+}
+```
+
+Supported Quiz types:
+
+```text
+multiple_choice
+true_false
+identification
+mixed
+```
+
+Supported difficulty:
+
+```text
+easy
+medium
+hard
+```
+
+Question count:
+
+```text
+1 to 50
+```
+
+Normal Quiz responses exclude:
+
+```text
+correct_answer
+accepted_answers
+explanation
+```
+
+## List Saved Quizzes
+
+```http
+GET /api/quizzes
+```
+
+## Get Saved Quiz
+
+```http
+GET /api/quizzes/{quiz_id}
+```
+
+## Delete Saved Quiz
+
+```http
+DELETE /api/quizzes/{quiz_id}
+```
+
+Successful status:
+
+```text
+204 No Content
+```
+
+---
+
+# Quiz Attempt API
+
+## Start Attempt
+
+```http
+POST /api/quizzes/{quiz_id}/attempts
+```
+
+Successful status:
+
+```text
+201 Created
+```
+
+## List Attempts
+
+```http
+GET /api/quizzes/{quiz_id}/attempts
+```
+
+## Get Attempt
+
+```http
+GET /api/quiz-attempts/{attempt_id}
+```
+
+## Submit Answer
+
+```http
+POST /api/quiz-attempts/{attempt_id}/questions/{position}/answer
+```
+
+Representative request:
+
+```json
+{
+  "answer": "Nucleus"
+}
+```
+
+The backend atomically:
+
+1. validates the expected question position;
+2. grades the answer;
+3. persists the submitted answer;
+4. updates the score;
+5. advances or completes the attempt.
+
+## Get Final Result
+
+```http
+GET /api/quiz-attempts/{attempt_id}/result
+```
+
+Result is available only for completed owned attempts.
+
+Topic classification:
+
+```text
+Strong: accuracy >= 70%
+Weak:   accuracy < 70%
+```
+
+## Review Completed Attempt
+
+```http
+GET /api/quiz-attempts/{attempt_id}/review
+```
+
+Review is only available after the owned attempt has completed.
+
+## Quiz Security
+
+1. Bearer authentication determines trusted student identity.
+2. Requests cannot choose `user_id`.
+3. Source loading is ownership scoped.
+4. Normal Quiz responses exclude private answer keys.
+5. Answer-key reads use trusted backend operations.
+6. Answer submission validates the expected position atomically.
+7. Full review requires a completed owned attempt.
+8. Public errors must not expose secrets or backend internals.
 
 ---
 
@@ -669,9 +629,9 @@ Authorization: Bearer <Supabase access token>
 
 The backend derives the trusted student identity from the validated bearer token.
 
-Clients must not submit a trusted `user_id`.
+Clients cannot submit a trusted `user_id`.
 
-Supported difficulty values:
+Supported difficulty:
 
 ```text
 easy
@@ -715,6 +675,8 @@ completed
 cancelled
 ```
 
+---
+
 ## Create Academic Task
 
 ```http
@@ -742,7 +704,7 @@ Representative request:
 }
 ```
 
-`status` is not required during creation and defaults to:
+Status defaults to:
 
 ```text
 pending
@@ -777,34 +739,11 @@ The selected subject must belong to the authenticated student.
 GET /api/academic-tasks
 ```
 
-Optional query parameter:
+Optional query:
 
 | Parameter | Type | Default | Rules |
 |---|---|---:|---|
 | `limit` | integer | 100 | 1–100 |
-
-Representative response:
-
-```json
-{
-  "items": [
-    {
-      "id": "task-uuid",
-      "subject_id": "subject-uuid",
-      "title": "Final research paper",
-      "description": null,
-      "deadline": "2026-08-20T12:00:00Z",
-      "estimated_minutes": 180,
-      "difficulty": "hard",
-      "task_type": "assignment",
-      "output_type": "writing",
-      "status": "pending",
-      "created_at": "2026-08-09T12:00:00Z",
-      "updated_at": "2026-08-09T12:00:00Z"
-    }
-  ]
-}
-```
 
 Only tasks owned by the authenticated student are returned.
 
@@ -816,7 +755,7 @@ Only tasks owned by the authenticated student are returned.
 GET /api/academic-tasks/prioritized
 ```
 
-Optional query parameter:
+Optional query:
 
 | Parameter | Type | Default | Rules |
 |---|---|---:|---|
@@ -857,7 +796,7 @@ Representative response:
 }
 ```
 
-Tasks are sorted deterministically by:
+Authoritative ordering:
 
 ```text
 1. total_score descending
@@ -878,7 +817,7 @@ GET /api/academic-tasks/{task_id}
 
 Returns one Academic Task owned by the authenticated student.
 
-Missing or unowned tasks receive the same safe not-found response.
+Missing and unowned tasks receive safe not-found behavior.
 
 ---
 
@@ -888,7 +827,7 @@ Missing or unowned tasks receive the same safe not-found response.
 PATCH /api/academic-tasks/{task_id}
 ```
 
-Editable fields are:
+Editable fields:
 
 ```text
 subject_id
@@ -901,20 +840,7 @@ task_type
 output_type
 ```
 
-Representative request:
-
-```json
-{
-  "deadline": "2026-08-25T12:00:00Z",
-  "estimated_minutes": 90,
-  "difficulty": "medium",
-  "output_type": "research"
-}
-```
-
-The response is the updated Academic Task.
-
-Task status is intentionally changed through the dedicated status endpoint.
+Task status is changed through the dedicated status endpoint.
 
 ---
 
@@ -934,8 +860,6 @@ Representative request:
 
 The response contains the updated Academic Task.
 
-The Academic Tasks frontend requests the prioritized endpoint again after a successful status change.
-
 Completed and cancelled tasks receive:
 
 ```text
@@ -950,21 +874,19 @@ total priority = 0
 DELETE /api/academic-tasks/{task_id}
 ```
 
-Successful response:
+Successful status:
 
 ```text
 204 No Content
 ```
 
-The client must not attempt to parse JSON from the successful 204 response.
+The client must not parse JSON from the successful 204 response.
 
 ---
 
 # Academic Task Priority Contract
 
-Priority calculation is deterministic and backend-owned.
-
-The configured factors are:
+The deterministic backend priority engine uses:
 
 | Factor | Weight |
 |---|---:|
@@ -978,9 +900,9 @@ The configured factors are:
 
 Priority context is loaded from authenticated student data.
 
-The browser cannot submit a trusted calculated priority.
+The browser cannot provide a trusted calculated priority.
 
-Previous performance currently uses a neutral fallback until a real performance subsystem is connected.
+Previous performance currently uses a neutral fallback until a production performance source is connected.
 
 ---
 
@@ -991,7 +913,7 @@ Controlled Academic Task errors include:
 | HTTP | Error Code | Meaning |
 |---:|---|---|
 | `400` | `ACADEMIC_TASK_VALIDATION_FAILED` | Academic Task request is invalid |
-| `404` | `ACADEMIC_TASK_NOT_FOUND` | Task does not exist or is not owned by the authenticated student |
+| `404` | `ACADEMIC_TASK_NOT_FOUND` | Task does not exist or is not owned by the student |
 | `500` | `ACADEMIC_TASK_RESPONSE_FAILED` | Stored Academic Task data could not be processed |
 | `500` | `ACADEMIC_TASK_FAILED` | Unexpected Academic Task operation failure |
 | `503` | `ACADEMIC_TASK_PERSISTENCE_FAILED` | Academic Task storage is temporarily unavailable |
@@ -1002,18 +924,34 @@ Authentication failures use the existing protected-API authentication behavior.
 
 # Academic Task Security Contract
 
-Academic Task API security requirements:
-
-1. The bearer token determines the trusted student identity.
-2. Request bodies cannot select or override `user_id`.
-3. Academic Tasks are scoped to their authenticated owner.
-4. Selected subjects must belong to the same student.
-5. Database Row Level Security protects direct student access.
+1. Bearer authentication determines trusted student identity.
+2. Requests cannot choose or override `user_id`.
+3. Academic Tasks are owner-scoped.
+4. Selected subjects must belong to the authenticated student.
+5. Database RLS protects direct student access.
 6. Priority context is loaded by trusted backend services.
-7. The browser cannot submit a trusted priority score.
+7. The browser cannot submit trusted priority scores.
 8. The browser cannot submit trusted study availability or output-confidence context for priority calculation.
 9. Priority calculation does not call Gemini.
-10. Public errors must not expose backend credentials, tokens, SQL details, or stack traces.
+10. Public errors must not expose secrets, tokens, SQL details, or stack traces.
+
+---
+
+# HTTP Security Rules
+
+Public responses must never expose:
+
+- Supabase secret key
+- Processor key
+- Gemini API key
+- Database password
+- Access tokens
+- Raw environment variables
+- Raw embeddings
+- Private Storage credentials
+- Provider tracebacks
+- Private Quiz answer keys before permitted feedback/review
+- Trusted Academic Task priority context
 
 ---
 # Study Plan API
@@ -1276,6 +1214,22 @@ GET    /api/reviewers
 GET    /api/reviewers/{reviewer_id}
 DELETE /api/reviewers/{reviewer_id}
 POST   /api/reviewers/{reviewer_id}/regenerate
+
+POST   /api/flashcards/generate
+GET    /api/flashcards
+GET    /api/flashcards/{deck_id}
+DELETE /api/flashcards/{deck_id}
+
+POST   /api/quizzes/generate
+GET    /api/quizzes
+GET    /api/quizzes/{quiz_id}
+DELETE /api/quizzes/{quiz_id}
+GET    /api/quizzes/{quiz_id}/attempts
+POST   /api/quizzes/{quiz_id}/attempts
+GET    /api/quiz-attempts/{attempt_id}
+POST   /api/quiz-attempts/{attempt_id}/questions/{position}/answer
+GET    /api/quiz-attempts/{attempt_id}/result
+GET    /api/quiz-attempts/{attempt_id}/review
 
 POST   /api/academic-tasks
 GET    /api/academic-tasks

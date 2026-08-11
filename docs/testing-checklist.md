@@ -453,7 +453,7 @@ Because the Study Assistant CSS layout was adjusted afterward, perform the final
 - [ ] Reviewer saved-history and reopening UI
 - [ ] Reviewer regeneration
 - [ ] Multi-pass generation for very large source collections
-- [ ] Quiz generation
+- [x] Quiz generation — implemented in Track B
 
 ---
 
@@ -635,6 +635,259 @@ Because the Study Assistant CSS layout was adjusted afterward, perform the final
 - [x] Track D documentation contains no stale Study Plan `Planned` labels
 
 ---
+
+# Track A — Flashcard Backend
+
+## Database and Security
+
+- [x] `flashcard_decks` foundation migration created
+- [x] `flashcards` child table created
+- [x] Flashcard foundation migration applied to linked Supabase
+- [x] Atomic Flashcard persistence RPC migration created and applied
+- [x] Flashcard deck ownership references authenticated users
+- [x] File/subject scope constraints are database enforced
+- [x] Requested card count is database bounded
+- [x] Flashcard text constraints are database enforced
+- [x] Flashcard deck and card tables use RLS
+- [x] Browser clients cannot directly insert generated Flashcard data
+- [x] Students can read only cards belonging to owned decks
+- [x] Trusted Flashcard creation RPC is restricted to `service_role`
+- [x] Deck deletion cascades to child Flashcards
+
+## Flashcard Source Loading
+
+- [x] File scope loads one owned ready study file
+- [x] Subject scope loads owned ready study files within one subject
+- [x] Flashcard generation uses `study_file_chunks`
+- [x] Source chunks remain deterministically ordered
+- [x] Missing chunk collections fail safely
+- [x] Non-contiguous chunk sequences fail safely
+- [x] Source/file ownership mismatches fail safely
+- [x] Flashcard sources preserve safe file/chunk locator metadata
+
+## Flashcard AI Generation
+
+- [x] Flashcard requests support 5 to 50 cards
+- [x] Default Flashcard count is 20
+- [x] Generation is grounded only in supplied study material
+- [x] Study-material text is treated as untrusted prompt content
+- [x] Flashcard prompt requires JSON-only output
+- [x] Generated output must contain exactly the requested card count
+- [x] Duplicate Flashcards are rejected
+- [x] Malformed generated output receives one controlled repair attempt
+- [x] Provider identity is validated
+- [x] Standard Flashcard generation uses a 4,096-token output budget
+- [x] Larger Flashcard requests use an 8,192-token output budget
+- [x] Source material above the current 80,000-character single-pass limit fails safely
+- [x] Source material is never silently truncated
+
+## Flashcard Persistence
+
+- [x] Deck and child cards are created atomically
+- [x] Generated Flashcards can be saved
+- [x] Saved decks can be listed
+- [x] Saved decks can be filtered by subject
+- [x] One owned saved deck can be retrieved
+- [x] One owned saved deck can be deleted
+- [x] Persistence operations remain scoped to the authenticated student
+- [x] Public deck responses do not expose `user_id`
+
+## Flashcard API
+
+- [x] `POST /api/flashcards/generate` registered
+- [x] `GET /api/flashcards` registered
+- [x] `GET /api/flashcards/{deck_id}` registered
+- [x] `DELETE /api/flashcards/{deck_id}` registered
+- [x] Real FastAPI OpenAPI schema exposes Flashcard paths
+- [x] Flashcard API derives owner identity from authentication
+- [x] Flashcard API does not accept trusted `user_id`
+- [x] Invalid card counts are rejected by request validation
+- [x] Controlled Flashcard errors use safe public responses
+- [x] Successful deletion returns `204 No Content`
+- [x] Existing Reviewer API regression remains green
+
+## Flashcard Automated Validation
+
+- [x] Flashcard schema tests pass
+- [x] Flashcard migration tests pass
+- [x] Flashcard persistence RPC migration tests pass
+- [x] Flashcard repository tests pass
+- [x] Flashcard persistence-service tests pass
+- [x] Flashcard source-loader tests pass
+- [x] Flashcard prompt tests pass
+- [x] Flashcard generation tests pass
+- [x] Flashcard orchestration tests pass
+- [x] Flashcard API endpoint tests pass
+- [x] Flashcard router/OpenAPI registration tests pass
+- [x] Full backend regression passes after protected Flashcard API integration
+- [x] Flashcard Ruff validation passes
+- [x] `git diff --check` passes
+
+## Deferred Beyond Current Track A Backend
+
+- [ ] Student-facing Flashcard page
+- [ ] Authenticated frontend Flashcard API client
+- [ ] Flashcard generation form
+- [ ] Interactive card flip/study interface
+- [ ] Saved-deck management UI
+- [ ] Multi-pass generation for materials above the current single-pass source limit
+
+# Track B — Quizzes
+
+## Quiz Database and Security
+
+- [x] `quizzes` foundation migration created and applied
+- [x] `quiz_questions` private answer-key storage implemented
+- [x] Quiz persistence RPC implemented
+- [x] `quiz_attempts` implemented
+- [x] `quiz_attempt_answers` implemented
+- [x] Attempt-start RPC implemented
+- [x] Atomic answer-submission/grading RPC implemented
+- [x] Quiz ownership scoped to authenticated student
+- [x] Normal Quiz reads exclude `correct_answer`
+- [x] Normal Quiz reads exclude `accepted_answers`
+- [x] Normal Quiz reads exclude `explanation`
+- [x] Browser clients do not directly write grading state
+- [x] Completed review requires an owned completed attempt
+- [x] Quiz deletion removes related Quiz data through configured cascades
+
+## Quiz Source Loading and Generation
+
+- [x] Whole-subject Quiz source supported
+- [x] Single-study-material Quiz source supported
+- [x] File scope requires selected file to belong to selected subject
+- [x] Only ready source material is used
+- [x] Source ownership is authenticated
+- [x] Multiple-choice generation supported
+- [x] True/false generation supported
+- [x] Identification generation supported
+- [x] Mixed generation supported
+- [x] Easy difficulty supported
+- [x] Medium difficulty supported
+- [x] Hard difficulty supported
+- [x] Question count validated from 1 to 50
+- [x] Generated question positions are sequential
+- [x] Quiz output is strictly validated before persistence
+- [x] Generated Quiz and questions persist atomically
+
+## Quiz API
+
+- [x] `POST /api/quizzes/generate` registered
+- [x] `GET /api/quizzes` registered
+- [x] `GET /api/quizzes/{quiz_id}` registered
+- [x] `DELETE /api/quizzes/{quiz_id}` registered
+- [x] `POST /api/quizzes/{quiz_id}/attempts` registered
+- [x] `GET /api/quizzes/{quiz_id}/attempts` registered
+- [x] `GET /api/quiz-attempts/{attempt_id}` registered
+- [x] Answer-submission endpoint registered
+- [x] Final-result endpoint registered
+- [x] Completed-review endpoint registered
+- [x] All Quiz routes require authenticated student identity
+- [x] Quiz request cannot override trusted `user_id`
+- [x] Controlled Quiz errors return safe responses
+- [x] Successful Quiz deletion returns `204 No Content`
+
+## Quiz Attempts and Scoring
+
+- [x] Fresh Quiz attempt starts at question 1
+- [x] One expected question position is enforced at a time
+- [x] Duplicate/stale position submission is rejected
+- [x] Multiple-choice grading works
+- [x] True/false grading works
+- [x] Identification grading uses correct and accepted answers
+- [x] Submitted answer history persists safely
+- [x] Immediate correct/incorrect feedback is returned
+- [x] Correct answer is revealed after submission
+- [x] Explanation is revealed after submission
+- [x] Attempt advances after each valid answer
+- [x] Final attempt status becomes `completed`
+- [x] Final correct count is persisted
+- [x] Final score percentage is calculated
+- [x] Strong-topic threshold is 70%
+- [x] Topics below 70% are classified as weak
+- [x] Result is unavailable before attempt completion
+- [x] Full review is unavailable before attempt completion
+
+## Quiz Frontend
+
+- [x] `/quizzes` protected route exists
+- [x] Quizzes navigation entry exists
+- [x] Create Quiz tab exists
+- [x] My Quizzes tab exists
+- [x] Subject selection works
+- [x] File selection works
+- [x] File options filter by subject
+- [x] Quiz type selection works
+- [x] Difficulty selection works
+- [x] Question-count selection works
+- [x] Quiz-generation loading state works
+- [x] Quiz-generation safe error state works
+- [x] Generated Quiz can be started
+- [x] Only one question is displayed at a time
+- [x] Multiple-choice answer control works
+- [x] True/false answer control works
+- [x] Identification text input works
+- [x] Submitted answer becomes locked after grading
+- [x] Immediate grading feedback renders
+- [x] Next Question flow works
+- [x] Final Results flow works
+- [x] Strong/weak topics render
+- [x] Retake starts a fresh attempt
+
+## Saved Quiz History and Review
+
+- [x] Saved Quiz list loads
+- [x] Empty history state implemented
+- [x] History refresh implemented
+- [x] Attempt count displays
+- [x] Latest completed score displays
+- [x] Incomplete latest attempt displays safely
+- [x] Saved Quiz can be reopened for a new attempt
+- [x] Review latest finds a completed attempt
+- [x] Completed review displays submitted answers
+- [x] Completed review displays correct/incorrect status
+- [x] Incorrect review displays correct answer
+- [x] Review displays explanations
+- [x] Delete requires confirmation
+- [x] Cancel preserves the Quiz
+- [x] Confirmed delete removes the Quiz
+
+## Track B Automated Validation
+
+- [x] Targeted backend history/review regression: 64 passed
+- [x] Quiz frontend regression: 21 passed across 5 test files
+- [x] Quiz backend Ruff validation passes
+- [x] Frontend TypeScript validation passes
+- [x] Frontend production build passes
+- [x] Frontend ESLint has 0 Quiz errors
+- [x] Existing unrelated subject-page ESLint warning remains documented
+- [x] Quiz OpenAPI routes verified
+
+## Track B Live Integration
+
+- [x] Quiz page opens from protected navigation
+- [x] Quiz generation works with processed study material
+- [x] Quiz-taking flow completes in the browser
+- [x] Immediate feedback works
+- [x] Final score/result works
+- [x] Saved Quiz history works
+- [x] Completed-attempt review works
+- [x] Retake works
+- [x] Delete confirmation and deletion work
+
+## Final Track B Regression Before Commit
+
+Run after documentation edits:
+
+- [ ] Full backend pytest suite passes
+- [ ] Full backend Ruff validation passes
+- [ ] Frontend full Vitest suite passes
+- [ ] Frontend TypeScript validation passes
+- [ ] Frontend ESLint has 0 errors
+- [ ] Frontend production build passes
+- [ ] `git diff --check` passes
+- [ ] Track B staging excludes other members' synchronization-only migrations
+
 # Final Documentation Checks
 
 After replacing the documentation files:
@@ -665,6 +918,17 @@ After replacing the documentation files:
 - [x] `api-contracts.md` documents Study Plan CRUD, generation, and regeneration
 - [x] `PROJECT_FILE_MAP.md` includes Track D backend, frontend, tests, and migrations
 - [x] `testing-checklist.md` includes Track D validation
+- [x] `ARCHITECTURE.md` reflects implemented Track A Flashcard backend
+- [x] `PROJECT_FILE_MAP.md` includes Track A Flashcard backend files
+- [x] `api-contracts.md` includes protected Flashcard endpoints
+- [x] `database.md` includes `flashcard_decks`, `flashcards`, and the trusted persistence RPC
+- [x] `testing-checklist.md` includes Track A Flashcard backend validation
+- [x] `ARCHITECTURE.md` reflects implemented Track B Quizzes
+- [x] `api-contracts.md` includes Quiz and attempt endpoints
+- [x] `database.md` includes Quiz tables and trusted RPCs
+- [x] `PROJECT_FILE_MAP.md` includes Track B backend/frontend/tests/migrations
+- [x] `testing-checklist.md` includes Track B validation
+- [x] `AI_QUIZ_GENERATION.md` documents Quiz generation and security boundaries
 ---
 
 # Final Database Checks
