@@ -7,11 +7,11 @@ from __future__ import annotations
 from uuid import uuid4
 
 import pytest
+
 from app.ai.flashcard_prompt import (
     FlashcardPromptBuilder,
     FlashcardPromptError,
 )
-
 from app.schemas.flashcard import (
     FlashcardGenerateRequest,
     FlashcardLocatorType,

@@ -8,6 +8,13 @@ from __future__ import annotations
 from datetime import UTC, datetime
 from uuid import UUID
 
+from fastapi import FastAPI
+from fastapi.testclient import TestClient
+
+from app.api.authenticated_user_dependency import (
+    AuthenticatedUser,
+    require_authenticated_user,
+)
 from app.api.flashcard_dependency import (
     get_flashcard_service,
 )
@@ -16,13 +23,6 @@ from app.api.flashcard_orchestration_dependency import (
 )
 from app.api.routes.flashcards import (
     router as flashcard_router,
-)
-from fastapi import FastAPI
-from fastapi.testclient import TestClient
-
-from app.api.authenticated_user_dependency import (
-    AuthenticatedUser,
-    require_authenticated_user,
 )
 from app.database.supabase_client import (
     get_supabase_client,

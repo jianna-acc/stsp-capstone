@@ -40,8 +40,8 @@ Update it whenever files, APIs, migrations, owners, or major system connections 
 | Track A | Flashcard backend, large-material generation, frontend study UI, and saved-deck management | Integrated |
 | Track B | Quiz generation, attempts, history, review, and deletion | Integrated |
 | Phase 7A–7E | Academic Tasks, output confidence, deterministic priority, frontend, live integration | Integrated |
-| Later | Study planning, scheduling, analytics, deployment | Planned |
-
+| Track D | Study plans, scheduling, calendar workspace, Academic Task integration, and regeneration | Integrated |
+| Later | Analytics and deployment | Planned |
 ---
 
 # Team Ownership
@@ -390,6 +390,69 @@ Update it whenever files, APIs, migrations, owners, or major system connections 
 | `/frontend/features/academic-tasks/components/AcademicTasksWorkspace.mutations.test.tsx` | Ready | Edit, status, delete, priority refresh |
 
 ---
+# Track D — Study Plans and Scheduling
+
+## Database and Migrations
+
+| Path | Status | Owner | Purpose | Connections |
+|---|---|---|---|---|
+| `/supabase/migrations/20260810002500_create_study_plans_foundation.sql` | Ready | Database | Creates owned study plans and study sessions with validation and RLS | Study Plan backend |
+| `/supabase/migrations/20260811002500_add_study_plan_regeneration_rpc.sql` | Ready | Database | Adds transactional generated-session replacement | Regeneration backend |
+
+The Track D migration files are committed but shared database application is coordinated separately.
+
+## Study Plan Backend
+
+| Path | Status | Owner | Purpose | Connections |
+|---|---|---|---|---|
+| `/backend/app/schemas/study_plan.py` | Integrated | Backend | Study-plan and study-session contracts | Repository, service, API |
+| `/backend/app/schemas/study_scheduler.py` | Integrated | Backend | Deterministic scheduler input/output and blocked-window contracts | Scheduler |
+| `/backend/app/schemas/study_plan_generation_api.py` | Integrated | Backend | Generation and regeneration API contracts | Generation routes |
+| `/backend/app/schemas/generated_study_plan_regeneration.py` | Integrated | Backend | Transactional regeneration persistence contract | Regeneration service |
+| `/backend/app/repositories/study_plan_repository.py` | Integrated | Backend | Owned plan/session persistence and manual-session loading | Supabase |
+| `/backend/app/repositories/generated_study_plan_regeneration_repository.py` | Integrated | Backend | Calls trusted generated-session replacement RPC | Supabase RPC |
+| `/backend/app/services/study_plan_service.py` | Integrated | Backend | Study-plan and manual-session orchestration | Repository, API |
+| `/backend/app/services/study_scheduler.py` | Integrated | Backend | Pure deterministic scheduling engine | Generation |
+| `/backend/app/services/study_schedule_generation_service.py` | Integrated | Backend | Loads scheduling context and produces schedules | Scheduler |
+| `/backend/app/services/generated_study_plan_regeneration_service.py` | Integrated | Backend | Validates and persists regenerated schedules | Regeneration repository |
+| `/backend/app/services/study_plan_regeneration_orchestrator.py` | Integrated | Backend | Coordinates latest tasks, blocked manual sessions, scheduling, and replacement | Generation and persistence |
+| `/backend/app/api/study_plan_dependency.py` | Integrated | Backend | Study Plan dependency assembly | FastAPI |
+| `/backend/app/api/study_plan_generation_dependency.py` | Integrated | Backend | Generation/regeneration dependency assembly | FastAPI |
+| `/backend/app/api/routes/study_plans.py` | Integrated | Backend | Protected plan/session CRUD routes | Study Plan services |
+| `/backend/app/api/routes/study_plan_generation.py` | Integrated | Backend | Protected generation and regeneration routes | Generation services |
+| `/backend/app/api/router.py` | Integrated | Backend | Registers Study Plan routes in the shared API | FastAPI application |
+
+## Study Plan Frontend
+
+| Path | Status | Owner | Purpose | Connections |
+|---|---|---|---|---|
+| `/frontend/app/(protected)/study-plan/page.tsx` | Integrated | Frontend | Protected Study Plan route | Study Plans workspace |
+| `/frontend/features/study-plans/types.ts` | Integrated | Frontend | Study Plan, session, scheduler, generation, and regeneration contracts | API/UI |
+| `/frontend/features/study-plans/api.ts` | Integrated | Frontend | Authenticated Study Plan API client | FastAPI |
+| `/frontend/features/study-plans/academic-task-adapter.ts` | Integrated | Frontend | Converts prioritized Academic Tasks into scheduler tasks | Track C Academic Tasks |
+| `/frontend/features/study-plans/components/StudyPlansWorkspace.tsx` | Integrated | Frontend | Saved plans, calendar, manual controls, generation, and regeneration | Study Plan APIs |
+| `/frontend/features/study-plans/components/GenerateStudyPlanModal.tsx` | Integrated | Frontend | Generated-plan creation workflow | Generation API |
+| `/frontend/features/study-plans/components/RegenerateStudyPlanModal.tsx` | Integrated | Frontend | Generated-plan refresh and unscheduled-work feedback | Regeneration API |
+| `/frontend/features/navigation/components/ProtectedAppShell.tsx` | Integrated | Frontend | Adds Study Plan to protected navigation | `/study-plan` |
+
+## Study Plan Tests
+
+| Path | Status | Purpose |
+|---|---|---|
+| `/backend/tests/test_study_plan_api_endpoint.py` | Ready | Study Plan CRUD API behavior |
+| `/backend/tests/test_study_plan_generation_api_endpoint.py` | Ready | Generation and regeneration API behavior |
+| `/backend/tests/test_study_scheduler_blocked_time.py` | Ready | Manual blocked windows and future-only scheduling |
+| `/backend/tests/test_study_plan_regeneration_orchestrator.py` | Ready | Generated-plan regeneration orchestration |
+| `/backend/tests/test_generated_study_plan_regeneration_repository.py` | Ready | Trusted replacement RPC repository behavior |
+| `/backend/tests/test_generated_study_plan_regeneration_service.py` | Ready | Regeneration persistence validation |
+| `/backend/tests/test_study_plan_regeneration_migration.py` | Ready | Regeneration migration contract |
+| `/frontend/features/study-plans/api.test.ts` | Ready | Authenticated Study Plan API client |
+| `/frontend/features/study-plans/academic-task-adapter.test.ts` | Ready | Academic Task scheduling adapter |
+| `/frontend/features/study-plans/components/GenerateStudyPlanModal.test.tsx` | Ready | Study-plan generation UI |
+| `/frontend/features/study-plans/components/RegenerateStudyPlanModal.test.tsx` | Ready | Regeneration UI |
+| `/frontend/features/study-plans/components/StudyPlansWorkspace.test.tsx` | Ready | Calendar, plan switching, generation, and regeneration integration |
+
+---
 
 # Migrations
 
@@ -465,6 +528,8 @@ public.quiz_attempts
 public.quiz_attempt_answers
 
 public.academic_tasks
+public.study_plans
+public.study_sessions
 
 storage bucket: study-materials
 ```
