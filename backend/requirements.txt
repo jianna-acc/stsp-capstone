@@ -4,6 +4,7 @@
 annotated-doc==0.0.4
 annotated-types==0.7.0
 anyio==4.14.2
+boto3>=1.43,<2
 certifi==2026.7.22
 cffi==2.1.0
 charset-normalizer==3.4.9

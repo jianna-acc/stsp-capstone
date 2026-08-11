@@ -2,8 +2,10 @@
 # Purpose: Exposes concrete AI provider implementations used by
 # backend services.
 
+from app.ai.providers.bedrock import BedrockGenerationProvider
 from app.ai.providers.gemini import GeminiProvider
 
 __all__ = [
+    "BedrockGenerationProvider",
     "GeminiProvider",
 ]
