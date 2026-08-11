@@ -25,22 +25,22 @@ Update it whenever files, APIs, migrations, owners, or major system connections 
 
 # Phase Status
 
-| Phase       | Scope                                                    | Status     |
-| ----------- | -------------------------------------------------------- | ---------- |
-| Phase 1     | Foundation and authentication                            | Integrated |
-| Phase 2     | Learning-profile onboarding                              | Integrated |
-| Phase 3     | Subjects and study-material processing                   | Integrated |
-| Phase 4     | AI provider, preparation, embeddings, vectors, retrieval | Integrated |
-| Phase 5A–5F | RAG and Study Assistant                                  | Integrated |
-| Phase 5G    | Saved conversations, memory, summaries, history UI       | Integrated |
-| Phase 6A    | Reviewer backend foundation                              | Integrated |
-| Phase 6B    | Reviewer generation frontend and result display          | Integrated |
-| Phase 6C    | Saved reviewer management and regeneration               | Integrated |
-| Phase 6D    | Large-material multi-pass reviewer generation            | Integrated |
+| Phase | Scope | Status |
+|---|---|---|
+| Phase 1 | Foundation and authentication | Integrated |
+| Phase 2 | Learning-profile onboarding | Integrated |
+| Phase 3 | Subjects and study-material processing | Integrated |
+| Phase 4 | AI provider, preparation, embeddings, vectors, retrieval | Integrated |
+| Phase 5A–5F | RAG and Study Assistant | Integrated |
+| Phase 5G | Saved conversations, memory, summaries, history UI | Integrated |
+| Phase 6A | Reviewer backend foundation | Integrated |
+| Phase 6B | Reviewer generation frontend and result display | Integrated |
+| Phase 6C | Saved reviewer management and regeneration | Integrated |
+| Phase 6D | Large-material multi-pass reviewer generation | Integrated |
 | Track A | Flashcard backend, large-material generation, frontend study UI, and saved-deck management | Integrated |
 | Track B | Quiz generation, attempts, history, review, and deletion | Integrated |
-| Later | Planning, analytics | Planned |
-
+| Phase 7A–7E | Academic Tasks, output confidence, deterministic priority, frontend, live integration | Integrated |
+| Later | Study planning, scheduling, analytics, deployment | Planned |
 
 ---
 
@@ -89,7 +89,8 @@ Update it whenever files, APIs, migrations, owners, or major system connections 
 | `/docs/AI_QUERY_EMBEDDING.md` | Integrated | Member 3 | Query embedding | Retrieval |
 | `/docs/AI_RAG_API_ENDPOINT.md` | Integrated | Member 3 | RAG endpoint | FastAPI, frontend |
 | `/docs/AI_REVIEWER_GENERATION.md` | Integrated | Member 3 | Reviewer generation and large-material batching design | Gemini, reviewer services |
-| `/docs/AI_QUIZ_GENERATION.md` | Integrated | Member 3 | Quiz generation, private answer-key, attempts, scoring, history, and review design | Gemini, Quiz services |
+| `/docs/AI_QUIZ_GENERATION.md` | Integrated | Member 3 | Quiz generation, answer-key security, attempts, scoring, history, and review | Gemini, Quiz services |
+| `/docs/ACADEMIC_TASK_PRIORITY.md` | Integrated | Backend/Documentation | Academic Task deterministic priority design, weights, fallbacks, and API behavior | Academic Task backend and frontend |
 
 ---
 
@@ -117,9 +118,9 @@ Update it whenever files, APIs, migrations, owners, or major system connections 
 | `/frontend/lib/supabase/config.ts` | Integrated | Member 1 | Safe Supabase config | Browser/server clients |
 | `/frontend/lib/supabase/client.ts` | Integrated | Member 1 | Browser client | Client Components |
 | `/frontend/lib/supabase/server.ts` | Integrated | Member 1 | Server client | Server Components |
-| `/frontend/lib/supabase/proxy.ts` | Integrated | Member 1 | Session refresh | Proxy |
+| `/frontend/lib/supabase/proxy.ts` | Integrated | Member 1 | Session refresh and protected-route handling | Protected routes |
 | `/frontend/proxy.ts` | Integrated | Member 1 | Root session proxy | Supabase Auth |
-| `/frontend/types/database.ts` | Generated | Supabase CLI | Schema types | Frontend Supabase clients |
+| `/frontend/types/database.ts` | Generated | Supabase CLI | Generated schema types | Frontend |
 
 ---
 
@@ -142,13 +143,18 @@ Update it whenever files, APIs, migrations, owners, or major system connections 
 
 | Path | Status | Owner | Purpose | Connections |
 |---|---|---|---|---|
-| `/frontend/features/learning-profile/types.ts` | Integrated | Member 2 | Profile types | Onboarding |
-| `/frontend/features/learning-profile/validation.ts` | Integrated | Member 2 | Input validation | Mutations |
-| `/frontend/features/learning-profile/server/queries.ts` | Integrated | Member 2 | Load profile | Supabase |
-| `/frontend/features/learning-profile/server/mutations.ts` | Integrated | Member 2 | Save profile | Supabase RPC |
-| `/frontend/features/learning-profile/server/guards.ts` | Integrated | Member 2 | Onboarding guards | Protected routes |
-| `/frontend/app/(protected)/onboarding` | Integrated | Member 2 | Onboarding flow | Learning-profile feature |
-| `/frontend/app/(protected)/profile/page.tsx` | Integrated | Member 2 | Profile display | Learning profile |
+| `/frontend/features/learning-profile/types.ts` | Integrated | Frontend | Learning-profile and output-confidence types | Onboarding |
+| `/frontend/features/learning-profile/validation.ts` | Integrated | Frontend | Learning-profile validation | Mutations |
+| `/frontend/features/learning-profile/constants.ts` | Integrated | Frontend | Learning-profile and output-confidence options | Onboarding |
+| `/frontend/features/learning-profile/progress.ts` | Integrated | Frontend | Onboarding progress | Protected onboarding |
+| `/frontend/features/learning-profile/routing.ts` | Integrated | Frontend | Onboarding routing | Protected pages |
+| `/frontend/features/learning-profile/server/queries.ts` | Integrated | Frontend | Load profile and output confidence | Supabase |
+| `/frontend/features/learning-profile/server/mutations.ts` | Integrated | Frontend | Save profile and output confidence | Supabase/RPC |
+| `/frontend/features/learning-profile/actions/save-subjects.ts` | Integrated | Frontend | Save onboarding subject/profile state | Learning profile |
+| `/frontend/features/learning-profile/components/SubjectsForm.tsx` | Integrated | Frontend | Subject and output-confidence controls | Onboarding |
+| `/frontend/app/(protected)/onboarding/subjects/page.tsx` | Integrated | Frontend | Subject/confidence onboarding | Learning profile |
+| `/frontend/app/(protected)/onboarding/review/page.tsx` | Integrated | Frontend | Onboarding review | Learning profile |
+| `/frontend/app/(protected)/profile/page.tsx` | Integrated | Frontend | Profile display | Learning profile |
 
 ---
 
@@ -156,18 +162,18 @@ Update it whenever files, APIs, migrations, owners, or major system connections 
 
 | Path | Status | Owner | Purpose | Connections |
 |---|---|---|---|---|
-| `/frontend/features/subjects/types.ts` | Integrated | Members 1,2 | Subject types | Subject feature |
-| `/frontend/features/subjects/queries.ts` | Integrated | Members 1,2 | Load subjects | Supabase |
-| `/frontend/features/subjects/actions.ts` | Integrated | Members 1,2 | Subject CRUD | Supabase |
-| `/frontend/app/(protected)/subjects/page.tsx` | Integrated | Members 1,2 | Subject management | Subject feature |
-| `/frontend/app/(protected)/subjects/[subjectId]/page.tsx` | Integrated | Members 1,2 | Subject workspace | Files |
-| `/frontend/features/files/types.ts` | Integrated | Members 1,3 | File types | File feature |
-| `/frontend/features/files/constants.ts` | Integrated | Members 1,3 | File limits/statuses | Upload UI |
-| `/frontend/features/files/queries.ts` | Integrated | Members 1,3 | Load files | Supabase |
-| `/frontend/features/files/actions.ts` | Integrated | Members 1,3 | File operations | Database, Storage |
-| `/frontend/features/files/upload.ts` | Integrated | Member 3 | TUS upload | Supabase Storage |
-| `/frontend/features/files/components/FileUploadManager.tsx` | Integrated | Members 2,3 | File management UI | File actions |
-| `/frontend/features/files/components/FilePreviewModal.tsx` | Integrated | Member 2 | File preview | Signed URLs |
+| `/frontend/features/subjects/types.ts` | Integrated | Frontend | Subject types | Subject feature |
+| `/frontend/features/subjects/queries.ts` | Integrated | Frontend | Load subjects | Supabase |
+| `/frontend/features/subjects/actions.ts` | Integrated | Frontend | Subject CRUD | Supabase |
+| `/frontend/app/(protected)/subjects/page.tsx` | Integrated | Frontend | Subject management | Subject feature |
+| `/frontend/app/(protected)/subjects/[subjectId]/page.tsx` | Integrated | Frontend | Subject workspace | Files |
+| `/frontend/features/files/types.ts` | Integrated | Frontend | File types | File feature |
+| `/frontend/features/files/constants.ts` | Integrated | Frontend | File limits/statuses | Upload UI |
+| `/frontend/features/files/queries.ts` | Integrated | Frontend | Load files | Supabase |
+| `/frontend/features/files/actions.ts` | Integrated | Frontend | File operations | Database, Storage |
+| `/frontend/features/files/upload.ts` | Integrated | Frontend | TUS upload | Supabase Storage |
+| `/frontend/features/files/components/FileUploadManager.tsx` | Integrated | Frontend | File management UI | File actions |
+| `/frontend/features/files/components/FilePreviewModal.tsx` | Integrated | Frontend | File preview | Signed URLs |
 
 ---
 
@@ -176,30 +182,14 @@ Update it whenever files, APIs, migrations, owners, or major system connections 
 | Path | Status | Owner | Purpose | Connections |
 |---|---|---|---|---|
 | `/frontend/app/(protected)/study-assistant/page.tsx` | Integrated | Frontend | Protected Study Assistant page | Workspace |
-| `/frontend/features/study-assistant/api.ts` | Integrated | Frontend | Authenticated RAG API client | `/api/rag/answer` |
-| `/frontend/features/study-assistant/conversations-api.ts` | Integrated | Frontend | Saved conversation API client | `/api/study-conversations` |
-| `/frontend/features/study-assistant/server/options.ts` | Integrated | Frontend | Load subjects/ready files | Supabase |
-| `/frontend/features/study-assistant/components/StudyAssistantPanel.tsx` | Integrated | Frontend | Question form, answer UI, transcript | RAG client |
-| `/frontend/features/study-assistant/components/StudyAssistantPanel.module.css` | Integrated | Frontend | Panel/transcript styling | Study Assistant panel |
-| `/frontend/features/study-assistant/components/ConversationHistoryPanel.tsx` | Integrated | Frontend | Saved history UI | Workspace |
-| `/frontend/features/study-assistant/components/ConversationHistoryPanel.module.css` | Integrated | Frontend | History styling | History panel |
-| `/frontend/features/study-assistant/components/StudyAssistantWorkspace.tsx` | Integrated | Frontend | History/detail orchestration | Both API clients |
-| `/frontend/features/study-assistant/components/StudyAssistantWorkspace.module.css` | Integrated | Frontend | Two-column responsive layout | Workspace |
-| `/frontend/types/rag.ts` | Integrated | Frontend | RAG contracts | API/client/UI |
+| `/frontend/features/study-assistant/api.ts` | Integrated | Frontend | Authenticated RAG client | `/api/rag/answer` |
+| `/frontend/features/study-assistant/conversations-api.ts` | Integrated | Frontend | Conversation API client | `/api/study-conversations` |
+| `/frontend/features/study-assistant/server/options.ts` | Integrated | Frontend | Subject/ready-file options | Supabase |
+| `/frontend/features/study-assistant/components/StudyAssistantPanel.tsx` | Integrated | Frontend | Question/answer UI | RAG |
+| `/frontend/features/study-assistant/components/ConversationHistoryPanel.tsx` | Integrated | Frontend | Saved conversation UI | Conversation API |
+| `/frontend/features/study-assistant/components/StudyAssistantWorkspace.tsx` | Integrated | Frontend | Assistant/history orchestration | API clients |
+| `/frontend/types/rag.ts` | Integrated | Frontend | RAG contracts | API/UI |
 | `/frontend/types/study-conversation.ts` | Integrated | Frontend | Conversation contracts | Conversation API |
-
----
-
-# Study Assistant Frontend Tests
-
-| Path | Status | Purpose |
-|---|---|---|
-| `/frontend/features/study-assistant/api.test.ts` | Ready | RAG API tests |
-| `/frontend/features/study-assistant/conversations-api.test.ts` | Ready | Conversation API tests |
-| `/frontend/features/study-assistant/server/options.test.ts` | Ready | Filter loader tests |
-| `/frontend/features/study-assistant/components/StudyAssistantPanel.test.tsx` | Ready | Panel and continuation tests |
-| `/frontend/features/study-assistant/components/ConversationHistoryPanel.test.tsx` | Ready | History-state tests |
-| `/frontend/features/study-assistant/components/StudyAssistantWorkspace.test.tsx` | Ready | Switching/refresh tests |
 
 ---
 
@@ -207,12 +197,12 @@ Update it whenever files, APIs, migrations, owners, or major system connections 
 
 | Path | Status | Owner | Purpose | Connections |
 |---|---|---|---|---|
-| `/backend/app/main.py` | Integrated | Member 3 | FastAPI app | Router/config |
-| `/backend/app/api/router.py` | Integrated | Member 3 | Main API router | Routes |
-| `/backend/app/api/health.py` | Integrated | Member 3 | Health endpoint | FastAPI |
-| `/backend/app/core/config.py` | Integrated | Member 3 | Typed settings | Backend |
-| `/backend/app/core/security.py` | Integrated | Member 3 | Processor security | Internal endpoints |
-| `/backend/app/services/supabase_admin.py` | Integrated | Member 3 | Trusted Supabase operations | Database/Storage |
+| `/backend/app/main.py` | Integrated | Backend | FastAPI application | Router/config |
+| `/backend/app/api/router.py` | Integrated | Backend | Registers RAG, Reviewer, Flashcard, Quiz, Quiz Attempt, and Academic Task routes | FastAPI |
+| `/backend/app/api/health.py` | Integrated | Backend | Health endpoint | FastAPI |
+| `/backend/app/core/config.py` | Integrated | Backend | Typed settings | Backend |
+| `/backend/app/core/security.py` | Integrated | Backend | Processor security | Internal routes |
+| `/backend/app/services/supabase_admin.py` | Integrated | Backend | Trusted Supabase operations | Database/Storage |
 
 ---
 
@@ -220,142 +210,190 @@ Update it whenever files, APIs, migrations, owners, or major system connections 
 
 | Path | Status | Owner | Purpose | Connections |
 |---|---|---|---|---|
-| `/backend/app/services/file_extraction.py` | Integrated | Member 3 | Document extraction | Processor |
-| `/backend/app/services/file_processor.py` | Integrated | Member 3 | Processing orchestration | Extraction, AI, Supabase |
-| `/backend/app/workers/file_processing_worker.py` | Integrated | Member 3 | Background processing | Queue, processor |
-| `/backend/app/api/routes/file_processing.py` | Integrated | Member 3 | Internal processing API | Processor |
+| `/backend/app/services/file_extraction.py` | Integrated | Backend | Document extraction | Processor |
+| `/backend/app/services/file_processor.py` | Integrated | Backend | Processing orchestration | Extraction, AI, Supabase |
+| `/backend/app/workers/file_processing_worker.py` | Integrated | Backend | Background processing | Queue, processor |
+| `/backend/app/api/routes/file_processing.py` | Integrated | Backend | Internal processing API | Processor |
 
 ---
 
-# AI Provider and Preparation
+# AI Provider, Retrieval, and RAG
 
 | Path | Status | Owner | Purpose | Connections |
 |---|---|---|---|---|
-| `/backend/app/ai/contracts.py` | Integrated | Member 3 | AI provider contracts | AI services |
-| `/backend/app/ai/errors.py` | Integrated | Member 3 | AI exceptions | Provider/services |
-| `/backend/app/ai/providers/gemini.py` | Integrated | Member 3 | Gemini implementation | Gemini API |
-| `/backend/app/ai/chunking.py` | Integrated | Member 3 | Chunk contracts | Chunker |
-| `/backend/app/ai/text_chunker.py` | Integrated | Member 3 | Deterministic chunking | Preparer |
-| `/backend/app/ai/embedding_batcher.py` | Integrated | Member 3 | Embedding batches | Preparer |
-| `/backend/app/ai/preparation.py` | Integrated | Member 3 | Preparation result | File processor |
-| `/backend/app/services/study_material_preparer.py` | Integrated | Member 3 | AI preparation | Chunking |
-| `/backend/app/services/study_material_embedder.py` | Integrated | Member 3 | Embedding execution | Gemini |
-| `/backend/app/services/study_material_vector_indexer.py` | Integrated | Member 3 | Vector persistence orchestration | Supabase |
-| `/backend/app/ai/vector_persistence.py` | Integrated | Member 3 | Vector payload validation | Vector indexer |
+| `/backend/app/ai/contracts.py` | Integrated | Backend | AI provider contracts | AI services |
+| `/backend/app/ai/errors.py` | Integrated | Backend | AI errors | Providers/services |
+| `/backend/app/ai/providers/gemini.py` | Integrated | Backend | Gemini provider | Gemini API |
+| `/backend/app/ai/text_chunker.py` | Integrated | Backend | Deterministic text chunking | Preparation |
+| `/backend/app/services/study_material_preparer.py` | Integrated | Backend | AI preparation | Chunking |
+| `/backend/app/services/study_material_embedder.py` | Integrated | Backend | Embedding execution | Gemini |
+| `/backend/app/services/study_material_vector_indexer.py` | Integrated | Backend | Vector persistence | Supabase |
+| `/backend/app/services/query_embedding.py` | Integrated | Backend | Query embeddings | Retrieval |
+| `/backend/app/services/retrieval_orchestration.py` | Integrated | Backend | Query-to-results flow | Vector search |
+| `/backend/app/services/rag_orchestration.py` | Integrated | Backend | Grounded answer flow | Retrieval/Gemini |
+| `/backend/app/api/routes/rag.py` | Integrated | Backend | `POST /api/rag/answer` | RAG |
 
 ---
 
-# Retrieval and RAG
+# Reviewer Backend
 
 | Path | Status | Owner | Purpose | Connections |
 |---|---|---|---|---|
-| `/backend/app/services/query_embedding.py` | Integrated | Member 3 | Query vectors | Gemini |
-| `/backend/app/ai/retrieval_contracts.py` | Integrated | Member 3 | Retrieval contracts | Retrieval |
-| `/backend/app/ai/retrieval_persistence.py` | Integrated | Member 3 | Vector RPC access | Supabase |
-| `/backend/app/services/retrieval_orchestration.py` | Integrated | Member 3 | Query-to-results flow | Query embedding |
-| `/backend/app/services/rag_orchestration.py` | Integrated | Member 3 | Retrieval + answer flow | Grounded generation |
-| `/backend/app/api/routes/rag.py` | Integrated | Member 3 | `POST /api/rag/answer` | RAG service |
-| `/backend/app/schemas/rag.py` | Integrated | Member 3 | Public RAG contracts | API/frontend |
+| `/backend/app/ai/reviewer_prompt.py` | Integrated | Backend | Reviewer prompts | Gemini |
+| `/backend/app/schemas/reviewer.py` | Integrated | Backend | Reviewer contracts | Routes/services |
+| `/backend/app/repositories/reviewer_repository.py` | Integrated | Backend | Reviewer persistence | Supabase |
+| `/backend/app/services/reviewer_source_loader.py` | Integrated | Backend | Ordered source loading | Study files/chunks |
+| `/backend/app/services/reviewer_batching.py` | Integrated | Backend | Large-material batching | Reviewer generation |
+| `/backend/app/services/reviewer_generation.py` | Integrated | Backend | Structured reviewer generation | Gemini |
+| `/backend/app/services/reviewer_service.py` | Integrated | Backend | Reviewer persistence operations | Repository |
+| `/backend/app/services/reviewer_orchestration.py` | Integrated | Backend | Reviewer generation orchestration | Reviewer services |
+| `/backend/app/api/routes/reviewers.py` | Integrated | Backend | Protected Reviewer API | Reviewer services |
 
 ---
 
-# Phase 5G Backend
+# Track A — Flashcards
+
+## Backend
 
 | Path | Status | Owner | Purpose | Connections |
 |---|---|---|---|---|
-| `/backend/app/repositories/study_conversation_repository.py` | Integrated | Member 3 | Conversation persistence | Supabase |
-| `/backend/app/schemas/study_conversation.py` | Integrated | Member 3 | Conversation/message contracts | Routes/services |
-| `/backend/app/services/study_conversation_errors.py` | Integrated | Member 3 | Controlled errors | Conversation services |
-| `/backend/app/services/study_conversation_service.py` | Integrated | Member 3 | Conversation CRUD | Repository |
-| `/backend/app/services/study_conversation_memory.py` | Integrated | Member 3 | Bounded memory | Conversation RAG |
-| `/backend/app/services/study_conversation_summary.py` | Integrated | Member 3 | Deterministic summaries | Conversation RAG |
-| `/backend/app/services/study_conversation_rag.py` | Integrated | Member 3 | Persisted RAG flow | RAG/repository |
-| `/backend/app/api/routes/study_conversations.py` | Integrated | Member 3 | Conversation endpoints | Conversation service |
-| `/backend/app/api/study_conversation_dependency.py` | Integrated | Member 3 | CRUD dependencies | Repository |
-| `/backend/app/api/study_conversation_rag_dependency.py` | Integrated | Member 3 | Conversation RAG dependency | RAG services |
+| `/backend/app/ai/flashcard_prompt.py` | Integrated | Backend | Grounded Flashcard prompts | Gemini |
+| `/backend/app/schemas/flashcard.py` | Integrated | Backend | Flashcard generation/deck contracts | API/services |
+| `/backend/app/schemas/flashcard_summary.py` | Integrated | Backend | Saved deck summary contracts | API |
+| `/backend/app/repositories/flashcard_repository.py` | Integrated | Backend | Atomic creation and owner-scoped CRUD | Supabase/RPC |
+| `/backend/app/services/flashcard_source_loader.py` | Integrated | Backend | Complete owned source loading | Study files/chunks |
+| `/backend/app/services/flashcard_batching.py` | Integrated | Backend | Deterministic source batching | Generation |
+| `/backend/app/services/flashcard_generation.py` | Integrated | Backend | Structured Flashcard generation | Gemini |
+| `/backend/app/services/flashcard_service.py` | Integrated | Backend | Saved deck operations | Repository |
+| `/backend/app/services/flashcard_orchestration.py` | Integrated | Backend | Source, generation, persistence orchestration | Flashcard services |
+| `/backend/app/api/routes/flashcards.py` | Integrated | Backend | Protected Flashcard API | FastAPI |
+
+## Frontend
+
+| Path | Status | Owner | Purpose | Connections |
+|---|---|---|---|---|
+| `/frontend/app/(protected)/flashcards/page.tsx` | Integrated | Frontend | Protected Flashcard page | Workspace |
+| `/frontend/features/flashcards/types.ts` | Integrated | Frontend | Flashcard contracts | API/UI |
+| `/frontend/features/flashcards/api.ts` | Integrated | Frontend | Generate/list/get/delete client | FastAPI |
+| `/frontend/features/flashcards/server/options.ts` | Integrated | Frontend | Subject/ready-file options | Supabase |
+| `/frontend/features/flashcards/components/FlashcardGenerationForm.tsx` | Integrated | Frontend | Generation controls | API |
+| `/frontend/features/flashcards/components/FlashcardStudyViewer.tsx` | Integrated | Frontend | Interactive viewer | Deck |
+| `/frontend/features/flashcards/components/SavedFlashcardList.tsx` | Integrated | Frontend | Saved deck list | Workspace |
+| `/frontend/features/flashcards/components/FlashcardWorkspace.tsx` | Integrated | Frontend | Flashcard orchestration | API/components |
 
 ---
 
-# Phase 6A Reviewer Backend
+# Track B — Quizzes
+
+## Backend
 
 | Path | Status | Owner | Purpose | Connections |
 |---|---|---|---|---|
-| `/backend/app/ai/reviewer_prompt.py` | Integrated | Member 3 | Builds complete, batch, and synthesis reviewer prompts | Reviewer generation, Gemini |
-| `/backend/app/schemas/reviewer.py` | Integrated | Member 3 | Reviewer API and persistence contracts | Routes, services, repository |
-| `/backend/app/repositories/reviewer_repository.py` | Integrated | Member 3 | Reviewer persistence and ownership filtering | Supabase |
-| `/backend/app/services/reviewer_errors.py` | Integrated | Member 3 | Controlled reviewer-domain errors | Reviewer services, API |
-| `/backend/app/services/reviewer_source_loader.py` | Integrated | Member 3 | Loads ordered source-aware chunks for file/subject scope | Study files, chunks |
-| `/backend/app/services/reviewer_generation.py` | Integrated | Member 3 | Structured reviewer generation with single-pass and large-material multi-pass flows, strict validation, and bounded repair | Gemini provider, reviewer batching |
-| `/backend/app/services/reviewer_service.py` | Integrated | Member 3 | Reviewer save/list/get/delete operations | Reviewer repository |
-| `/backend/app/services/reviewer_orchestration.py` | Integrated | Member 3 | Coordinates source loading, generation, and persistence | Reviewer services |
-| `/backend/app/api/reviewer_dependency.py` | Integrated | Member 3 | Reviewer persistence dependency | Repository, Supabase client |
-| `/backend/app/api/reviewer_orchestration_dependency.py` | Integrated | Member 3 | Reviewer generation dependency assembly | Gemini, source loader, service |
-| `/backend/app/api/routes/reviewers.py` | Integrated | Member 3 | Protected reviewer API endpoints | Reviewer orchestration/service |
-| `/backend/app/services/supabase_admin.py` | Integrated | Member 3 | Trusted ready-file and source-chunk reads | Reviewer source loader |
-# Phase 6D Large-Material Reviewer Generation
+| `/backend/app/ai/quiz_prompt.py` | Integrated | Backend | Grounded Quiz prompts | Gemini |
+| `/backend/app/schemas/quiz.py` | Integrated | Backend | Quiz/attempt/history/review contracts | API/services |
+| `/backend/app/repositories/quiz_repository.py` | Integrated | Backend | Quiz persistence and safe reads | Supabase |
+| `/backend/app/repositories/quiz_attempt_repository.py` | Integrated | Backend | Attempts, grading, history, review | Supabase/RPC |
+| `/backend/app/services/quiz_source_loader.py` | Integrated | Backend | Owned ready source loading | Study files/chunks |
+| `/backend/app/services/quiz_generation.py` | Integrated | Backend | Structured Quiz generation | Gemini |
+| `/backend/app/services/quiz_service.py` | Integrated | Backend | Quiz CRUD operations | Repository |
+| `/backend/app/services/quiz_orchestration.py` | Integrated | Backend | Generation orchestration | Quiz services |
+| `/backend/app/services/quiz_attempt_service.py` | Integrated | Backend | Attempts, results, topic analysis, review | Attempt repository |
+| `/backend/app/api/routes/quizzes.py` | Integrated | Backend | Generate/list/get/delete Quiz routes | FastAPI |
+| `/backend/app/api/routes/quiz_attempts.py` | Integrated | Backend | Attempt/history/submit/result/review routes | FastAPI |
 
-| Path                                               | Status     | Owner    | Purpose                                                                                                                 | Connections                        |
-| -------------------------------------------------- | ---------- | -------- | ----------------------------------------------------------------------------------------------------------------------- | ---------------------------------- |
-| `/backend/app/services/reviewer_batching.py`       | Integrated | Member 3 | Splits large reviewer source bundles into deterministic character-bounded batches without dropping or reordering chunks | Reviewer generation, source loader |
-| `/backend/app/ai/reviewer_prompt.py`               | Integrated | Member 3 | Builds single-pass, partial-batch, and final-synthesis reviewer prompts                                                 | Reviewer batching, Gemini          |
-| `/backend/app/services/reviewer_generation.py`     | Integrated | Member 3 | Selects single-pass or multi-pass generation and synthesizes partial reviewers into one validated reviewer              | Reviewer prompt builder, Gemini    |
-| `/backend/tests/test_reviewer_batching.py`         | Ready      | Member 3 | Verifies batching limits, order preservation, and chunk completeness                                                    | Reviewer batching                  |
-| `/backend/tests/test_reviewer_large_generation.py` | Ready      | Member 3 | Verifies small-material compatibility, batched generation, synthesis, and complete-source metadata                      | Reviewer generation                |
-| `/backend/tests/test_reviewer_prompt.py`           | Ready      | Member 3 | Verifies complete, batch, and synthesis-aware prompt behavior                                                           | Reviewer prompt builder            |
-| `/docs/AI_REVIEWER_GENERATION.md`                  | Integrated | Member 3 | Documents reviewer generation architecture and Phase 6D large-material flow                                             | Reviewer backend                   |
+## Frontend
 
-Phase 6D does not require a new database migration. Existing reviewer persistence and source metadata continue to use the Phase 6A reviewer schema and `reviewers` table.
-
-Large-material generation preserves the complete original source bundle for ownership validation, persistence, and source metadata while sending bounded subsets of source chunks to the generation provider.
+| Path | Status | Owner | Purpose | Connections |
+|---|---|---|---|---|
+| `/frontend/app/(protected)/quizzes/page.tsx` | Integrated | Frontend | Protected Quiz page | Workspace |
+| `/frontend/features/quizzes/types.ts` | Integrated | Frontend | Quiz/attempt/history/review contracts | API/UI |
+| `/frontend/features/quizzes/api.ts` | Integrated | Frontend | Quiz generation client | FastAPI |
+| `/frontend/features/quizzes/attempts-api.ts` | Integrated | Frontend | Quiz attempt client | FastAPI |
+| `/frontend/features/quizzes/history-api.ts` | Integrated | Frontend | History/review/delete client | FastAPI |
+| `/frontend/features/quizzes/server/options.ts` | Integrated | Frontend | Subject/ready-file options | Supabase |
+| `/frontend/features/quizzes/components/QuizGenerationForm.tsx` | Integrated | Frontend | Generation controls | API |
+| `/frontend/features/quizzes/components/QuizPlayer.tsx` | Integrated | Frontend | Quiz-taking flow | Attempt API |
+| `/frontend/features/quizzes/components/QuizQuestionView.tsx` | Integrated | Frontend | Question/feedback UI | Quiz player |
+| `/frontend/features/quizzes/components/QuizResult.tsx` | Integrated | Frontend | Final score/topics | Attempt result |
+| `/frontend/features/quizzes/components/QuizHistoryPanel.tsx` | Integrated | Frontend | History/retake/review/delete | History API |
+| `/frontend/features/quizzes/components/QuizAttemptReview.tsx` | Integrated | Frontend | Completed-attempt review | Review API |
+| `/frontend/features/quizzes/components/QuizWorkspace.tsx` | Integrated | Frontend | Quiz orchestration | Quiz feature |
 
 ---
 
-# Track A — Flashcard Backend
+# Phase 7 — Academic Tasks
+
+## Database and Migrations
 
 | Path | Status | Owner | Purpose | Connections |
 |---|---|---|---|---|
-| `/backend/app/ai/flashcard_prompt.py` | Integrated | Member 3 | Builds complete, partial-batch, and final-synthesis Flashcard prompts | Flashcard generation, batching, Gemini |
-| `/backend/app/services/flashcard_batching.py` | Integrated | Member 3 | Splits oversized Flashcard source bundles into ordered bounded batches without truncating or reordering chunks | Flashcard generation, source loader |
-| `/backend/app/services/flashcard_generation.py` | Integrated | Member 3 | Selects single-pass or multi-pass generation, validates candidate/final decks, and performs one controlled repair per generation pass | Flashcard prompts, batching, Gemini |
-| `/backend/app/schemas/flashcard.py` | Integrated | Member 3 | Flashcard generation requests, cards, sources, deck responses, and API error contracts | Routes, generation, repository |
-| `/backend/app/schemas/flashcard_summary.py` | Integrated | Member 3 | Lightweight saved-deck summary and list-response contracts | Flashcard repository, API |
-| `/backend/app/repositories/flashcard_repository.py` | Integrated | Member 3 | Atomic Flashcard creation, owner-scoped retrieval, listing, and deletion | Supabase, Flashcard RPC |
-| `/backend/app/services/flashcard_errors.py` | Integrated | Member 3 | Controlled Flashcard validation, source, generation, persistence, response, and orchestration errors | Flashcard services, API |
-| `/backend/app/services/flashcard_service.py` | Integrated | Member 3 | Flashcard persistence service for create/list/get/delete operations | Flashcard repository |
-| `/backend/app/services/flashcard_source_loader.py` | Integrated | Member 3 | Loads complete ordered owned source chunks for file or subject Flashcard generation | Study files, study-file chunks |
-| `/backend/app/services/flashcard_generation.py` | Integrated | Member 3 | Generates structured Flashcards through the shared AI provider with strict validation and one repair attempt | Flashcard prompt, Gemini |
-| `/backend/app/services/flashcard_orchestration.py` | Integrated | Member 3 | Coordinates source loading, AI generation, deterministic titles, and persistence | Flashcard source loader, generation, persistence |
-| `/backend/app/api/flashcard_dependency.py` | Integrated | Member 3 | Builds Flashcard persistence dependencies | Supabase client, repository |
-| `/backend/app/api/flashcard_orchestration_dependency.py` | Integrated | Member 3 | Assembles Gemini, trusted source loading, generation, and persistence dependencies | Gemini, Supabase, Flashcard services |
-| `/backend/app/api/routes/flashcards.py` | Integrated | Member 3 | Protected Flashcard generation, listing, retrieval, and deletion endpoints | Authentication, orchestration, persistence |
-| `/backend/app/api/router.py` | Integrated | Member 3 | Registers the protected Flashcard router with the shared FastAPI API router | FastAPI app |
+| `/supabase/migrations/20260809054523_create_academic_tasks.sql` | Integrated | Database | Creates student-owned Academic Tasks, constraints, ownership validation, triggers, indexes, privileges, and RLS | Academic Task backend |
+| `/supabase/migrations/20260809153000_add_output_confidence_and_task_output_type.sql` | Integrated | Database | Adds academic output-confidence storage and Academic Task `output_type` | Learning profile, priority engine |
+| `/frontend/types/database.ts` | Generated | Supabase CLI | Generated database contracts including Track C changes | Frontend |
+
+## Backend
+
+| Path | Status | Owner | Purpose | Connections |
+|---|---|---|---|---|
+| `/backend/app/schemas/academic_task.py` | Integrated | Backend | Academic Task CRUD contracts | API/service |
+| `/backend/app/schemas/academic_task_priority.py` | Integrated | Backend | Explainable priority response contracts | Priority API |
+| `/backend/app/repositories/academic_task_repository.py` | Integrated | Backend | Owner-scoped task persistence | Supabase |
+| `/backend/app/repositories/academic_task_priority_context_repository.py` | Integrated | Backend | Loads timezone, output confidence, and study availability | Priority service |
+| `/backend/app/services/academic_task_errors.py` | Integrated | Backend | Controlled Academic Task errors | Services/API |
+| `/backend/app/services/academic_task_service.py` | Integrated | Backend | Academic Task CRUD orchestration | Repository |
+| `/backend/app/services/academic_task_priority.py` | Integrated | Backend | Pure deterministic seven-factor priority engine | Priority service |
+| `/backend/app/services/academic_task_priority_context.py` | Integrated | Backend | Resolves output confidence and available study time | Priority service |
+| `/backend/app/services/academic_task_priority_service.py` | Integrated | Backend | Combines task and student context into priority evaluations | Priority engine |
+| `/backend/app/api/academic_task_dependency.py` | Integrated | Backend | CRUD dependency assembly | FastAPI |
+| `/backend/app/api/academic_task_priority_dependency.py` | Integrated | Backend | Priority dependency assembly | FastAPI |
+| `/backend/app/api/routes/academic_tasks.py` | Integrated | Backend | Protected CRUD, status, and prioritized routes | Academic Task services |
+
+## Frontend
+
+| Path | Status | Owner | Purpose | Connections |
+|---|---|---|---|---|
+| `/frontend/app/(protected)/academic-tasks/page.tsx` | Integrated | Frontend | Protected Academic Tasks page | Workspace |
+| `/frontend/features/academic-tasks/types.ts` | Integrated | Frontend | CRUD and priority contracts | API/UI |
+| `/frontend/features/academic-tasks/api.ts` | Integrated | Frontend | Authenticated CRUD and prioritized API client | FastAPI |
+| `/frontend/features/academic-tasks/validation.ts` | Integrated | Frontend | Create/edit form validation | Workspace |
+| `/frontend/features/academic-tasks/form.ts` | Integrated | Frontend | Persisted task to form mapping | Workspace |
+| `/frontend/features/academic-tasks/priority-presentation.ts` | Integrated | Frontend | Score and urgency presentation | Workspace |
+| `/frontend/features/academic-tasks/components/AcademicTaskPriorityBreakdown.tsx` | Integrated | Frontend | Expandable seven-factor `Why this priority?` explanation | Priority response |
+| `/frontend/features/academic-tasks/components/AcademicTasksWorkspace.tsx` | Integrated | Frontend | CRUD, status, priority display, refresh, and independent-column layout | Academic Task API |
+| `/frontend/features/academic-tasks/components/AcademicTasksWorkspace.module.css` | Integrated | Frontend | Responsive independent-column task-card layout | Workspace |
+| `/frontend/features/navigation/components/ProtectedAppShell.tsx` | Integrated | Frontend | Protected navigation including Flashcards, Quizzes, and Academic Tasks | Protected pages |
+
+## Backend Tests
+
+| Path | Status | Purpose |
+|---|---|---|
+| `/backend/tests/test_academic_task_api_endpoint.py` | Ready | Academic Task API |
+| `/backend/tests/test_academic_task_priority.py` | Ready | Deterministic priority engine |
+| `/backend/tests/test_academic_task_priority_context.py` | Ready | Output confidence and availability |
+| `/backend/tests/test_academic_task_priority_context_repository.py` | Ready | Priority context persistence |
+| `/backend/tests/test_academic_task_priority_schemas.py` | Ready | Priority contracts |
+| `/backend/tests/test_academic_task_priority_service.py` | Ready | Priority orchestration |
+| `/backend/tests/test_academic_task_repository.py` | Ready | Task persistence |
+| `/backend/tests/test_academic_task_schemas.py` | Ready | Task CRUD schemas |
+| `/backend/tests/test_academic_task_service.py` | Ready | Task CRUD service |
+
+## Frontend Tests
+
+| Path | Status | Purpose |
+|---|---|---|
+| `/frontend/features/academic-tasks/api.test.ts` | Ready | Academic Task API client |
+| `/frontend/features/academic-tasks/validation.test.ts` | Ready | Task-form validation |
+| `/frontend/features/academic-tasks/form.test.ts` | Ready | Persisted-task form mapping |
+| `/frontend/features/academic-tasks/priority-presentation.test.ts` | Ready | Priority presentation |
+| `/frontend/features/academic-tasks/components/AcademicTaskPriorityBreakdown.test.tsx` | Ready | Priority explanation |
+| `/frontend/features/academic-tasks/components/AcademicTasksWorkspace.test.tsx` | Ready | Workspace loading, creation, priority display |
+| `/frontend/features/academic-tasks/components/AcademicTasksWorkspace.mutations.test.tsx` | Ready | Edit, status, delete, priority refresh |
 
 ---
 
-# Track B — Quiz Backend
+# Migrations
 
-| Path | Status | Owner | Purpose | Connections |
-|---|---|---|---|---|
-| `/backend/app/ai/quiz_prompt.py` | Integrated | Backend | Builds grounded Quiz-generation prompts | Quiz generation, Gemini |
-| `/backend/app/schemas/quiz.py` | Integrated | Backend | Quiz generation, attempt, history, review, and API contracts | Routes, services, repositories |
-| `/backend/app/repositories/quiz_repository.py` | Integrated | Backend | Quiz persistence, safe retrieval, listing, and deletion | Supabase |
-| `/backend/app/repositories/quiz_attempt_repository.py` | Integrated | Backend | Attempt start, grading, history, answer reads, and review-question loading | Supabase RPCs/tables |
-| `/backend/app/services/quiz_errors.py` | Integrated | Backend | Controlled Quiz-domain errors | Quiz API/services |
-| `/backend/app/services/quiz_attempt_errors.py` | Integrated | Backend | Controlled Quiz-attempt errors | Attempt API/services |
-| `/backend/app/services/quiz_source_loader.py` | Integrated | Backend | Loads owned ready source chunks for subject/file Quiz scopes | Study files/chunks |
-| `/backend/app/services/quiz_generation.py` | Integrated | Backend | Structured Quiz generation and validation | Quiz prompt, Gemini |
-| `/backend/app/services/quiz_service.py` | Integrated | Backend | Saved Quiz create/list/get/delete operations | Quiz repository |
-| `/backend/app/services/quiz_orchestration.py` | Integrated | Backend | Coordinates source loading, generation, and persistence | Quiz services |
-| `/backend/app/services/quiz_attempt_service.py` | Integrated | Backend | Attempt lifecycle, results, topic analysis, and completed review | Attempt repository |
-| `/backend/app/api/quiz_dependency.py` | Integrated | Backend | Quiz persistence/service dependency | Repository, Supabase |
-| `/backend/app/api/quiz_orchestration_dependency.py` | Integrated | Backend | Quiz-generation dependency assembly | Gemini, source loader, service |
-| `/backend/app/api/quiz_attempt_dependency.py` | Integrated | Backend | Quiz-attempt dependency assembly | Attempt repository/service |
-| `/backend/app/api/routes/quizzes.py` | Integrated | Backend | Generate/list/get/delete Quiz API | Quiz orchestration/service |
-| `/backend/app/api/routes/quiz_attempts.py` | Integrated | Backend | Attempt start/history/submit/result/review API | Quiz attempt service |
-| `/backend/app/api/router.py` | Integrated | Backend | Registers protected Quiz routers | FastAPI |
-
-
-# Phase 5G Migrations
+## Phase 5G
 
 | Path | Status | Purpose |
 |---|---|---|
@@ -364,176 +402,37 @@ Large-material generation preserves the complete original source bundle for owne
 | `/supabase/migrations/20260806223000_add_study_conversation_summary_state.sql` | Integrated | Summary state |
 | `/supabase/migrations/20260806234000_restrict_study_conversation_summary_updates.sql` | Integrated | Summary security |
 
----
-
-# Phase 6A Migration
+## Phase 6A
 
 | Path | Status | Purpose |
 |---|---|---|
-| `/supabase/migrations/20260807230500_create_reviewers.sql` | Integrated | Retained no-op migration entry matching remote migration history |
-| `/supabase/migrations/20260808053929_create_reviewers_foundation.sql` | Integrated | Reviewer table, ownership/scope validation, indexes, triggers, privileges, and RLS |
+| `/supabase/migrations/20260807230500_create_reviewers.sql` | Integrated | Retained migration-history entry |
+| `/supabase/migrations/20260808053929_create_reviewers_foundation.sql` | Integrated | Reviewer persistence and RLS foundation |
 
----
-
-# Track A Flashcard Migrations
+## Track A
 
 | Path | Status | Purpose |
 |---|---|---|
-| `/supabase/migrations/20260809142000_create_flashcard_foundation.sql` | Integrated | Creates `flashcard_decks` and `flashcards`, constraints, ownership validation, indexes, privileges, and RLS |
-| `/supabase/migrations/20260809145600_create_flashcard_persistence_rpc.sql` | Integrated | Creates the trusted atomic `create_flashcard_deck_with_cards` persistence function |
+| `/supabase/migrations/20260809142000_create_flashcard_foundation.sql` | Integrated | Flashcard deck/card foundation |
+| `/supabase/migrations/20260809145600_create_flashcard_persistence_rpc.sql` | Integrated | Atomic Flashcard persistence RPC |
 
----
-
-# Track B — Quiz Migrations
+## Track B
 
 | Path | Status | Purpose |
 |---|---|---|
-| `/supabase/migrations/20260809204500_create_quizzes_foundation.sql` | Integrated | Owned Quiz metadata and private questions |
-| `/supabase/migrations/20260809211600_create_quiz_persistence_rpc.sql` | Integrated | Atomic Quiz/question persistence |
-| `/supabase/migrations/20260809223500_create_quiz_attempt_foundation.sql` | Integrated | Attempts and submitted-answer history |
-| `/supabase/migrations/20260809225500_create_quiz_attempt_rpcs.sql` | Integrated | Atomic attempt start and answer grading |
+| `/supabase/migrations/20260809204500_create_quizzes_foundation.sql` | Integrated | Quiz metadata and private questions |
+| `/supabase/migrations/20260809211600_create_quiz_persistence_rpc.sql` | Integrated | Atomic Quiz persistence |
+| `/supabase/migrations/20260809223500_create_quiz_attempt_foundation.sql` | Integrated | Quiz attempts and answer history |
+| `/supabase/migrations/20260809225500_create_quiz_attempt_rpcs.sql` | Integrated | Attempt start and answer grading |
 
-
-
-# Phase 6A Reviewer Tests
+## Phase 7
 
 | Path | Status | Purpose |
 |---|---|---|
-| `/backend/tests/test_reviewer_migration.py` | Ready | Reviewer migration contract |
-| `/backend/tests/test_reviewer_schemas.py` | Ready | Reviewer schema validation |
-| `/backend/tests/test_reviewer_repository.py` | Ready | Reviewer persistence behavior |
-| `/backend/tests/test_reviewer_service.py` | Ready | Reviewer service behavior |
-| `/backend/tests/test_reviewer_source_loader.py` | Ready | File/subject source loading |
-| `/backend/tests/test_reviewer_source_admin.py` | Ready | Trusted Supabase source queries |
-| `/backend/tests/test_reviewer_prompt.py` | Ready | Prompt construction and limits |
-| `/backend/tests/test_reviewer_generation.py` | Ready | Structured AI generation and repair |
-| `/backend/tests/test_reviewer_orchestration.py` | Ready | End-to-end reviewer service orchestration |
-| `/backend/tests/test_reviewer_api_endpoint.py` | Ready | Authenticated reviewer API contract |
+| `/supabase/migrations/20260809054523_create_academic_tasks.sql` | Integrated | Academic Task foundation |
+| `/supabase/migrations/20260809153000_add_output_confidence_and_task_output_type.sql` | Integrated | Output confidence and task output type |
 
 ---
-
-# Track A Flashcard Backend Tests
-
-| Path | Status | Purpose |
-|---|---|---|
-| `/backend/tests/test_flashcard_schemas.py` | Ready | Flashcard request, card, source, and response schema validation |
-| `/backend/tests/test_flashcard_migration.py` | Ready | Flashcard table, ownership, RLS, privilege, and constraint migration contract |
-| `/backend/tests/test_flashcard_persistence_rpc_migration.py` | Ready | Atomic Flashcard persistence RPC migration contract |
-| `/backend/tests/test_flashcard_repository.py` | Ready | Flashcard persistence, listing, retrieval, deletion, and owner filtering |
-| `/backend/tests/test_flashcard_service.py` | Ready | Flashcard persistence-service delegation |
-| `/backend/tests/test_flashcard_source_loader.py` | Ready | Complete file/subject source loading, ownership, readiness, and chunk validation |
-| `/backend/tests/test_flashcard_prompt.py` | Ready | Grounded Flashcard prompt construction, limits, and source-data boundary |
-| `/backend/tests/test_flashcard_generation.py` | Ready | Structured AI generation, exact card counts, duplicate rejection, and one repair attempt |
-| `/backend/tests/test_flashcard_orchestration.py` | Ready | End-to-end source → generation → persistence orchestration |
-| `/backend/tests/test_flashcard_api_endpoint.py` | Ready | Authenticated Flashcard API contract and controlled error responses |
-| `/backend/tests/test_flashcard_router_registration.py` | Ready | Real FastAPI/OpenAPI Flashcard route registration |
-| `/backend/tests/test_flashcard_batching.py` | Ready | Flashcard batching limits, stable ordering, chunk preservation, and oversized-chunk validation |
-| `/backend/tests/test_flashcard_large_prompt.py` | Ready | Partial-batch and final-synthesis Flashcard prompt behavior |
-| `/backend/tests/test_flashcard_large_generation.py` | Ready | Multi-pass generation, partial repair, final synthesis, and complete-source metadata |
-
----
-# Track B — Quiz Tests
-
-| Path | Status | Purpose |
-|---|---|---|
-| `/backend/tests/test_quiz_migration.py` | Ready | Quiz foundation migration contract |
-| `/backend/tests/test_quiz_persistence_rpc_migration.py` | Ready | Atomic Quiz persistence RPC migration |
-| `/backend/tests/test_quiz_attempt_migration.py` | Ready | Quiz-attempt foundation migration |
-| `/backend/tests/test_quiz_attempt_rpc_migration.py` | Ready | Attempt/grading RPC migration |
-| `/backend/tests/test_quiz_schemas.py` | Ready | Quiz-generation schema validation |
-| `/backend/tests/test_quiz_repository.py` | Ready | Quiz persistence/list/get/delete behavior |
-| `/backend/tests/test_quiz_service.py` | Ready | Quiz service behavior |
-| `/backend/tests/test_quiz_source_loader.py` | Ready | Owned file/subject source loading |
-| `/backend/tests/test_quiz_prompt.py` | Ready | Quiz prompt construction |
-| `/backend/tests/test_quiz_generation.py` | Ready | Structured Quiz generation |
-| `/backend/tests/test_quiz_orchestration.py` | Ready | End-to-end generation orchestration |
-| `/backend/tests/test_quiz_api_endpoint.py` | Ready | Authenticated Quiz API contract |
-| `/backend/tests/test_quiz_attempt_schemas.py` | Ready | Attempt/result contracts |
-| `/backend/tests/test_quiz_attempt_service.py` | Ready | Attempt grading/results/review service behavior |
-| `/backend/tests/test_quiz_attempt_api_endpoint.py` | Ready | Authenticated attempt API contract |
-| `/frontend/features/quizzes/api.test.ts` | Ready | Quiz-generation client tests |
-| `/frontend/features/quizzes/attempts-api.test.ts` | Ready | Quiz-attempt client tests |
-| `/frontend/features/quizzes/history-api.test.ts` | Ready | Saved Quiz/history/review/delete client tests |
-| `/frontend/features/quizzes/server/options.test.ts` | Ready | Quiz filter-option loader tests |
-| `/frontend/features/quizzes/components/QuizHistoryPanel.test.tsx` | Ready | Saved Quiz history/retake/delete UI tests |
-
-
-# Track A — Flashcard Frontend
-
-| Path                                                                          | Status     | Owner    | Purpose                                                                           | Connections                         |
-| ----------------------------------------------------------------------------- | ---------- | -------- | --------------------------------------------------------------------------------- | ----------------------------------- |
-| `/frontend/app/(protected)/flashcards/page.tsx`                               | Integrated | Frontend | Protected Flashcard page                                                          | Flashcard workspace, filter options |
-| `/frontend/features/flashcards/types.ts`                                      | Integrated | Frontend | Flashcard generation, saved-deck, source, and filter contracts                    | API client, UI                      |
-| `/frontend/features/flashcards/api.ts`                                        | Integrated | Frontend | Authenticated generate/list/get/delete Flashcard API client                       | Protected Flashcard API             |
-| `/frontend/features/flashcards/server/options.ts`                             | Integrated | Frontend | Loads authenticated subjects and ready study materials                            | Supabase                            |
-| `/frontend/features/flashcards/components/FlashcardGenerationForm.tsx`        | Integrated | Frontend | Subject/file scope and card-count generation controls                             | Flashcard API                       |
-| `/frontend/features/flashcards/components/FlashcardGenerationForm.module.css` | Integrated | Frontend | Generation-form styling                                                           | Flashcard generation form           |
-| `/frontend/features/flashcards/components/FlashcardStudyViewer.tsx`           | Integrated | Frontend | Interactive question/answer study viewer with navigation                          | Generated and saved decks           |
-| `/frontend/features/flashcards/components/FlashcardStudyViewer.module.css`    | Integrated | Frontend | Flashcard viewer and distinct answer-side styling                                 | Flashcard study viewer              |
-| `/frontend/features/flashcards/components/SavedFlashcardList.tsx`             | Integrated | Frontend | Lists, reopens, and requests deletion of saved Flashcard decks                    | Flashcard workspace                 |
-| `/frontend/features/flashcards/components/SavedFlashcardList.module.css`      | Integrated | Frontend | Saved-deck list styling                                                           | Saved Flashcards                    |
-| `/frontend/features/flashcards/components/FlashcardWorkspace.tsx`             | Integrated | Frontend | Coordinates generation, saved-deck loading, reopening, deletion, and study viewer | Flashcard API and components        |
-| `/frontend/features/flashcards/components/FlashcardWorkspace.module.css`      | Integrated | Frontend | Flashcard workspace layout                                                        | Flashcard page                      |
-| `/frontend/features/navigation/components/ProtectedAppShell.tsx`              | Integrated | Frontend | Adds Flashcards to authenticated navigation                                       | `/flashcards`                       |
-
-# Track A — Flashcard Frontend Tests
-
-| Path                                                                        | Status | Purpose                                                                                      |
-| --------------------------------------------------------------------------- | ------ | -------------------------------------------------------------------------------------------- |
-| `/frontend/features/flashcards/api.test.ts`                                 | Ready  | Authenticated Flashcard generate/list/get/delete API behavior                                |
-| `/frontend/features/flashcards/server/options.test.ts`                      | Ready  | Subject and ready-study-material filter loading                                              |
-| `/frontend/features/flashcards/components/FlashcardGenerationForm.test.tsx` | Ready  | Scope selection, card count, generation, and error states                                    |
-| `/frontend/features/flashcards/components/FlashcardStudyViewer.test.tsx`    | Ready  | Question/answer flipping, navigation, boundaries, and deck reset                             |
-| `/frontend/features/flashcards/components/SavedFlashcardList.test.tsx`      | Ready  | Saved list, metadata, opening, deletion callbacks, empty state, and errors                   |
-| `/frontend/features/flashcards/components/FlashcardWorkspace.test.tsx`      | Ready  | Saved-list loading, generation refresh, reopening, deletion, viewer cleanup, and safe errors |
-
----
-
-# Track B — Quiz Frontend
-
-| Path | Status | Owner | Purpose | Connections |
-|---|---|---|---|---|
-| `/frontend/app/(protected)/quizzes/page.tsx` | Integrated | Frontend | Protected Quiz page | Quiz workspace/options |
-| `/frontend/features/quizzes/types.ts` | Integrated | Frontend | Quiz, attempt, history, review, and option contracts | Quiz clients/UI |
-| `/frontend/features/quizzes/api.ts` | Integrated | Frontend | Authenticated Quiz-generation client | `POST /api/quizzes/generate` |
-| `/frontend/features/quizzes/attempts-api.ts` | Integrated | Frontend | Attempt start/submission/result client | Quiz-attempt API |
-| `/frontend/features/quizzes/history-api.ts` | Integrated | Frontend | Saved Quiz list/get/delete, attempt-history, and review client | Quiz/history APIs |
-| `/frontend/features/quizzes/server/options.ts` | Integrated | Frontend | Loads authenticated subjects and ready study files | Supabase |
-| `/frontend/features/quizzes/components/QuizGenerationForm.tsx` | Integrated | Frontend | Scope/type/difficulty/question-count generation controls | Quiz API |
-| `/frontend/features/quizzes/components/QuizPlayer.tsx` | Integrated | Frontend | One-question-at-a-time Quiz-taking flow | Attempt API |
-| `/frontend/features/quizzes/components/QuizQuestionView.tsx` | Integrated | Frontend | Question input and immediate feedback | Quiz player |
-| `/frontend/features/quizzes/components/QuizResult.tsx` | Integrated | Frontend | Final score and strong/weak topic display | Attempt result |
-| `/frontend/features/quizzes/components/QuizHistoryPanel.tsx` | Integrated | Frontend | Saved Quiz history, retake, review, and delete controls | History API |
-| `/frontend/features/quizzes/components/QuizAttemptReview.tsx` | Integrated | Frontend | Completed-attempt answer/explanation review | Review API |
-| `/frontend/features/quizzes/components/QuizWorkspace.tsx` | Integrated | Frontend | Create/My Quizzes tabs and Quiz orchestration | Quiz feature |
-| `/frontend/features/navigation/components/ProtectedAppShell.tsx` | Integrated | Frontend | Adds Quizzes to protected navigation | `/quizzes` |
-
-
-# Phase 6B Reviewer Frontend
-
-| Path | Status | Owner | Purpose | Connections |
-|---|---|---|---|---|
-| `/frontend/app/(protected)/reviewers/page.tsx` | Integrated | Frontend | Protected Reviewer page | Reviewer workspace, filter options |
-| `/frontend/features/reviewers/types.ts` | Integrated | Frontend | Reviewer request, response, source, and option contracts | Reviewer API/UI |
-| `/frontend/features/reviewers/api.ts` | Integrated | Frontend | Authenticated reviewer-generation API client | `POST /api/reviewers/generate` |
-| `/frontend/features/reviewers/server/options.ts` | Integrated | Frontend | Loads authenticated subjects and ready study files | Supabase |
-| `/frontend/features/reviewers/components/ReviewerGenerationForm.tsx` | Integrated | Frontend | Reviewer scope, subject/file, and length controls | Reviewer API client |
-| `/frontend/features/reviewers/components/ReviewerGenerationForm.module.css` | Integrated | Frontend | Reviewer generation-form styling | Generation form |
-| `/frontend/features/reviewers/components/ReviewerResult.tsx` | Integrated | Frontend | Displays generated overview, topics, key points, definitions, and sources | Reviewer response |
-| `/frontend/features/reviewers/components/ReviewerResult.module.css` | Integrated | Frontend | Reviewer content/result styling | Reviewer result |
-| `/frontend/features/reviewers/components/ReviewerWorkspace.tsx` | Integrated | Frontend | Coordinates generation form and generated result | Reviewer page |
-| `/frontend/features/reviewers/components/ReviewerWorkspace.module.css` | Integrated | Frontend | Reviewer page layout | Reviewer workspace |
-| `/frontend/features/navigation/components/ProtectedAppShell.tsx` | Integrated | Frontend | Adds Reviewers to authenticated navigation | `/reviewers` |
-
-# Phase 6B Reviewer Frontend Tests
-
-| Path | Status | Purpose |
-|---|---|---|
-| `/frontend/features/reviewers/api.test.ts` | Ready | Authenticated generation API tests |
-| `/frontend/features/reviewers/server/options.test.ts` | Ready | Subject and ready-file option loading |
-| `/frontend/features/reviewers/components/ReviewerGenerationForm.test.tsx` | Ready | Scope, material, length, generation, and error-state tests |
-| `/frontend/features/reviewers/components/ReviewerResult.test.tsx` | Ready | Overview, topics, definitions, and source rendering |
-| `/frontend/features/reviewers/components/ReviewerWorkspace.test.tsx` | Ready | Workspace generation/result integration |
 
 # Important Supabase Resources
 
@@ -543,6 +442,7 @@ auth.users
 public.profiles
 public.learning_profiles
 public.learning_profile_subjects
+public.learning_output_confidences
 public.study_availability
 
 public.subjects
@@ -564,6 +464,8 @@ public.quiz_questions
 public.quiz_attempts
 public.quiz_attempt_answers
 
+public.academic_tasks
+
 storage bucket: study-materials
 ```
 
@@ -581,8 +483,6 @@ NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY
 ```
 
 ## Backend
-
-Important private values include:
 
 ```text
 SUPABASE_URL
@@ -647,7 +547,7 @@ SQL:
 -- File: /supabase/migrations/timestamp_name.sql
 ```
 
-Strict JSON files are exempt because JSON does not support comments.
+Strict JSON files are exempt.
 
 ---
 
