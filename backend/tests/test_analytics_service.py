@@ -5,6 +5,7 @@ from datetime import datetime, timedelta, timezone
 from uuid import UUID
 
 from app.repositories.analytics_repository import (
+    FlashcardReviewAnalyticsRecord,
     QuizAnswerAnalyticsRecord,
     QuizAttemptAnalyticsRecord,
 )
@@ -12,6 +13,9 @@ from app.schemas.analytics import (
     AnalyticsAvailability,
     AnalyticsDataState,
     AnalyticsPeriod,
+)
+from app.schemas.flashcard_review import (
+    FlashcardReviewOutcome,
 )
 from app.services.analytics_service import AnalyticsService
 
@@ -105,6 +109,30 @@ class FakeAnalyticsRepository:
             ),
         }
 
+        self.flashcard_reviews = (
+            FlashcardReviewAnalyticsRecord(
+                outcome=FlashcardReviewOutcome.KNOWN,
+                reviewed_at=NOW
+                - timedelta(
+                    days=1,
+                ),
+            ),
+            FlashcardReviewAnalyticsRecord(
+                outcome=FlashcardReviewOutcome.REVIEW_AGAIN,
+                reviewed_at=NOW
+                - timedelta(
+                    days=2,
+                ),
+            ),
+            FlashcardReviewAnalyticsRecord(
+                outcome=FlashcardReviewOutcome.KNOWN,
+                reviewed_at=NOW
+                - timedelta(
+                    days=10,
+                ),
+            ),
+        )
+
     def count_subjects(
         self,
         *,
@@ -161,6 +189,20 @@ class FakeAnalyticsRepository:
             (),
         )
 
+    def list_flashcard_review_events(
+        self,
+        *,
+        user_id: UUID,
+    ) -> tuple[
+        FlashcardReviewAnalyticsRecord,
+        ...,
+    ]:
+        self.user_ids.append(
+            user_id,
+        )
+
+        return self.flashcard_reviews
+
 
 def _service(
     repository: FakeAnalyticsRepository,
@@ -174,7 +216,7 @@ def _service(
 
 
 def test_all_time_overview_uses_real_quiz_evidence() -> None:
-    """All-time Analytics aggregates completed canonical Quiz attempts."""
+    """All-time Analytics aggregates completed canonical evidence."""
 
     repository = FakeAnalyticsRepository()
     service = _service(
@@ -229,12 +271,14 @@ def test_all_time_overview_uses_real_quiz_evidence() -> None:
     ]
 
     assert response.flashcard_performance_percent.availability is (
-        AnalyticsAvailability.UNAVAILABLE
+        AnalyticsAvailability.AVAILABLE
     )
+    assert response.flashcard_performance_percent.value == 66.67
+    assert response.flashcard_performance_percent.sample_size == 3
 
 
-def test_last_7_days_excludes_old_quiz_attempts() -> None:
-    """Period-sensitive Quiz Analytics excludes older attempts."""
+def test_last_7_days_excludes_old_evidence() -> None:
+    """Seven-day Analytics excludes old Quiz and Flashcard evidence."""
 
     repository = FakeAnalyticsRepository()
     service = _service(
@@ -248,6 +292,9 @@ def test_last_7_days_excludes_old_quiz_attempts() -> None:
 
     assert response.quiz_accuracy_percent.value == 80.0
     assert response.quiz_accuracy_percent.sample_size == 10
+
+    assert response.flashcard_performance_percent.value == 50.0
+    assert response.flashcard_performance_percent.sample_size == 2
 
     assert len(
         response.strong_topics,
@@ -274,9 +321,12 @@ def test_last_30_days_includes_both_quiz_attempts() -> None:
     assert response.quiz_accuracy_percent.value == 73.33
     assert response.quiz_accuracy_percent.sample_size == 15
 
+    assert response.flashcard_performance_percent.value == 66.67
+    assert response.flashcard_performance_percent.sample_size == 3
+
 
 def test_no_completed_quizzes_returns_available_empty_metric() -> None:
-    """No evidence is different from an unavailable Quiz data source."""
+    """No Quiz evidence differs from an unavailable data source."""
 
     repository = FakeAnalyticsRepository()
     repository.attempts = ()
@@ -319,4 +369,28 @@ def test_overview_scopes_canonical_queries_to_authenticated_user() -> None:
         USER_ID,
         USER_ID,
         USER_ID,
+        USER_ID,
     ]
+
+
+def test_no_flashcard_reviews_returns_available_empty_metric() -> None:
+    """No reviews differs from an unavailable Flashcard data source."""
+
+    repository = FakeAnalyticsRepository()
+    repository.flashcard_reviews = ()
+
+    service = _service(
+        repository,
+    )
+
+    response = service.get_overview(
+        user_id=USER_ID,
+        period=AnalyticsPeriod.ALL_TIME,
+    )
+
+    metric = response.flashcard_performance_percent
+
+    assert metric.availability is AnalyticsAvailability.AVAILABLE
+    assert metric.value is None
+    assert metric.sample_size == 0
+    assert metric.message is not None

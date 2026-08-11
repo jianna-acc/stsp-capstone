@@ -71,12 +71,9 @@ class FakeAnalyticsService:
                 sample_size=10,
             ),
             flashcard_performance_percent=AnalyticsMetric(
-                availability=AnalyticsAvailability.UNAVAILABLE,
-                value=None,
-                sample_size=0,
-                message=(
-                    "Flashcard correctness evidence is unavailable."
-                ),
+                availability=AnalyticsAvailability.AVAILABLE,
+                value=75.0,
+                sample_size=8,
             ),
             study_minutes=AnalyticsMetric(
                 availability=AnalyticsAvailability.UNAVAILABLE,
@@ -146,7 +143,7 @@ def test_analytics_overview_requires_authentication() -> None:
 
 
 def test_authenticated_user_can_get_analytics_overview() -> None:
-    """Authenticated users receive canonical Quiz Analytics."""
+    """Authenticated users receive canonical study Analytics."""
 
     app.dependency_overrides[
         require_authenticated_user
@@ -188,6 +185,13 @@ def test_authenticated_user_can_get_analytics_overview() -> None:
         "message": None,
     }
 
+    assert payload["flashcard_performance_percent"] == {
+        "availability": "available",
+        "value": 75.0,
+        "sample_size": 8,
+        "message": None,
+    }
+
     assert payload["strong_topics"] == [
         {
             "topic": "Algebra",
@@ -203,15 +207,6 @@ def test_authenticated_user_can_get_analytics_overview() -> None:
             "sample_size": 4,
         },
     ]
-
-    assert (
-        payload[
-            "flashcard_performance_percent"
-        ][
-            "availability"
-        ]
-        == "unavailable"
-    )
 
 
 def test_analytics_overview_accepts_supported_period() -> None:

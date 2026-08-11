@@ -811,6 +811,111 @@ Run after documentation edits:
 - [ ] Track B staging excludes other members' synchronization-only migrations
 
 
+# Phase 6 Track E — Analytics Final Validation
+
+## Analytics Backend
+
+- [x] Analytics repository tests pass
+- [x] Analytics service tests pass
+- [x] Analytics API endpoint tests pass
+- [x] Analytics router-registration tests pass
+- [x] Weighted Quiz accuracy is covered
+- [x] All-time, 7-day, and 30-day periods are covered
+- [x] Strong/weak Quiz topic classification is covered
+- [x] Empty Quiz evidence returns an available metric with no value
+- [x] Owner-scoped Analytics reads are covered
+- [x] General study minutes remain explicitly unavailable without a canonical duration source
+
+## Flashcard Review Evidence
+
+- [x] Flashcard review migration contract tests pass
+- [x] Flashcard review repository tests pass
+- [x] Flashcard review service tests pass
+- [x] Flashcard review API tests pass
+- [x] Flashcard review router-registration tests pass
+- [x] `known` review evidence is supported
+- [x] `review_again` review evidence is supported
+- [x] Review target validation covers owned decks and valid card positions
+- [x] Flashcard review writes use authenticated backend identity
+- [x] Browser review persistence is covered by the frontend API tests
+- [x] Flashcard viewer exposes self-assessment only after the answer is revealed
+- [x] Successful review persistence advances normally
+- [x] Final-card review remains visible and confirms save state
+- [x] Review persistence failure shows a safe frontend message
+- [x] Analytics consumes durable Flashcard review evidence rather than inferring performance from navigation
+
+## Track E Targeted Validation
+
+- [x] Backend Ruff validation passes
+- [x] Analytics targeted suite: 20 passed
+- [x] Flashcard-review targeted suite: 10 passed
+- [x] Frontend Flashcard API/viewer suite: 28 passed across 2 test files
+- [x] TypeScript validation passes
+- [x] Frontend ESLint has 0 errors
+- [x] Existing unrelated subject-page ESLint warning remains documented
+- [x] `git diff --check` passes
+
+## Final Regression
+
+- [x] Full backend regression: 1042 passed
+- [x] Full frontend regression: 23 test files passed
+- [x] Full frontend regression: 135 tests passed
+- [x] Production frontend build passes
+- [x] Production build completes TypeScript successfully
+
+Known backend warnings:
+
+```text
+Google GenAI deprecation warning
+Starlette HTTP 422 deprecation warning
+```
+
+These warnings do not represent Track E failures.
+
+## Database Coordination
+
+Track E migration:
+
+```text
+20260811162000_create_flashcard_review_events.sql
+```
+
+Current shared-database status:
+
+- [x] Migration file created
+- [x] Migration security foundation tested
+- [x] Linked migration history inspected
+- [x] Remote-only migration owners identified
+- [x] `20260809054523` belongs to the in-progress Track C academic-task work
+- [x] `20260809153000` belongs to the in-progress Track C academic-task work
+- [x] `20260810002500` belongs to the in-progress Track D study-plan work
+- [x] `20260811002500` belongs to the in-progress Track D study-plan work
+- [ ] Track E migration applied to the shared remote database
+- [ ] Local and remote migration histories synchronized after Track C/Track D coordination
+
+The Track E migration is intentionally left unapplied on the shared remote database until the team coordinates the in-progress Track C and Track D migrations.
+
+Do not use migration repair merely to make the Track E branch match remote-only migrations owned by other tracks.
+
+## Track E Completion State
+
+Track E application code and automated validation are complete for:
+
+```text
+current subject inventory
+current study-material inventory
+weighted Quiz accuracy
+strong Quiz topics
+weak Quiz topics
+self-assessed Flashcard performance
+```
+
+General study minutes remain intentionally unavailable until a canonical study-duration source exists.
+
+Shared remote migration application remains a coordinated integration step rather than an unfinished Track E code task.
+
+---
+
 # Final Documentation Checks
 
 After replacing the documentation files:
@@ -847,6 +952,12 @@ After replacing the documentation files:
 - [x] `PROJECT_FILE_MAP.md` includes Track B backend/frontend/tests/migrations
 - [x] `testing-checklist.md` includes Track B validation
 - [x] `AI_QUIZ_GENERATION.md` documents Quiz generation and security boundaries
+- [x] `ANALYTICS_DESIGN.md` documents implemented Track E metrics and canonical sources
+- [x] `ARCHITECTURE.md` reflects Track E Analytics and Flashcard self-assessment evidence
+- [x] `PROJECT_FILE_MAP.md` includes Track E backend, frontend integration, tests, and migration
+- [x] `api-contracts.md` includes Flashcard review and Analytics endpoints
+- [x] `database.md` documents `flashcard_review_events` and its migration state
+- [x] `testing-checklist.md` records Track E targeted and full regression results
 
 ---
 

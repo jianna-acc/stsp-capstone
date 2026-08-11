@@ -151,6 +151,20 @@ class FakeClient:
                     "is_correct": False,
                 },
             ],
+            "flashcard_review_events": [
+                {
+                    "outcome": "known",
+                    "reviewed_at": (
+                        "2026-08-10T05:00:00+00:00"
+                    ),
+                },
+                {
+                    "outcome": "review_again",
+                    "reviewed_at": (
+                        "2026-08-09T05:00:00+00:00"
+                    ),
+                },
+            ],
         }
 
     def table(
@@ -412,3 +426,42 @@ def test_invalid_completed_quiz_attempt_is_rejected() -> None:
         repository.list_completed_quiz_attempts(
             user_id=USER_ID,
         )
+
+
+def test_flashcard_reviews_are_owner_scoped() -> None:
+    """Flashcard performance must read only the student's reviews."""
+
+    client = FakeClient()
+
+    repository = AnalyticsRepository(
+        client,
+    )
+
+    reviews = repository.list_flashcard_review_events(
+        user_id=USER_ID,
+    )
+
+    assert len(
+        reviews,
+    ) == 2
+
+    assert reviews[0].outcome.value == "known"
+    assert reviews[1].outcome.value == "review_again"
+
+    query = client.queries[0]
+
+    assert query.selected_columns == "outcome,reviewed_at"
+
+    assert query.filters == [
+        (
+            "user_id",
+            str(USER_ID),
+        ),
+    ]
+
+    assert query.orderings == [
+        (
+            "reviewed_at",
+            True,
+        ),
+    ]

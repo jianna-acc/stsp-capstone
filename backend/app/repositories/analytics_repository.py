@@ -11,6 +11,9 @@ from uuid import UUID
 
 from postgrest.exceptions import APIError
 
+from app.schemas.flashcard_review import (
+    FlashcardReviewOutcome,
+)
 from app.services.analytics_errors import AnalyticsRepositoryError
 
 
@@ -36,6 +39,17 @@ class QuizAnswerAnalyticsRecord:
 
     topic: str
     is_correct: bool
+
+
+@dataclass(
+    frozen=True,
+    slots=True,
+)
+class FlashcardReviewAnalyticsRecord:
+    """Minimal persisted Flashcard review evidence for Analytics."""
+
+    outcome: FlashcardReviewOutcome
+    reviewed_at: datetime
 
 
 class _SupabaseResponse(
@@ -251,6 +265,45 @@ class AnalyticsRepository:
             for row in rows
         )
 
+    def list_flashcard_review_events(
+        self,
+        *,
+        user_id: UUID,
+    ) -> tuple[
+        FlashcardReviewAnalyticsRecord,
+        ...,
+    ]:
+        """Return persisted Flashcard reviews belonging to one student."""
+
+        query = (
+            self._client.table(
+                "flashcard_review_events",
+            )
+            .select(
+                "outcome,reviewed_at",
+            )
+            .eq(
+                "user_id",
+                str(user_id),
+            )
+            .order(
+                "reviewed_at",
+                desc=True,
+            )
+        )
+
+        rows = self._execute_rows(
+            query,
+            resource="Flashcard reviews",
+        )
+
+        return tuple(
+            self._parse_flashcard_review(
+                row,
+            )
+            for row in rows
+        )
+
     def _execute_count(
         self,
         query: _SupabaseQuery,
@@ -404,6 +457,40 @@ class AnalyticsRepository:
         return QuizAnswerAnalyticsRecord(
             topic=topic.strip(),
             is_correct=is_correct,
+        )
+
+    def _parse_flashcard_review(
+        self,
+        row: Mapping[
+            str,
+            object,
+        ],
+    ) -> FlashcardReviewAnalyticsRecord:
+        """Validate persisted Flashcard review Analytics evidence."""
+
+        try:
+            outcome = FlashcardReviewOutcome(
+                row.get(
+                    "outcome",
+                ),
+            )
+        except (
+            TypeError,
+            ValueError,
+        ) as exc:
+            raise AnalyticsRepositoryError(
+                "Stored Flashcard review outcome is invalid.",
+            ) from exc
+
+        reviewed_at = self._parse_datetime(
+            row.get(
+                "reviewed_at",
+            ),
+        )
+
+        return FlashcardReviewAnalyticsRecord(
+            outcome=outcome,
+            reviewed_at=reviewed_at,
         )
 
     @staticmethod

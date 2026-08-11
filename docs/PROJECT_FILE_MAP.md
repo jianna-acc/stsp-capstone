@@ -39,7 +39,8 @@ Update it whenever files, APIs, migrations, owners, or major system connections 
 | Phase 6D    | Large-material multi-pass reviewer generation            | Integrated |
 | Track A | Flashcard backend, large-material generation, frontend study UI, and saved-deck management | Integrated |
 | Track B | Quiz generation, attempts, history, review, and deletion | Integrated |
-| Later | Planning, analytics | Planned |
+| Track E | Analytics and Flashcard self-assessment evidence | Ready; shared migration pending coordination |
+| Later | Remaining planning, scheduling, and deployment work | Planned |
 
 
 ---
@@ -90,6 +91,7 @@ Update it whenever files, APIs, migrations, owners, or major system connections 
 | `/docs/AI_RAG_API_ENDPOINT.md` | Integrated | Member 3 | RAG endpoint | FastAPI, frontend |
 | `/docs/AI_REVIEWER_GENERATION.md` | Integrated | Member 3 | Reviewer generation and large-material batching design | Gemini, reviewer services |
 | `/docs/AI_QUIZ_GENERATION.md` | Integrated | Member 3 | Quiz generation, private answer-key, attempts, scoring, history, and review design | Gemini, Quiz services |
+| `/docs/ANALYTICS_DESIGN.md` | Ready | Track E — Analytics | Analytics metrics, canonical sources, Flashcard review evidence, and security | Track E backend, Track A, Track B |
 
 ---
 
@@ -463,12 +465,12 @@ Large-material generation preserves the complete original source bundle for owne
 | Path                                                                          | Status     | Owner    | Purpose                                                                           | Connections                         |
 | ----------------------------------------------------------------------------- | ---------- | -------- | --------------------------------------------------------------------------------- | ----------------------------------- |
 | `/frontend/app/(protected)/flashcards/page.tsx`                               | Integrated | Frontend | Protected Flashcard page                                                          | Flashcard workspace, filter options |
-| `/frontend/features/flashcards/types.ts`                                      | Integrated | Frontend | Flashcard generation, saved-deck, source, and filter contracts                    | API client, UI                      |
-| `/frontend/features/flashcards/api.ts`                                        | Integrated | Frontend | Authenticated generate/list/get/delete Flashcard API client                       | Protected Flashcard API             |
+| `/frontend/features/flashcards/types.ts`                                      | Integrated | Frontend | Flashcard generation, saved-deck, source, filter, and review contracts            | API client, UI                      |
+| `/frontend/features/flashcards/api.ts`                                        | Integrated | Frontend | Authenticated generate/list/get/delete/review Flashcard API client                | Protected Flashcard API             |
 | `/frontend/features/flashcards/server/options.ts`                             | Integrated | Frontend | Loads authenticated subjects and ready study materials                            | Supabase                            |
 | `/frontend/features/flashcards/components/FlashcardGenerationForm.tsx`        | Integrated | Frontend | Subject/file scope and card-count generation controls                             | Flashcard API                       |
 | `/frontend/features/flashcards/components/FlashcardGenerationForm.module.css` | Integrated | Frontend | Generation-form styling                                                           | Flashcard generation form           |
-| `/frontend/features/flashcards/components/FlashcardStudyViewer.tsx`           | Integrated | Frontend | Interactive question/answer study viewer with navigation                          | Generated and saved decks           |
+| `/frontend/features/flashcards/components/FlashcardStudyViewer.tsx`           | Integrated | Frontend | Interactive study viewer with navigation and durable self-assessment actions      | Generated/saved decks, review API   |
 | `/frontend/features/flashcards/components/FlashcardStudyViewer.module.css`    | Integrated | Frontend | Flashcard viewer and distinct answer-side styling                                 | Flashcard study viewer              |
 | `/frontend/features/flashcards/components/SavedFlashcardList.tsx`             | Integrated | Frontend | Lists, reopens, and requests deletion of saved Flashcard decks                    | Flashcard workspace                 |
 | `/frontend/features/flashcards/components/SavedFlashcardList.module.css`      | Integrated | Frontend | Saved-deck list styling                                                           | Saved Flashcards                    |
@@ -480,10 +482,10 @@ Large-material generation preserves the complete original source bundle for owne
 
 | Path                                                                        | Status | Purpose                                                                                      |
 | --------------------------------------------------------------------------- | ------ | -------------------------------------------------------------------------------------------- |
-| `/frontend/features/flashcards/api.test.ts`                                 | Ready  | Authenticated Flashcard generate/list/get/delete API behavior                                |
+| `/frontend/features/flashcards/api.test.ts`                                 | Ready  | Authenticated Flashcard generate/list/get/delete/review API behavior                         |
 | `/frontend/features/flashcards/server/options.test.ts`                      | Ready  | Subject and ready-study-material filter loading                                              |
 | `/frontend/features/flashcards/components/FlashcardGenerationForm.test.tsx` | Ready  | Scope selection, card count, generation, and error states                                    |
-| `/frontend/features/flashcards/components/FlashcardStudyViewer.test.tsx`    | Ready  | Question/answer flipping, navigation, boundaries, and deck reset                             |
+| `/frontend/features/flashcards/components/FlashcardStudyViewer.test.tsx`    | Ready  | Flipping, navigation, review persistence, failure handling, boundaries, and deck reset       |
 | `/frontend/features/flashcards/components/SavedFlashcardList.test.tsx`      | Ready  | Saved list, metadata, opening, deletion callbacks, empty state, and errors                   |
 | `/frontend/features/flashcards/components/FlashcardWorkspace.test.tsx`      | Ready  | Saved-list loading, generation refresh, reopening, deletion, viewer cleanup, and safe errors |
 
@@ -537,19 +539,41 @@ Large-material generation preserves the complete original source bundle for owne
 
 ## Phase 6 Track E — Analytics
 
-| File | Purpose | Owner | Connections |
-|---|---|---|---|
-| `backend/app/api/analytics_dependency.py` | Constructs the Analytics service and repository dependency graph. | Track E — Analytics | Supabase client, Analytics repository, Analytics service |
-| `backend/app/api/routes/analytics.py` | Exposes authenticated Analytics endpoints. | Track E — Analytics | Authentication dependency, Analytics service |
-| `backend/app/repositories/analytics_repository.py` | Reads owner-scoped canonical subject and study-material data. | Track E — Analytics | subjects, study_files, quiz_attempts, quiz_attempt_answers, Supabase client |
-| `backend/app/schemas/analytics.py` | Defines Analytics request/response contracts and metric states. | Track E — Analytics | Analytics route and service |
-| `backend/app/services/analytics_errors.py` | Defines controlled Analytics feature errors. | Track E — Analytics | Repository and route |
-| `backend/app/services/analytics_service.py` | Aggregates canonical data and deferred performance metrics. | Track E — Analytics | Analytics repository, Track B Quiz attempts; future Flashcard study evidence |
-| `backend/tests/test_analytics_api_endpoint.py` | Tests authentication, periods, responses, and controlled API failures. | Track E — Analytics | Analytics API |
-| `backend/tests/test_analytics_repository.py` | Tests owner-scoped canonical data access. | Track E — Analytics | Analytics repository |
-| `backend/tests/test_analytics_router_registration.py` | Protects Analytics router registration. | Track E — Analytics | FastAPI application router |
-| `backend/tests/test_analytics_service.py` | Tests Analytics aggregation behavior. | Track E — Analytics | Analytics service |
-| `docs/ANALYTICS_DESIGN.md` | Documents Track E architecture, scope, and future Track A/B integration. | Track E — Analytics | Phase 6 implementation |
+| File | Status | Purpose | Owner | Connections |
+|---|---|---|---|---|
+| `backend/app/api/analytics_dependency.py` | Ready | Constructs the Analytics service and repository dependency graph. | Track E — Analytics | Supabase client, Analytics repository, Analytics service |
+| `backend/app/api/routes/analytics.py` | Ready | Exposes `GET /api/analytics/overview`. | Track E — Analytics | Authentication dependency, Analytics service |
+| `backend/app/repositories/analytics_repository.py` | Ready | Reads owner-scoped subject, study-material, completed Quiz, Quiz-answer, and Flashcard-review evidence. | Track E — Analytics | `subjects`, `study_files`, `quiz_attempts`, `quiz_attempt_answers`, `flashcard_review_events` |
+| `backend/app/schemas/analytics.py` | Ready | Defines Analytics response contracts, periods, metric availability, and topic-performance records. | Track E — Analytics | Analytics route and service |
+| `backend/app/services/analytics_errors.py` | Ready | Defines controlled Analytics feature errors. | Track E — Analytics | Analytics repository and route |
+| `backend/app/services/analytics_service.py` | Ready | Aggregates current inventory, weighted Quiz accuracy, Quiz topic performance, and Flashcard self-assessment performance. | Track E — Analytics | Analytics repository, Track A Flashcards, Track B Quiz evidence |
+| `backend/app/schemas/flashcard_review.py` | Ready | Defines Flashcard self-assessment review request, outcome, and response contracts. | Track E — Analytics | Flashcard review API and persistence |
+| `backend/app/repositories/flashcard_review_repository.py` | Ready | Validates owned Flashcard review targets and persists durable review events. | Track E — Analytics | `flashcard_decks`, `flashcards`, `flashcard_review_events` |
+| `backend/app/services/flashcard_review_errors.py` | Ready | Defines controlled Flashcard-review errors. | Track E — Analytics | Flashcard review repository and API |
+| `backend/app/services/flashcard_review_service.py` | Ready | Coordinates Flashcard self-assessment persistence. | Track E — Analytics | Flashcard review repository |
+| `backend/app/api/flashcard_review_dependency.py` | Ready | Constructs the Flashcard-review repository/service dependency graph. | Track E — Analytics | Supabase client, review repository, review service |
+| `backend/app/api/routes/flashcard_reviews.py` | Ready | Exposes the protected Flashcard self-assessment review endpoint. | Track E — Analytics | Authentication, review service |
+| `frontend/features/flashcards/types.ts` | Ready | Includes Flashcard review request/response and outcome contracts used by the frontend. | Track A + Track E integration | Flashcard frontend API |
+| `frontend/features/flashcards/api.ts` | Ready | Sends authenticated Flashcard review events in addition to existing Flashcard requests. | Track A + Track E integration | Protected Flashcard API |
+| `frontend/features/flashcards/components/FlashcardStudyViewer.tsx` | Ready | Lets the student persist `I Know This` or `Review Again` after revealing an answer. | Track A + Track E integration | Flashcard review API |
+| `backend/tests/test_analytics_api_endpoint.py` | Ready | Tests Analytics authentication, reporting periods, responses, and controlled failures. | Track E — Analytics | Analytics API |
+| `backend/tests/test_analytics_repository.py` | Ready | Tests owner-scoped canonical Analytics reads including Quiz and Flashcard-review evidence. | Track E — Analytics | Analytics repository |
+| `backend/tests/test_analytics_router_registration.py` | Ready | Protects Analytics router registration. | Track E — Analytics | FastAPI application router |
+| `backend/tests/test_analytics_service.py` | Ready | Tests Quiz/Flashcard aggregation, periods, topic classification, empty evidence, and owner scope. | Track E — Analytics | Analytics service |
+| `backend/tests/test_flashcard_review_api_endpoint.py` | Ready | Tests Flashcard-review authentication, valid writes, and request validation. | Track E — Analytics | Flashcard review API |
+| `backend/tests/test_flashcard_review_migration.py` | Ready | Protects the Flashcard review-event migration security foundation. | Track E — Analytics | Supabase migration |
+| `backend/tests/test_flashcard_review_repository.py` | Ready | Tests owner/card validation and review persistence. | Track E — Analytics | Flashcard review repository |
+| `backend/tests/test_flashcard_review_router_registration.py` | Ready | Protects Flashcard-review route registration. | Track E — Analytics | FastAPI application router |
+| `backend/tests/test_flashcard_review_service.py` | Ready | Tests Flashcard-review service delegation. | Track E — Analytics | Flashcard review service |
+| `frontend/features/flashcards/api.test.ts` | Ready | Tests authenticated Flashcard review requests and response validation alongside existing Flashcard API behavior. | Track A + Track E integration | Frontend Flashcard API |
+| `frontend/features/flashcards/components/FlashcardStudyViewer.test.tsx` | Ready | Tests review controls, known/review-again persistence, failures, and navigation behavior. | Track A + Track E integration | Flashcard study viewer |
+| `supabase/migrations/20260811162000_create_flashcard_review_events.sql` | Ready; remote pending | Adds durable owner-scoped Flashcard self-assessment evidence for Analytics. | Track E — Analytics | `flashcard_decks`, `flashcards`, RLS |
+| `docs/ANALYTICS_DESIGN.md` | Ready | Documents Track E architecture, canonical metrics, security, validation, and remaining unavailable metrics. | Track E — Analytics | Phase 6 implementation |
+
+Track E does not depend on the unmerged Track C or Track D application code for its implemented metrics.
+
+The Track E migration is intentionally not yet applied to the shared remote database while Track C and Track D migrations are still being coordinated.
+
 
 # Important Supabase Resources
 
@@ -574,6 +598,7 @@ public.reviewers
 
 public.flashcard_decks
 public.flashcards
+public.flashcard_review_events
 
 public.quizzes
 public.quiz_questions

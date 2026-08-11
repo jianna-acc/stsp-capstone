@@ -1062,6 +1062,58 @@ The client must not attempt to parse a JSON body from a successful `204` respons
 
 ---
 
+## Record Flashcard Review
+
+```http
+POST /api/flashcards/{deck_id}/reviews
+```
+
+Persists one authenticated student self-assessment for a Flashcard after its answer is revealed.
+
+Representative request:
+
+```json
+{
+  "card_position": 0,
+  "outcome": "known"
+}
+```
+
+Supported outcomes:
+
+```text
+known
+review_again
+```
+
+Representative response:
+
+```json
+{
+  "id": "review-uuid",
+  "deck_id": "deck-uuid",
+  "card_position": 0,
+  "outcome": "known",
+  "reviewed_at": "2026-08-11T08:00:00Z"
+}
+```
+
+The authenticated student's UUID is derived from the bearer token and cannot be supplied by the request body.
+
+The backend verifies that:
+
+- the deck belongs to the authenticated student;
+- the requested card position exists in that deck;
+- the outcome is one of the supported self-assessment values.
+
+Successful status:
+
+```text
+201 Created
+```
+
+---
+
 # Flashcard API Errors
 
 Controlled Flashcard errors use:
@@ -1085,6 +1137,10 @@ Current controlled mappings include:
 | `502` | `FLASHCARD_GENERATION_FAILED` | AI generation provider failed |
 | `503` | `FLASHCARD_PERSISTENCE_FAILED` | Flashcard storage is temporarily unavailable |
 | `503` | `FLASHCARD_SOURCE_STORAGE_FAILED` | Study-material source loading is temporarily unavailable |
+| `400` | Flashcard review validation failure | Review request is invalid |
+| `404` | Flashcard review target not found | Deck/card review target is missing or not owned |
+| `500` | Flashcard review response failure | Persisted review response could not be processed |
+| `503` | Flashcard review persistence failure | Review storage is temporarily unavailable |
 
 Authentication failures continue to use the existing protected-API authentication behavior.
 
@@ -1106,6 +1162,10 @@ Flashcard API security requirements:
 10. Study-material content is treated as untrusted prompt content.
 11. Generated output must pass schema, exact-card-count, and duplicate validation before persistence.
 12. Raw backend secrets, provider errors, and database details must not appear in public API errors.
+13. Flashcard review requests cannot provide a trusted `user_id`.
+14. Flashcard reviews are accepted only for owned decks and valid card positions.
+15. Browser clients cannot directly insert `flashcard_review_events`; writes pass through the trusted backend.
+16. Authenticated browser reads of Flashcard review events are owner-scoped through RLS.
 
 ---
 
@@ -1490,6 +1550,144 @@ Quiz-attempt controlled errors include:
 10. Public errors must not expose provider traces, database details, tokens, or secrets.
 
 
+# Analytics API
+
+Analytics endpoints require authenticated Supabase bearer authentication.
+
+The backend derives the trusted student UUID from the validated bearer token.
+
+Analytics requests cannot provide or override `user_id`.
+
+## Get Analytics Overview
+
+```http
+GET /api/analytics/overview
+```
+
+Optional query parameter:
+
+```text
+period
+```
+
+Supported values:
+
+```text
+all_time
+last_7_days
+last_30_days
+```
+
+Default:
+
+```text
+all_time
+```
+
+Representative response:
+
+```json
+{
+  "period": "all_time",
+  "data_state": "partial",
+  "subject_count": {
+    "availability": "available",
+    "value": 3,
+    "scope": "current_inventory",
+    "message": null
+  },
+  "study_material_count": {
+    "availability": "available",
+    "value": 8,
+    "scope": "current_inventory",
+    "message": null
+  },
+  "ready_study_material_count": {
+    "availability": "available",
+    "value": 6,
+    "scope": "current_inventory",
+    "message": null
+  },
+  "quiz_accuracy_percent": {
+    "availability": "available",
+    "value": 80.0,
+    "sample_size": 10,
+    "message": null
+  },
+  "flashcard_performance_percent": {
+    "availability": "available",
+    "value": 75.0,
+    "sample_size": 8,
+    "message": null
+  },
+  "study_minutes": {
+    "availability": "unavailable",
+    "value": null,
+    "sample_size": 0,
+    "message": "General study duration is unavailable because no canonical study-activity duration source exists yet."
+  },
+  "strong_topics": [
+    {
+      "topic": "Algebra",
+      "score_percent": 75.0,
+      "sample_size": 4
+    }
+  ],
+  "weak_topics": [
+    {
+      "topic": "Biology",
+      "score_percent": 50.0,
+      "sample_size": 4
+    }
+  ]
+}
+```
+
+Current canonical data sources are:
+
+```text
+subjects
+study_files
+quiz_attempts
+quiz_attempt_answers
+flashcard_review_events
+```
+
+Inventory counts represent current stored resources and are not period-filtered.
+
+Quiz accuracy uses completed attempts and is weighted by total completed question count.
+
+Strong and weak Quiz topics follow Track B's 70% classification threshold.
+
+Flashcard performance is a self-assessment metric calculated from persisted `known` and `review_again` review events.
+
+General study minutes remain explicitly unavailable until a canonical duration source exists.
+
+If the selected period has no completed Quiz attempts or no Flashcard review events, the corresponding source remains available while the metric value is `null` with `sample_size = 0`.
+
+## Analytics Errors
+
+| HTTP | Meaning |
+|---|---|
+| `401` | Authentication is missing, invalid, or expired |
+| `422` | Reporting period is unsupported |
+| `503` | Canonical Analytics data is temporarily unavailable |
+
+## Analytics Security Contract
+
+1. Bearer authentication determines the trusted student identity.
+2. Analytics requests cannot choose `user_id`.
+3. Subject and study-material queries are owner-scoped.
+4. Quiz attempts are filtered to the authenticated student.
+5. Topic evidence is read only for the selected owned completed attempts.
+6. Flashcard review evidence is filtered to the authenticated student.
+7. Analytics does not expose Quiz answer keys.
+8. Controlled failures do not expose database credentials, backend secrets, or provider traces.
+
+The Flashcard review persistence migration may be present on the Track E branch before it is applied to the shared remote database. Shared database application must be coordinated when other team migrations are in progress.
+
+---
+
 # OpenAPI Verification
 
 Start FastAPI and open:
@@ -1522,7 +1720,10 @@ DELETE /api/reviewers/{reviewer_id}
 POST   /api/flashcards/generate
 GET    /api/flashcards
 GET    /api/flashcards/{deck_id}
+POST   /api/flashcards/{deck_id}/reviews
 DELETE /api/flashcards/{deck_id}
+
+GET    /api/analytics/overview
 
 POST   /api/quizzes/generate
 GET    /api/quizzes

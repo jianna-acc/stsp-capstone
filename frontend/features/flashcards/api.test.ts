@@ -1,6 +1,6 @@
 // File: /frontend/features/flashcards/api.test.ts
-// Purpose: Tests authenticated Flashcard generation, saved-deck
-// operations, response validation, and safe API errors.
+// Purpose: Tests authenticated Flashcard generation, saved-deck,
+// review operations, response validation, and safe API errors.
 
 import {
   afterEach,
@@ -32,6 +32,7 @@ import {
   generateFlashcards,
   getFlashcardDeck,
   listFlashcardDecks,
+  recordFlashcardReview,
 } from "./api";
 
 const FLASHCARD_DECK_RESPONSE = {
@@ -143,6 +144,22 @@ const FLASHCARD_LIST_RESPONSE = {
         "2026-08-09T08:00:00Z",
     },
   ],
+} as const;
+
+const FLASHCARD_REVIEW_RESPONSE = {
+  id:
+    "review-id",
+
+  deck_id:
+    "deck-id",
+
+  card_position: 1,
+
+  outcome:
+    "known",
+
+  reviewed_at:
+    "2026-08-11T08:00:00Z",
 } as const;
 
 function createJsonResponse(
@@ -475,6 +492,253 @@ describe(
         expect(
           requestOptions.method,
         ).toBe("GET");
+      },
+    );
+
+    it(
+      "records authenticated Flashcard review evidence",
+      async () => {
+        mocks.fetch
+          .mockResolvedValue(
+            createJsonResponse(
+              FLASHCARD_REVIEW_RESPONSE,
+              201,
+            ),
+          );
+
+        const controller =
+          new AbortController();
+
+        const result =
+          await recordFlashcardReview(
+            "deck-id",
+            {
+              card_position: 1,
+              outcome: "known",
+            },
+            {
+              signal:
+                controller.signal,
+            },
+          );
+
+        expect(result).toEqual(
+          FLASHCARD_REVIEW_RESPONSE,
+        );
+
+        const [
+          requestUrl,
+          requestOptions,
+        ] = mocks.fetch.mock
+          .calls[0] as [
+          string,
+          RequestInit,
+        ];
+
+        expect(
+          requestUrl,
+        ).toBe(
+          "http://127.0.0.1:8000/api/flashcards/deck-id/reviews",
+        );
+
+        expect(
+          requestOptions.method,
+        ).toBe("POST");
+
+        expect(
+          requestOptions.cache,
+        ).toBe("no-store");
+
+        expect(
+          requestOptions.signal,
+        ).toBe(
+          controller.signal,
+        );
+
+        expect(
+          requestOptions.headers,
+        ).toEqual({
+          "Content-Type":
+            "application/json",
+
+          Authorization:
+            "Bearer test-access-token",
+        });
+
+        expect(
+          JSON.parse(
+            String(
+              requestOptions.body,
+            ),
+          ),
+        ).toEqual({
+          card_position: 1,
+          outcome: "known",
+        });
+      },
+    );
+
+    it(
+      "supports review-again Flashcard evidence",
+      async () => {
+        mocks.fetch
+          .mockResolvedValue(
+            createJsonResponse(
+              {
+                ...FLASHCARD_REVIEW_RESPONSE,
+
+                card_position: 2,
+
+                outcome:
+                  "review_again",
+              },
+              201,
+            ),
+          );
+
+        const result =
+          await recordFlashcardReview(
+            "deck-id",
+            {
+              card_position: 2,
+              outcome:
+                "review_again",
+            },
+          );
+
+        expect(
+          result.outcome,
+        ).toBe(
+          "review_again",
+        );
+
+        expect(
+          result.card_position,
+        ).toBe(
+          2,
+        );
+      },
+    );
+
+    it(
+      "rejects an invalid review position before making a request",
+      async () => {
+        await expect(
+          recordFlashcardReview(
+            "deck-id",
+            {
+              card_position: -1,
+              outcome: "known",
+            },
+          ),
+        ).rejects.toMatchObject({
+          status: 400,
+
+          code:
+            "FLASHCARD_REVIEW_POSITION_INVALID",
+        });
+
+        expect(
+          mocks.fetch,
+        ).not.toHaveBeenCalled();
+      },
+    );
+
+    it(
+      "rejects an empty review deck id before making a request",
+      async () => {
+        await expect(
+          recordFlashcardReview(
+            "   ",
+            {
+              card_position: 0,
+              outcome: "known",
+            },
+          ),
+        ).rejects.toMatchObject({
+          status: 400,
+
+          code:
+            "FLASHCARD_DECK_ID_REQUIRED",
+        });
+
+        expect(
+          mocks.fetch,
+        ).not.toHaveBeenCalled();
+      },
+    );
+
+    it(
+      "rejects malformed successful Flashcard review responses",
+      async () => {
+        mocks.fetch
+          .mockResolvedValue(
+            createJsonResponse(
+              {
+                id:
+                  "review-id",
+
+                deck_id:
+                  "deck-id",
+
+                outcome:
+                  "known",
+              },
+              201,
+            ),
+          );
+
+        await expect(
+          recordFlashcardReview(
+            "deck-id",
+            {
+              card_position: 0,
+              outcome: "known",
+            },
+          ),
+        ).rejects.toMatchObject({
+          status: 502,
+
+          code:
+            "INVALID_FLASHCARD_REVIEW_RESPONSE",
+        });
+      },
+    );
+
+    it(
+      "maps a controlled Flashcard review backend error",
+      async () => {
+        mocks.fetch
+          .mockResolvedValue(
+            createJsonResponse(
+              {
+                error_code:
+                  "FLASHCARD_REVIEW_NOT_FOUND",
+
+                message:
+                  "The Flashcard review target was not found.",
+              },
+              404,
+            ),
+          );
+
+        await expect(
+          recordFlashcardReview(
+            "deck-id",
+            {
+              card_position: 0,
+              outcome: "known",
+            },
+          ),
+        ).rejects.toMatchObject({
+          status: 404,
+
+          code:
+            "FLASHCARD_REVIEW_NOT_FOUND",
+
+          message:
+            "The Flashcard review target was not found.",
+        });
       },
     );
 

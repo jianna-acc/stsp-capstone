@@ -56,10 +56,17 @@ The system currently includes:
 - One-question-at-a-time Quiz attempts with immediate grading feedback
 - Final Quiz scoring with strong/weak topic analysis
 - Saved Quiz history, completed-attempt review, retaking, and deletion
+- Durable Flashcard self-assessment review events
+- `I Know This` and `Review Again` Flashcard study actions
+- Authenticated Analytics overview API
+- Weighted Quiz accuracy Analytics
+- Strong/weak Quiz topic Analytics
+- Self-assessed Flashcard performance Analytics
+- All-time, 7-day, and 30-day Analytics periods
 
 The application now includes protected Reviewer, Flashcard, and Quiz frontends for generating and studying AI-generated learning materials from a whole subject or one ready study material. Quiz generation and attempts use authenticated FastAPI endpoints while private answer keys remain backend-only until the appropriate answer feedback or completed-attempt review is returned.
 
-Future phases may add study planning, scheduling, analytics, and deployment improvements.
+Future phases may add study planning, scheduling, additional activity-based Analytics, and deployment improvements.
 
 ---
 
@@ -79,7 +86,8 @@ Future phases may add study planning, scheduling, analytics, and deployment impr
 | Phase 6D | Large-material multi-pass reviewer generation | Implemented |
 | Track A | Flashcard backend, large-material generation, protected frontend, saved-deck access, and interactive study UI | Implemented |
 | Track B | Quiz generation, attempts, scoring, history, review, retake, deletion | Implemented |
-| Later phases | Study plans, analytics, deployment | Planned |
+| Track E | Analytics, Quiz performance aggregation, and Flashcard self-assessment evidence | Implemented in code; shared migration pending coordination |
+| Later phases | Remaining study planning, scheduling, and deployment work | Planned |
 
 ---
 
@@ -945,6 +953,7 @@ public.reviewers
 
 public.flashcard_decks
 public.flashcards
+public.flashcard_review_events
 
 public.quizzes
 public.quiz_questions
@@ -982,9 +991,13 @@ study-materials
 18. Browser roles cannot directly call the trusted Flashcard creation RPC.
 19. Generated Flashcard decks are persisted only after successful structured AI validation.
 20. Flashcard deck deletion cascades to its individual Flashcards.
-21. Normal Quiz responses must not expose `correct_answer`, `accepted_answers`, or `explanation`.
-22. Quiz answer keys are read only through trusted backend operations.
-23. Completed-attempt review requires authenticated ownership and completed attempt state.
+21. Flashcard self-assessment requests cannot provide a trusted `user_id`.
+22. Flashcard review creation validates owned decks and existing card positions.
+23. Browser clients cannot directly insert Flashcard review events.
+24. Analytics queries are scoped to the authenticated student.
+25. Normal Quiz responses must not expose `correct_answer`, `accepted_answers`, or `explanation`.
+26. Quiz answer keys are read only through trusted backend operations.
+27. Completed-attempt review requires authenticated ownership and completed attempt state.
 
 ---
 
@@ -1084,6 +1097,40 @@ Browser anon and authenticated roles cannot execute the persistence RPC directly
 ```
 
 These migrations create owned Quiz metadata, private Quiz questions and answer keys, Quiz attempts, submitted-answer history, and trusted atomic RPCs for Quiz creation, attempt start, and answer submission.
+
+---
+
+# Track E Analytics Migration
+
+```text
+20260811162000_create_flashcard_review_events.sql
+```
+
+This migration creates:
+
+```text
+flashcard_review_events
+```
+
+The table provides durable Flashcard self-assessment evidence for Analytics.
+
+It includes:
+
+```text
+authenticated owner linkage
+Flashcard deck linkage
+card-position validation
+known/review_again outcome constraint
+review timestamps
+indexes
+Row Level Security
+restricted browser privileges
+trusted backend write access
+```
+
+The review target is validated against the owned Flashcard deck and an existing card position.
+
+The migration is intentionally allowed to remain unapplied to the shared remote database while in-progress Track C and Track D migrations are being coordinated.
 
 ---
 
@@ -1329,35 +1376,100 @@ flowchart TD
 
 ## Phase 6 Track E — Analytics
 
-```mermaid
-flowchart LR
-    U[Authenticated Student]
-    AUTH[Authenticated User Dependency]
-    ROUTE[Analytics API]
-    SERVICE[Analytics Service]
-    REPO[Analytics Repository]
-    SUBJECTS[(subjects)]
-    FILES[(study_files)]
-    A[Track A Flashcards]
-    B[Track B Quizzes]
-    ACT[Future Study Activity]
+Track E aggregates authenticated canonical study evidence without duplicating Quiz or Flashcard feature state.
 
-    U --> AUTH
-    AUTH --> ROUTE
-    ROUTE --> SERVICE
-    SERVICE --> REPO
-    REPO --> SUBJECTS
-    REPO --> FILES
+Protected endpoint:
 
-    A -. future provider .-> SERVICE
-    B -. future provider .-> SERVICE
-    ACT -. future provider .-> SERVICE
+```text
+GET /api/analytics/overview
 ```
 
-The partial implementation currently exposes canonical subject and
-study-material inventory metrics. Quiz, flashcard, topic-performance, and
-study-activity metrics remain deferred until their canonical data sources are
-available.
+```mermaid
+flowchart LR
+    U["Authenticated Student"]
+    AUTH["Authenticated User Dependency"]
+
+    ANALYTICS_API["Analytics API"]
+    ANALYTICS_SERVICE["Analytics Service"]
+    ANALYTICS_REPO["Analytics Repository"]
+
+    SUBJECTS[("subjects")]
+    FILES[("study_files")]
+    QUIZ_ATTEMPTS[("quiz_attempts")]
+    QUIZ_ANSWERS[("quiz_attempt_answers")]
+    FLASHCARD_REVIEWS[("flashcard_review_events")]
+
+    FLASHCARD_UI["FlashcardStudyViewer"]
+    FLASHCARD_REVIEW_API["Flashcard Review API"]
+    FLASHCARD_REVIEW_SERVICE["Flashcard Review Service"]
+
+    U --> AUTH
+    AUTH --> ANALYTICS_API
+    ANALYTICS_API --> ANALYTICS_SERVICE
+    ANALYTICS_SERVICE --> ANALYTICS_REPO
+
+    ANALYTICS_REPO --> SUBJECTS
+    ANALYTICS_REPO --> FILES
+    ANALYTICS_REPO --> QUIZ_ATTEMPTS
+    ANALYTICS_REPO --> QUIZ_ANSWERS
+    ANALYTICS_REPO --> FLASHCARD_REVIEWS
+
+    U --> FLASHCARD_UI
+    FLASHCARD_UI --> FLASHCARD_REVIEW_API
+    FLASHCARD_REVIEW_API --> FLASHCARD_REVIEW_SERVICE
+    FLASHCARD_REVIEW_SERVICE --> FLASHCARD_REVIEWS
+```
+
+Current Analytics metrics include:
+
+```text
+Current subject count
+Current study-material count
+Current ready-study-material count
+Weighted Quiz accuracy
+Strong Quiz topics
+Weak Quiz topics
+Self-assessed Flashcard performance
+```
+
+Performance reporting supports:
+
+```text
+all_time
+last_7_days
+last_30_days
+```
+
+Quiz accuracy uses completed Quiz attempts and is weighted by total question count rather than averaging per-attempt percentages.
+
+Strong and weak topics are derived from persisted Quiz-answer correctness and use the same 70% threshold as Track B.
+
+Flashcard performance is derived from durable self-assessment events:
+
+```text
+known
+review_again
+```
+
+The metric is:
+
+```text
+known events / all review events × 100
+```
+
+This is explicitly self-assessed performance rather than automatically graded Flashcard correctness.
+
+General study minutes remain unavailable because no canonical general study-duration source exists yet.
+
+The Analytics response therefore currently retains:
+
+```text
+data_state = partial
+```
+
+Track E does not depend on unmerged Track C or Track D code for its implemented metrics.
+
+The Track E Flashcard review migration is present on the branch but is intentionally not yet applied to the shared remote database while the team coordinates the in-progress Track C and Track D migrations.
 
 
 Each partial batch prompt identifies itself as one ordered portion of a larger source collection. The model is instructed to use only concepts supported by that batch and not assume information from unseen batches.
@@ -1568,6 +1680,7 @@ Implemented endpoints:
 POST   /api/flashcards/generate
 GET    /api/flashcards
 GET    /api/flashcards/{deck_id}
+POST   /api/flashcards/{deck_id}/reviews
 DELETE /api/flashcards/{deck_id}
 ```
 The authenticated user's UUID comes from the validated Supabase bearer token.
@@ -1771,6 +1884,7 @@ Implemented endpoints:
 POST   /api/flashcards/generate
 GET    /api/flashcards
 GET    /api/flashcards/{deck_id}
+POST   /api/flashcards/{deck_id}/reviews
 DELETE /api/flashcards/{deck_id}
 ```
 
@@ -1814,6 +1928,10 @@ The interactive study viewer supports:
 * Previous and next navigation
 * Automatic return to the question side when changing cards
 * Current-card progress display
+* Self-assessment actions after revealing the answer
+* `I Know This` persistence
+* `Review Again` persistence
+* Safe review-save error feedback
 
 Saved Flashcards support:
 
@@ -1833,6 +1951,7 @@ Select subject or file
 → Generate Flashcards
 → Persist deck automatically
 → Study question and answer
+→ Record I Know This or Review Again
 → Reopen from Saved Flashcards later
 → Delete when no longer needed
 ```
@@ -1850,6 +1969,7 @@ Implemented scope includes:
 * Structured AI generation
 * Large-material multi-pass generation
 * Interactive Flashcard frontend
+* Durable Flashcard self-assessment review actions
 * Saved-deck reopening
 * Saved-deck deletion
 * Automated backend and frontend coverage
@@ -2089,7 +2209,7 @@ Future phases may introduce:
 - Academic task integration
 - Study-plan generation
 - Calendar scheduling
-- Study analytics
+- Additional task, schedule, and study-duration Analytics after their canonical sources are merged
 - Deployment and monitoring improvements
 
 These features must not be documented as implemented until their code, migrations, tests, and security boundaries exist.

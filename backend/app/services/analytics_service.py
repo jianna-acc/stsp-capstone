@@ -9,6 +9,7 @@ from typing import Protocol
 from uuid import UUID
 
 from app.repositories.analytics_repository import (
+    FlashcardReviewAnalyticsRecord,
     QuizAnswerAnalyticsRecord,
     QuizAttemptAnalyticsRecord,
 )
@@ -20,6 +21,9 @@ from app.schemas.analytics import (
     AnalyticsOverviewResponse,
     AnalyticsPeriod,
     AnalyticsTopicPerformance,
+)
+from app.schemas.flashcard_review import (
+    FlashcardReviewOutcome,
 )
 from app.services.quiz_attempt_service import (
     STRONG_TOPIC_THRESHOLD_PERCENTAGE,
@@ -72,6 +76,15 @@ class AnalyticsDataSource(
         attempt_id: UUID,
     ) -> tuple[
         QuizAnswerAnalyticsRecord,
+        ...,
+    ]: ...
+
+    def list_flashcard_review_events(
+        self,
+        *,
+        user_id: UUID,
+    ) -> tuple[
+        FlashcardReviewAnalyticsRecord,
         ...,
     ]: ...
 
@@ -151,6 +164,25 @@ class AnalyticsService:
             )
         )
 
+        flashcard_reviews = (
+            self._repository.list_flashcard_review_events(
+                user_id=user_id,
+            )
+        )
+
+        period_flashcard_reviews = (
+            self._filter_flashcard_reviews(
+                flashcard_reviews,
+                period=period,
+            )
+        )
+
+        flashcard_performance = (
+            self._build_flashcard_performance(
+                period_flashcard_reviews,
+            )
+        )
+
         return AnalyticsOverviewResponse(
             period=period,
             data_state=AnalyticsDataState.PARTIAL,
@@ -164,13 +196,7 @@ class AnalyticsService:
                 ready_study_material_count,
             ),
             quiz_accuracy_percent=quiz_accuracy,
-            flashcard_performance_percent=self._unavailable_metric(
-                (
-                    "Flashcard study performance is unavailable because "
-                    "the current Flashcard feature does not persist "
-                    "correctness or mastery evidence."
-                ),
-            ),
+            flashcard_performance_percent=flashcard_performance,
             study_minutes=self._unavailable_metric(
                 (
                     "No canonical general study-activity duration source "
@@ -220,6 +246,45 @@ class AnalyticsService:
             if attempt.completed_at >= cutoff
         )
 
+    def _filter_flashcard_reviews(
+        self,
+        reviews: tuple[
+            FlashcardReviewAnalyticsRecord,
+            ...,
+        ],
+        *,
+        period: AnalyticsPeriod,
+    ) -> tuple[
+        FlashcardReviewAnalyticsRecord,
+        ...,
+    ]:
+        """Apply the reporting period to Flashcard review evidence."""
+
+        if period is AnalyticsPeriod.ALL_TIME:
+            return reviews
+
+        now = self._clock()
+
+        if now.tzinfo is None:
+            raise ValueError(
+                "Analytics clock must return a timezone-aware datetime.",
+            )
+
+        if period is AnalyticsPeriod.LAST_7_DAYS:
+            cutoff = now - timedelta(
+                days=7,
+            )
+        else:
+            cutoff = now - timedelta(
+                days=30,
+            )
+
+        return tuple(
+            review
+            for review in reviews
+            if review.reviewed_at >= cutoff
+        )
+
     def _build_quiz_accuracy(
         self,
         attempts: tuple[
@@ -263,6 +328,50 @@ class AnalyticsService:
             availability=AnalyticsAvailability.AVAILABLE,
             value=accuracy,
             sample_size=question_count,
+        )
+
+    def _build_flashcard_performance(
+        self,
+        reviews: tuple[
+            FlashcardReviewAnalyticsRecord,
+            ...,
+        ],
+    ) -> AnalyticsMetric:
+        """Calculate self-assessed Flashcard knowledge percentage."""
+
+        if not reviews:
+            return AnalyticsMetric(
+                availability=AnalyticsAvailability.AVAILABLE,
+                value=None,
+                sample_size=0,
+                message=(
+                    "No Flashcard review events are available for "
+                    "the selected period."
+                ),
+            )
+
+        known_count = sum(
+            review.outcome is FlashcardReviewOutcome.KNOWN
+            for review in reviews
+        )
+
+        performance = round(
+            (
+                known_count
+                / len(
+                    reviews,
+                )
+            )
+            * 100,
+            2,
+        )
+
+        return AnalyticsMetric(
+            availability=AnalyticsAvailability.AVAILABLE,
+            value=performance,
+            sample_size=len(
+                reviews,
+            ),
         )
 
     def _build_topic_performance(

@@ -1,99 +1,138 @@
 <!-- File: /docs/ANALYTICS_DESIGN.md -->
+<!-- Purpose: Documents Phase 6 Track E Analytics, canonical metric sources, Flashcard review evidence, security, and validation. -->
 
-# Phase 6 Track E — Analytics Design
+# STUDY AI — Analytics Design
 
 ## Purpose
 
-Track E provides authenticated study-performance analytics.
+Phase 6 Track E provides authenticated study analytics using canonical data already stored by STUDY AI.
 
-The final feature combines canonical study-feature data to help students
-understand:
+The Analytics feature helps a student understand:
 
-- their available study materials;
-- quiz performance;
-- flashcard performance;
-- strong topics;
-- weak topics;
-- study activity and performance trends.
+- current subject and study-material inventory;
+- Quiz performance;
+- self-assessed Flashcard performance;
+- strong Quiz topics;
+- weak Quiz topics;
+- future study-activity metrics when a trustworthy duration source becomes available.
 
-## Current Independent Scope
+Analytics does not fabricate performance values when canonical evidence does not exist.
 
-The partial Track E implementation is designed to be mergeable before Tracks
-A and B are complete.
+---
 
-The current implementation includes:
+# Current Status
 
-- authenticated Analytics API;
-- Analytics schemas;
-- Analytics dependency injection;
-- Analytics service layer;
-- canonical Analytics repository;
+Track E is implemented in code and independently validated for the canonical data sources currently available on the Track E branch.
+
+Implemented Analytics sources are:
+
+```text
+subjects
+study_files
+quiz_attempts
+quiz_attempt_answers
+flashcard_review_events
+```
+
+The current implementation provides:
+
 - authenticated subject counts;
 - authenticated study-material counts;
 - authenticated ready-study-material counts;
-- reporting-period contracts;
-- explicit unavailable states for deferred metrics;
-- controlled canonical-data error handling;
-- service, repository, endpoint, and router tests.
+- weighted Quiz accuracy;
+- Quiz topic-performance aggregation;
+- strong-topic classification;
+- weak-topic classification;
+- self-assessed Flashcard performance;
+- all-time reporting;
+- last-7-days reporting;
+- last-30-days reporting;
+- an explicit unavailable state for general study duration;
+- controlled canonical-data failure handling.
 
-## Current Endpoint
+General study duration remains unavailable because the application does not yet have a canonical persisted study-duration source.
+
+The Flashcard review migration exists locally on Track E but is intentionally not yet applied to the shared remote database while other team migrations are still in progress.
+
+---
+
+# Protected Analytics Endpoint
 
 ```text
 GET /api/analytics/overview
+```
 
-## Deferred Integrations
+Authentication is required.
 
-The following metrics require canonical data from other Phase 6 tracks:
+The authenticated student's UUID is derived from the validated Supabase bearer token.
 
-| Metric | Dependency |
-|---|---|
-| Quiz accuracy | Track B |
-| Quiz topic performance | Track B |
-| Flashcard performance | Track A |
-| Strong topics | Track B and optionally Track A |
-| Weak topics | Track B and optionally Track A |
-| General study duration | Future canonical study-activity source |
+The request cannot provide or override a trusted `user_id`.
 
-Track E must not create replacement quiz, flashcard, or activity tables merely
-to enable early analytics development.
-
-## Canonical Data Principle
-
-Analytics reads and aggregates canonical feature data.
+Supported reporting periods:
 
 ```text
-Feature Data
-    |
-    v
-Analytics Provider
-    |
-    v
+all_time
+last_7_days
+last_30_days
+```
+
+Default:
+
+```text
+all_time
+```
+
+---
+
+# Metric Scope
+
+Inventory metrics represent the student's current stored resources and are not filtered by the selected performance period.
+
+Current-inventory metrics are:
+
+```text
+subject_count
+study_material_count
+ready_study_material_count
+```
+
+Performance-period metrics are:
+
+```text
+quiz_accuracy_percent
+flashcard_performance_percent
+strong_topics
+weak_topics
+```
+
+The selected period affects completed Quiz evidence through `completed_at` and Flashcard review evidence through `reviewed_at`.
+
+---
+
+# Canonical Data Principle
+
+Analytics reads canonical feature data rather than maintaining replacement copies of feature state.
+
+```text
+Canonical Feature Data
+        |
+        v
+Analytics Repository
+        |
+        v
 Analytics Service
-    |
-    v
+        |
+        v
 Authenticated Analytics API
+```
 
+Track E does not duplicate Quiz or Flashcard content merely for reporting.
 
-### Canonical metrics available before Track A/B integration
+---
 
-The current backend can safely provide authenticated counts from canonical
-Phase 3 study data:
+# Quiz Analytics
 
-- total subject count;
-- total study-material count;
-- ready study-material count.
-
-These values are read directly from the existing `subjects` and `study_files`
-tables and are scoped using the authenticated user's ID.
-
-Performance metrics remain explicitly unavailable until their canonical feature
-sources are merged.
-
-## Track B Quiz Analytics Integration
-
-Track B is now integrated into the Analytics service.
-
-Canonical Quiz performance evidence comes from:
+Canonical Quiz evidence comes from:
 
 ```text
 quiz_attempts
@@ -108,3 +147,305 @@ quiz_attempt_answers
 ├── topic
 ├── is_correct
 └── answered_at
+```
+
+Only completed Quiz attempts are used for performance Analytics.
+
+## Overall Quiz Accuracy
+
+Overall accuracy is weighted by the number of questions:
+
+```text
+sum(correct_count)
+------------------ × 100
+sum(question_count)
+```
+
+Analytics does not average individual attempt percentages because attempts may contain different numbers of questions.
+
+The Quiz metric `sample_size` represents the total number of completed Quiz questions included in the selected period.
+
+When no completed Quiz attempts exist for the selected period, the source remains available but the metric has no value and a sample size of zero.
+
+---
+
+# Quiz Topic Performance
+
+Topic performance is calculated from persisted Quiz answers.
+
+Topic names are normalized case-insensitively for aggregation while retaining a stable display name.
+
+For each topic:
+
+```text
+correct answers
+--------------- × 100
+total answers
+```
+
+The `sample_size` for a topic is the number of persisted answers included in that topic.
+
+Track E follows Track B's Quiz topic classification threshold:
+
+```text
+Strong topic: accuracy >= 70%
+Weak topic:   accuracy < 70%
+```
+
+This keeps Analytics consistent with the Quiz result feature.
+
+---
+
+# Flashcard Review Evidence
+
+The original Track A Flashcard feature persists generated cards but does not persist whether a student knew an answer.
+
+Track E therefore adds a minimal durable self-assessment signal instead of guessing performance from navigation.
+
+After revealing a Flashcard answer, the student can choose:
+
+```text
+I Know This
+Review Again
+```
+
+These actions create canonical review events in:
+
+```text
+flashcard_review_events
+├── id
+├── user_id
+├── deck_id
+├── card_position
+├── outcome
+├── reviewed_at
+└── created_at
+```
+
+Supported outcomes:
+
+```text
+known
+review_again
+```
+
+A review target is identified by:
+
+```text
+deck_id + card_position
+```
+
+The existing Flashcard schema guarantees that each position is unique within a deck.
+
+The review persistence layer also verifies that the deck belongs to the authenticated student and that the requested card position exists.
+
+---
+
+# Flashcard Performance
+
+Flashcard performance is explicitly a student self-assessment metric.
+
+It is calculated as:
+
+```text
+known review events
+------------------- × 100
+all review events
+```
+
+For example:
+
+```text
+8 known
+2 review_again
+----------------
+80% performance
+```
+
+The metric `sample_size` represents the number of persisted Flashcard review events in the selected period.
+
+This value must not be interpreted as an automatically graded knowledge score.
+
+When no review events exist for the selected period:
+
+```text
+availability = available
+value = null
+sample_size = 0
+```
+
+This is different from an unavailable data source.
+
+---
+
+# Flashcard Review API
+
+Flashcard self-assessment is persisted through:
+
+```text
+POST /api/flashcards/{deck_id}/reviews
+```
+
+Representative request:
+
+```json
+{
+  "card_position": 0,
+  "outcome": "known"
+}
+```
+
+Representative response:
+
+```json
+{
+  "id": "review-uuid",
+  "deck_id": "deck-uuid",
+  "card_position": 0,
+  "outcome": "known",
+  "reviewed_at": "2026-08-11T08:00:00Z"
+}
+```
+
+The trusted student identity comes from authentication and is never accepted from the request body.
+
+---
+
+# Security
+
+Analytics and Flashcard review operations preserve authenticated ownership boundaries.
+
+Important controls include:
+
+1. Analytics repository queries are scoped to the authenticated student's UUID.
+2. Quiz attempts are read only when owned by that student.
+3. Quiz-answer topic evidence is loaded only from already owner-scoped completed attempts.
+4. Flashcard review events store the authenticated student's UUID.
+5. Flashcard review creation verifies that the deck belongs to that student.
+6. Flashcard review creation verifies that the requested card position exists in that deck.
+7. Browser clients cannot directly insert Flashcard review events.
+8. Review writes pass through the protected FastAPI backend and trusted Supabase client.
+9. Authenticated browser reads of review events are owner-scoped through RLS.
+10. Controlled API errors do not expose database details or backend secrets.
+
+---
+
+# Data Availability
+
+Current Track E metric state:
+
+| Metric | Status | Canonical Source |
+|---|---|---|
+| Subject count | Available | `subjects` |
+| Study-material count | Available | `study_files` |
+| Ready study-material count | Available | `study_files.processing_status` |
+| Quiz accuracy | Available | `quiz_attempts` |
+| Strong topics | Available | `quiz_attempt_answers` |
+| Weak topics | Available | `quiz_attempt_answers` |
+| Flashcard performance | Available after the Track E migration is applied | `flashcard_review_events` |
+| General study minutes | Unavailable | No canonical duration source yet |
+
+Because at least one requested Analytics area remains unavailable, the overview currently reports:
+
+```text
+data_state = partial
+```
+
+---
+
+# Track Dependencies
+
+Track E currently depends on:
+
+```text
+Track A
+└── Flashcard decks and cards
+
+Track B
+└── Quiz attempts and answer history
+```
+
+Track C and Track D are not required for the currently implemented Track E metrics.
+
+Future integration may use their canonical data only if later Analytics requirements include task, workload, scheduling, or study-plan metrics.
+
+Track E should not depend on unmerged Track C or Track D code.
+
+---
+
+# Database Migration
+
+Track E adds:
+
+```text
+20260811162000_create_flashcard_review_events.sql
+```
+
+The migration creates:
+
+```text
+public.flashcard_review_events
+```
+
+with:
+
+- authenticated owner linkage;
+- Flashcard deck linkage;
+- stable card position;
+- constrained self-assessment outcome;
+- review timestamps;
+- ownership/card validation;
+- indexes;
+- Row Level Security;
+- restricted authenticated browser privileges;
+- trusted service-role write access.
+
+The migration is committed as part of Track E but may remain unapplied to the shared remote database until migration-history coordination is complete.
+
+Current linked migration history also contains remote-only migrations owned by the in-progress Track C and Track D branches. Track E must not repair, overwrite, or copy those migrations merely to make its branch match the remote.
+
+---
+
+# Current Validation
+
+Track E and its Flashcard-review integration have passed:
+
+```text
+Backend full suite:
+1042 passed
+
+Frontend full suite:
+23 test files passed
+135 tests passed
+
+Production frontend build:
+successful
+
+TypeScript:
+successful
+
+Ruff:
+successful
+```
+
+The frontend lint run completed with zero errors and one unrelated existing warning in the subject page.
+
+Known Python warnings are dependency/deprecation warnings and do not represent Track E test failures.
+
+---
+
+# Remaining Work
+
+Track E's application code is complete for the available canonical Quiz and Flashcard evidence.
+
+Before live use of Flashcard performance on the shared environment, the Track E migration must be applied in coordination with the team.
+
+Future Analytics expansion may include:
+
+- canonical study-duration tracking;
+- task/workload analytics after the responsible track is merged;
+- study-plan adherence after the responsible track is merged;
+- calendar/schedule analytics;
+- longer-term progress visualization.
+
+These future metrics should be implemented only when their canonical sources exist.

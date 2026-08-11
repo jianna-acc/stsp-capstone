@@ -36,6 +36,7 @@ Supabase provides:
 | Conversation summary state | Implemented |
 | Reviewer table | Implemented |
 | Flashcard decks and cards | Implemented |
+| Flashcard review events | Ready in Track E; shared remote application pending |
 | Quiz tables and attempt history | Implemented |
 | Tasks/study plans | Planned |
 
@@ -438,6 +439,8 @@ erDiagram
     SUBJECTS ||--o{ FLASHCARD_DECKS : organizes
     STUDY_FILES ||--o{ FLASHCARD_DECKS : optional_source
     FLASHCARD_DECKS ||--o{ FLASHCARDS : contains
+    AUTH_USERS ||--o{ FLASHCARD_REVIEW_EVENTS : owns
+    FLASHCARD_DECKS ||--o{ FLASHCARD_REVIEW_EVENTS : reviewed_in
 
     AUTH_USERS ||--o{ QUIZZES : owns
     AUTH_USERS ||--o{ QUIZ_ATTEMPTS : owns
@@ -492,7 +495,7 @@ Students must not be able to read or modify:
 - Another student's vector chunks
 - Another student's saved conversations
 - Another student's messages
-- Another student's Flashcard decks or cards
+- Another student's Flashcard decks, cards, or review events
 - Another student's Quizzes, attempts, or submitted-answer history
 - Another student's private Storage objects
 
@@ -561,11 +564,12 @@ topics
 
 # Saved Flashcards
 
-Flashcard persistence uses two normalized tables:
+Flashcard study persistence uses the existing generated-deck/card tables plus durable Track E review evidence:
 
 ```text
 public.flashcard_decks
 public.flashcards
+public.flashcard_review_events
 ```
 
 ## `public.flashcard_decks`
@@ -623,9 +627,47 @@ flashcards
 
 Deleting a Flashcard deck cascades to its child Flashcards.
 
+## `public.flashcard_review_events`
+
+Stores durable student self-assessment evidence created while studying saved Flashcards.
+
+Important columns:
+
+| Column | Purpose |
+|---|---|
+| `id` | Review-event UUID |
+| `user_id` | Authenticated student owner |
+| `deck_id` | Reviewed Flashcard deck |
+| `card_position` | Stable zero-based card position within the deck |
+| `outcome` | `known` or `review_again` |
+| `reviewed_at` | Time the student submitted the self-assessment |
+| `created_at` | Row creation timestamp |
+
+A review event is valid only for a deck owned by the authenticated student and a card position that exists in that deck.
+
+Conceptually, validation preserves:
+
+```text
+flashcard_decks.id = deck_id
+flashcard_decks.user_id = user_id
+flashcards.deck_id = deck_id
+flashcards.position = card_position
+```
+
+Supported outcomes:
+
+```text
+known
+review_again
+```
+
+Deleting the parent Flashcard deck cascades to its review events.
+
+The migration that creates this table is present on the Track E branch but is intentionally not yet applied to the shared remote database while in-progress Track C and Track D migrations are coordinated.
+
 ## Flashcard Security
 
-Both Flashcard tables use Row Level Security.
+The Flashcard deck/card resources and Flashcard review events use Row Level Security and authenticated ownership boundaries.
 
 Authenticated browser clients may:
 
@@ -635,6 +677,12 @@ delete owned Flashcard decks
 ```
 
 Browser clients may not directly insert generated Flashcard records.
+
+Authenticated browser clients may read only their own Flashcard review events.
+
+Browser clients cannot directly insert Flashcard review events.
+
+Review-event writes pass through the protected FastAPI backend using the trusted server-side Supabase client.
 
 Card reads are authorized through ownership of the parent Flashcard deck.
 
@@ -863,7 +911,7 @@ Deleting a conversation removes its connected messages through cascade behavior.
 
 # Remaining Planned Tables
 
-Future phases may add:
+Parallel/in-progress tracks may add these resources when their code is merged into the shared development history:
 
 ```text
 academic_tasks
@@ -884,12 +932,15 @@ Vector storage is already implemented using:
 study_file_ai_chunks
 ```
 
-Flashcard persistence is already implemented using:
+Flashcard persistence and Track E self-assessment evidence use:
 
 ```text
 flashcard_decks
 flashcards
+flashcard_review_events
 ```
+
+The `flashcard_review_events` migration is ready on Track E but remains unapplied to the shared remote database pending team migration coordination.
 
 Quiz persistence and attempt history are already implemented using:
 
@@ -908,6 +959,18 @@ quiz_attempt_answers
 |---|---|
 | `20260809142000_create_flashcard_foundation.sql` | Creates `flashcard_decks`, `flashcards`, ownership/scope validation, constraints, indexes, triggers, privileges, and RLS |
 | `20260809145600_create_flashcard_persistence_rpc.sql` | Adds atomic trusted Flashcard deck-and-card creation |
+
+---
+
+# Track E Flashcard Review Migration
+
+| Migration | Purpose |
+|---|---|
+| `20260811162000_create_flashcard_review_events.sql` | Creates durable owner-scoped Flashcard self-assessment review events, validation, indexes, privileges, and RLS for Analytics |
+
+This migration is owned by Track E because the persisted review evidence provides the canonical Flashcard-performance source used by Analytics.
+
+The migration file is ready and tested locally. Shared remote application is intentionally pending because the linked remote database already contains in-progress Track C and Track D migrations that are not yet present on `development`.
 
 ---
 
