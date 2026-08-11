@@ -16,9 +16,6 @@ from typing import Any, ParamSpec
 from uuid import UUID, uuid4
 
 import pytest
-from app.services.flashcard_source_loader import (
-    FlashcardSourceLoader,
-)
 
 from app.schemas.flashcard import (
     FlashcardGenerateRequest,
@@ -28,6 +25,9 @@ from app.schemas.flashcard import (
 from app.services.flashcard_errors import (
     FlashcardSourceNotFoundError,
     FlashcardSourceUnavailableError,
+)
+from app.services.flashcard_source_loader import (
+    FlashcardSourceLoader,
 )
 
 P = ParamSpec(

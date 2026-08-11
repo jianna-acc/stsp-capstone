@@ -37,8 +37,9 @@ Supabase provides:
 | Reviewer table | Implemented |
 | Flashcard decks and cards | Implemented |
 | Quiz tables and attempt history | Implemented |
-| Tasks/study plans | Planned |
-
+| Academic tasks | Implemented |
+| Study plans | Implemented |
+| Study sessions | Implemented |
 ---
 
 # Authentication
@@ -820,6 +821,96 @@ Key boundaries:
 - Deleting one owned Quiz removes its related Quiz data without affecting another student's resources.
 
 
+# Study Plans and Study Sessions
+
+## `public.study_plans`
+
+`public.study_plans` stores student-owned manual and generated study plans.
+
+Important columns:
+
+| Column | Purpose |
+|---|---|
+| `id` | Study-plan UUID |
+| `user_id` | Authenticated owner |
+| `title` | Plan title |
+| `starts_on` | First plan date |
+| `ends_on` | Last plan date |
+| `status` | Plan lifecycle status |
+| `generation_mode` | `manual` or `generated` |
+| `generated_at` | Latest generation or regeneration timestamp |
+| `created_at` | Creation timestamp |
+| `updated_at` | Latest record update |
+
+Supported plan statuses:
+
+```text
+draft
+active
+completed
+archived
+```
+
+## `public.study_sessions`
+
+`public.study_sessions` stores calendar sessions belonging to owned study plans.
+
+Important columns:
+
+| Column | Purpose |
+|---|---|
+| `id` | Study-session UUID |
+| `study_plan_id` | Parent study plan |
+| `user_id` | Authenticated owner |
+| `subject_id` | Connected owned subject |
+| `title` | Session title |
+| `starts_at` | Session start timestamp |
+| `ends_at` | Session end timestamp |
+| `status` | Session lifecycle status |
+| `origin` | `manual` or `generated` |
+| `notes` | Optional student notes |
+| `created_at` | Creation timestamp |
+| `updated_at` | Latest record update |
+
+Session statuses:
+
+```text
+planned
+completed
+skipped
+```
+
+Session origins:
+
+```text
+manual
+generated
+```
+
+Plan and session ownership is enforced through database relationships and Row Level Security.
+
+## Generated Session Replacement RPC
+
+Track D adds:
+
+```text
+replace_generated_study_plan_sessions
+```
+
+During regeneration, this trusted RPC:
+
+1. Locks the owned generated plan.
+2. Validates the replacement schedule.
+3. Prevents generated sessions from overlapping manual sessions.
+4. Deletes only existing generated sessions.
+5. Inserts replacement generated sessions.
+6. Preserves manual sessions.
+7. Updates the plan generation timestamp.
+8. Returns the refreshed plan and complete session list.
+
+Execution is restricted to the trusted `service_role`.
+
+---
 # File Deletion Behavior
 
 Deleting a study file must remove or invalidate:
@@ -860,16 +951,20 @@ Deleting a conversation removes its connected messages through cascade behavior.
 | `20260808053929_create_reviewers_foundation.sql` | Creates reviewer table, ownership/scope validation, indexes, timestamps, triggers, privileges, and RLS |
 
 ---
+# Track D Study Plan Migrations
+
+| Migration | Purpose |
+|---|---|
+| `20260810002500_create_study_plans_foundation.sql` | Creates owned `study_plans` and `study_sessions`, validation, relationships, indexes, timestamps, privileges, and RLS |
+| `20260811002500_add_study_plan_regeneration_rpc.sql` | Adds transactional generated-session replacement and increases the session-title limit to 200 characters |
+
+These Track D migration files have been applied to the shared linked database during coordinated integration.
+
+---
 
 # Remaining Planned Tables
 
-Future phases may add:
-
-```text
-academic_tasks
-study_plans
-study_sessions
-```
+No additional Track A, Track B, Phase 7, or Track D tables remain planned in this section. Future phases may introduce additional persistence when required.
 
 Saved AI conversations are already implemented using:
 

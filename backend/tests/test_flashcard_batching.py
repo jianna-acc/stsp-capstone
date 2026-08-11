@@ -5,15 +5,15 @@
 from uuid import UUID
 
 import pytest
+
+from app.schemas.flashcard import (
+    FlashcardScopeType,
+)
 from app.services.flashcard_batching import (
     MAX_FLASHCARD_BATCH_SOURCE_CHARACTERS,
     MIN_FLASHCARD_BATCH_SOURCE_CHARACTERS,
     FlashcardBatchingError,
     FlashcardSourceBatcher,
-)
-
-from app.schemas.flashcard import (
-    FlashcardScopeType,
 )
 from app.services.flashcard_source_loader import (
     FlashcardSourceBundle,
