@@ -17,9 +17,6 @@ from typing import (
 from uuid import UUID, uuid4
 
 import pytest
-from app.services.flashcard_orchestration import (
-    FlashcardOrchestrationService,
-)
 
 from app.schemas.flashcard import (
     FlashcardContent,
@@ -35,6 +32,9 @@ from app.services.flashcard_errors import (
 )
 from app.services.flashcard_generation import (
     FlashcardGenerationResult,
+)
+from app.services.flashcard_orchestration import (
+    FlashcardOrchestrationService,
 )
 from app.services.flashcard_source_loader import (
     FlashcardSourceBundle,

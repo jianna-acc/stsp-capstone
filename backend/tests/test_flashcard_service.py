@@ -6,13 +6,12 @@ from __future__ import annotations
 
 from uuid import UUID, uuid4
 
-from app.services.flashcard_service import (
-    FlashcardService,
-)
-
 from app.schemas.flashcard import (
     FlashcardItem,
     FlashcardScopeType,
+)
+from app.services.flashcard_service import (
+    FlashcardService,
 )
 
 

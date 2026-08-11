@@ -134,14 +134,20 @@ export function createInitialStudyChallengesState(
 // Subjects and confidence
 // ============================================================
 
-export interface SubjectConfidenceFormValue {
+export interface SubjectFormValue {
   subjectName: string;
   subjectStrength: string;
+}
+
+export interface OutputConfidenceFormValue {
+  outputType: string;
   confidenceLevel: string;
 }
 
 export interface SubjectsFormValues {
-  subjects: SubjectConfidenceFormValue[];
+  subjects: SubjectFormValue[];
+  outputConfidences:
+    OutputConfidenceFormValue[];
 }
 
 export interface SubjectsFieldErrors {
@@ -150,6 +156,7 @@ export interface SubjectsFieldErrors {
   subjects?: string;
   strongSubjects?: string;
   weakSubjects?: string;
+  outputConfidences?: string;
 }
 
 export interface SubjectsActionState {
@@ -160,15 +167,45 @@ export interface SubjectsActionState {
 }
 
 const DEFAULT_SUBJECT_ROWS:
-  SubjectConfidenceFormValue[] = [
+  SubjectFormValue[] = [
     {
       subjectName: "",
       subjectStrength: "strong",
-      confidenceLevel: "3",
     },
     {
       subjectName: "",
       subjectStrength: "weak",
+    },
+  ];
+
+const DEFAULT_OUTPUT_CONFIDENCE_ROWS:
+  OutputConfidenceFormValue[] = [
+    {
+      outputType: "writing",
+      confidenceLevel: "3",
+    },
+    {
+      outputType: "computation",
+      confidenceLevel: "3",
+    },
+    {
+      outputType: "research",
+      confidenceLevel: "3",
+    },
+    {
+      outputType: "presentation",
+      confidenceLevel: "3",
+    },
+    {
+      outputType: "creative",
+      confidenceLevel: "3",
+    },
+    {
+      outputType: "reading_analysis",
+      confidenceLevel: "3",
+    },
+    {
+      outputType: "memorization",
       confidenceLevel: "3",
     },
   ];
@@ -182,14 +219,28 @@ export function createInitialSubjectsState(
       ? values.subjects
       : DEFAULT_SUBJECT_ROWS;
 
+  const outputConfidences =
+    values?.outputConfidences &&
+    values.outputConfidences.length > 0
+      ? values.outputConfidences
+      : DEFAULT_OUTPUT_CONFIDENCE_ROWS;
+
   return {
     status: "idle",
     message: "",
     fieldErrors: {},
     values: {
-      subjects: subjects.map((subject) => ({
-        ...subject,
-      })),
+      subjects: subjects.map(
+        (subject) => ({
+          ...subject,
+        }),
+      ),
+      outputConfidences:
+        outputConfidences.map(
+          (confidence) => ({
+            ...confidence,
+          }),
+        ),
     },
   };
 }

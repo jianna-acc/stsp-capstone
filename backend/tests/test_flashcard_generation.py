@@ -18,9 +18,6 @@ from typing import (
 from uuid import uuid4
 
 import pytest
-from app.services.flashcard_generation import (
-    FlashcardGenerationService,
-)
 
 from app.ai.contracts import (
     GenerationRequest,
@@ -37,6 +34,9 @@ from app.schemas.flashcard import (
 from app.services.flashcard_errors import (
     FlashcardGenerationError,
     FlashcardGenerationResponseError,
+)
+from app.services.flashcard_generation import (
+    FlashcardGenerationService,
 )
 from app.services.flashcard_source_loader import (
     FlashcardSourceBundle,

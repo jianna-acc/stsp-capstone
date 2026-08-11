@@ -4,15 +4,18 @@
 
 import {
   LEARNING_METHODS,
+  LEARNING_OUTPUT_TYPES,
   PREFERRED_STUDY_TIMES,
   STUDY_CHALLENGES,
   SUBJECT_STRENGTHS,
   type LearningMethod,
+  type LearningOutputType,
   type PreferredStudyTime,
   type StudyChallenge,
   type SubjectStrength,
 } from "./constants";
 import type {
+  LearningOutputConfidenceInput,
   LearningSubjectInput,
   StudentProfileInput,
   StudyAvailabilityInput,
@@ -360,9 +363,6 @@ export function validateLearningSubjects(
         const subjectStrength =
           subject.subjectStrength;
 
-        const confidenceLevel =
-          subject.confidenceLevel;
-
         if (!subjectName) {
           errors[`subjects.${index}.name`] =
             "Enter the subject name.";
@@ -384,31 +384,16 @@ export function validateLearningSubjects(
             "Select strong or weak.";
         }
 
-        if (
-          !isIntegerInRange(
-            confidenceLevel,
-            1,
-            5,
-          )
-        ) {
-          errors[
-            `subjects.${index}.confidence`
-          ] =
-            "Select a confidence level from 1 to 5.";
-        }
-
         return {
           subjectName,
           subjectStrength:
             subjectStrength as SubjectStrength,
-          confidenceLevel,
         };
       },
     );
 
-  const normalizedNames = new Set<
-    string
-  >();
+  const normalizedNames =
+    new Set<string>();
 
   normalizedSubjects.forEach(
     (subject, index) => {
@@ -419,13 +404,17 @@ export function validateLearningSubjects(
 
       if (
         subject.subjectName &&
-        normalizedNames.has(duplicateKey)
+        normalizedNames.has(
+          duplicateKey,
+        )
       ) {
         errors[`subjects.${index}.name`] =
           "Each subject may only be added once.";
       }
 
-      normalizedNames.add(duplicateKey);
+      normalizedNames.add(
+        duplicateKey,
+      );
     },
   );
 
@@ -455,12 +444,107 @@ export function validateLearningSubjects(
 
   if (Object.keys(errors).length > 0) {
     throw new LearningProfileValidationError(
-      "Review your subjects and confidence ratings.",
+      "Review your subject information.",
       errors,
     );
   }
 
   return normalizedSubjects;
+}
+
+export function validateLearningOutputConfidences(
+  confidences:
+    readonly LearningOutputConfidenceInput[],
+): LearningOutputConfidenceInput[] {
+  const errors: ValidationFieldErrors =
+    {};
+
+  if (
+    confidences.length !==
+    LEARNING_OUTPUT_TYPES.length
+  ) {
+    errors.outputConfidences =
+      "Rate your confidence for all seven output types.";
+  }
+
+  const seenOutputTypes =
+    new Set<LearningOutputType>();
+
+  const normalizedConfidences =
+    confidences.map(
+      (confidence, index) => {
+        const outputType =
+          confidence.outputType;
+
+        const confidenceLevel =
+          confidence.confidenceLevel;
+
+        if (
+          !LEARNING_OUTPUT_TYPES.includes(
+            outputType,
+          )
+        ) {
+          errors[
+            `outputConfidences.${index}.outputType`
+          ] =
+            "Select a valid output type.";
+        } else if (
+          seenOutputTypes.has(
+            outputType,
+          )
+        ) {
+          errors[
+            `outputConfidences.${index}.outputType`
+          ] =
+            "Each output type may only appear once.";
+        } else {
+          seenOutputTypes.add(
+            outputType,
+          );
+        }
+
+        if (
+          !isIntegerInRange(
+            confidenceLevel,
+            1,
+            5,
+          )
+        ) {
+          errors[
+            `outputConfidences.${index}.confidence`
+          ] =
+            "Select a confidence level from 1 to 5.";
+        }
+
+        return {
+          outputType:
+            outputType as LearningOutputType,
+          confidenceLevel,
+        };
+      },
+    );
+
+  const hasEveryOutputType =
+    LEARNING_OUTPUT_TYPES.every(
+      (outputType) =>
+        seenOutputTypes.has(
+          outputType,
+        ),
+    );
+
+  if (!hasEveryOutputType) {
+    errors.outputConfidences =
+      "Rate your confidence for all seven output types.";
+  }
+
+  if (Object.keys(errors).length > 0) {
+    throw new LearningProfileValidationError(
+      "Review your academic-output confidence ratings.",
+      errors,
+    );
+  }
+
+  return normalizedConfidences;
 }
 
 const TIME_PATTERN =

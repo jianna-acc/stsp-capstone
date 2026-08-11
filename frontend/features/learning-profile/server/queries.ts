@@ -36,6 +36,7 @@ export async function getOnboardingSnapshotForUser(
     profileResult,
     learningProfileResult,
     subjectsResult,
+    outputConfidencesResult,
     availabilityResult,
   ] = await Promise.all([
     supabase
@@ -55,6 +56,16 @@ export async function getOnboardingSnapshotForUser(
       .select("*")
       .eq("user_id", userId)
       .order("subject_name", {
+        ascending: true,
+      }),
+
+    supabase
+      .from(
+        "learning_output_confidences",
+      )
+      .select("*")
+      .eq("user_id", userId)
+      .order("output_type", {
         ascending: true,
       }),
 
@@ -97,9 +108,23 @@ export async function getOnboardingSnapshotForUser(
   if (subjectsResult.error) {
     throw new LearningProfileDataError(
       "QUERY_FAILED",
-      "The subject-confidence records could not be loaded.",
+      "The subject records could not be loaded.",
       {
-        cause: subjectsResult.error,
+        cause:
+          subjectsResult.error,
+      },
+    );
+  }
+
+  if (
+    outputConfidencesResult.error
+  ) {
+    throw new LearningProfileDataError(
+      "QUERY_FAILED",
+      "The output confidence ratings could not be loaded.",
+      {
+        cause:
+          outputConfidencesResult.error,
       },
     );
   }
@@ -117,17 +142,22 @@ export async function getOnboardingSnapshotForUser(
 
   const snapshotWithoutProgress = {
     userId,
-    profile: profileResult.data,
+    profile:
+      profileResult.data,
     learningProfile:
       learningProfileResult.data,
     subjects:
       subjectsResult.data ?? [],
+    outputConfidences:
+      outputConfidencesResult.data ??
+      [],
     availability:
       availabilityResult.data ?? [],
   };
 
   return {
     ...snapshotWithoutProgress,
+
     progress:
       calculateOnboardingProgress(
         snapshotWithoutProgress,
@@ -136,8 +166,9 @@ export async function getOnboardingSnapshotForUser(
 }
 
 export async function getOnboardingSnapshot():
-  Promise<OnboardingSnapshot> {
-  const supabase = await createClient();
+Promise<OnboardingSnapshot> {
+  const supabase =
+    await createClient();
 
   const userId =
     await requireAuthenticatedUserId(
@@ -151,7 +182,7 @@ export async function getOnboardingSnapshot():
 }
 
 export async function requireCompletedOnboarding():
-  Promise<OnboardingSnapshot> {
+Promise<OnboardingSnapshot> {
   const snapshot =
     await getOnboardingSnapshot();
 

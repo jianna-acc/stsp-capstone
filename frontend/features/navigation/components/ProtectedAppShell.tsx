@@ -21,7 +21,9 @@ import { useDisclosure } from "@mantine/hooks";
 import {
   IconBook2,
   IconBooks,
+  IconCalendarWeek,
   IconCards,
+  IconChecklist,
   IconLayoutDashboard,
   IconListCheck,
   IconLogout,
@@ -44,7 +46,6 @@ interface ProtectedAppShellProps {
   children: ReactNode;
 }
 
-
 const NAVIGATION_ITEMS = [
   {
     label: "Dashboard",
@@ -58,6 +59,20 @@ const NAVIGATION_ITEMS = [
       "Manage subjects and materials",
     href: "/subjects",
     icon: IconBooks,
+  },
+  {
+    label: "Academic Tasks",
+    description:
+      "Manage deadlines and priorities",
+    href: "/academic-tasks",
+    icon: IconChecklist,
+  },
+  {
+    label: "Study Plan",
+    description:
+      "Plan and schedule study sessions",
+    href: "/study-plan",
+    icon: IconCalendarWeek,
   },
   {
     label: "Study Assistant",

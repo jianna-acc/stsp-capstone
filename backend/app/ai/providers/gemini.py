@@ -2,11 +2,11 @@
 # Purpose: Implements controlled asynchronous Gemini text-generation
 # and embedding operations behind provider-independent interfaces.
 
+import asyncio
+import logging
 from typing import Any
 
 from google import genai
-import asyncio
-import logging
 from google.genai import types
 
 from app.ai.contracts import (

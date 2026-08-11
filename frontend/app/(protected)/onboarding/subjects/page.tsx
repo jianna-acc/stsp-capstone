@@ -52,19 +52,27 @@ export default async function SubjectsPage() {
 
   const initialValues:
     SubjectsFormValues = {
-      subjects: snapshot.subjects.map(
-        (subject) => ({
-          subjectName:
-            subject.subject_name,
+      subjects:
+        snapshot.subjects.map(
+          (subject) => ({
+            subjectName:
+              subject.subject_name,
+            subjectStrength:
+              subject.subject_strength,
+          }),
+        ),
 
-          subjectStrength:
-            subject.subject_strength,
-
-          confidenceLevel:
-            subject.confidence_level
-              .toString(),
-        }),
-      ),
+      outputConfidences:
+        snapshot.outputConfidences.map(
+          (confidence) => ({
+            outputType:
+              confidence.output_type,
+            confidenceLevel:
+              String(
+                confidence.confidence_level,
+              ),
+          }),
+        ),
     };
 
   return (

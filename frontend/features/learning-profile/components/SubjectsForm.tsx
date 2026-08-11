@@ -1,6 +1,6 @@
 // File: /frontend/features/learning-profile/components/SubjectsForm.tsx
-// Purpose: Renders Step 4 of onboarding and manages strong and
-// weak subject rows with confidence values.
+// Purpose: Renders the onboarding subject-strength and academic
+// output-confidence questionnaire.
 
 "use client";
 
@@ -30,19 +30,26 @@ import {
   IconTrash,
 } from "@tabler/icons-react";
 
-import { saveSubjectsAction } from "../actions/save-subjects";
+import {
+  saveSubjectsAction,
+} from "../actions/save-subjects";
 import {
   createInitialSubjectsState,
-  type SubjectConfidenceFormValue,
+  type OutputConfidenceFormValue,
+  type SubjectFormValue,
   type SubjectsFormValues,
 } from "../actions/types";
+import {
+  LEARNING_OUTPUT_TYPE_LABELS,
+  type LearningOutputType,
+} from "../constants";
 
 interface SubjectsFormProps {
   initialValues: SubjectsFormValues;
 }
 
 interface EditableSubject
-  extends SubjectConfidenceFormValue {
+  extends SubjectFormValue {
   id: string;
 }
 
@@ -84,19 +91,27 @@ function createEditableSubjects(
   values: SubjectsFormValues,
 ): EditableSubject[] {
   const initialState =
-    createInitialSubjectsState(values);
+    createInitialSubjectsState(
+      values,
+    );
 
   return initialState.values.subjects.map(
-    (subject, index) => ({
+    (
+      subject,
+      index,
+    ) => ({
       ...subject,
-      id: `initial-subject-${index}`,
+      id:
+        `initial-subject-${index}`,
     }),
   );
 }
 
 export function SubjectsForm({
   initialValues,
-}: Readonly<SubjectsFormProps>) {
+}: Readonly<
+  SubjectsFormProps
+>) {
   const [
     state,
     formAction,
@@ -108,54 +123,105 @@ export function SubjectsForm({
     ),
   );
 
-  const [subjects, setSubjects] =
-    useState<EditableSubject[]>(() =>
-      createEditableSubjects(
-        initialValues,
-      ),
-    );
+  const [
+    subjects,
+    setSubjects,
+  ] = useState<
+    EditableSubject[]
+  >(() =>
+    createEditableSubjects(
+      initialValues,
+    ),
+  );
+
+  const [
+    outputConfidences,
+    setOutputConfidences,
+  ] = useState<
+    OutputConfidenceFormValue[]
+  >(() =>
+    createInitialSubjectsState(
+      initialValues,
+    ).values.outputConfidences,
+  );
 
   function updateSubject(
     subjectId: string,
     updates:
-      Partial<SubjectConfidenceFormValue>,
+      Partial<SubjectFormValue>,
   ): void {
-    setSubjects((currentSubjects) =>
-      currentSubjects.map((subject) =>
-        subject.id === subjectId
-          ? {
-              ...subject,
-              ...updates,
-            }
-          : subject,
-      ),
+    setSubjects(
+      (currentSubjects) =>
+        currentSubjects.map(
+          (subject) =>
+            subject.id ===
+            subjectId
+              ? {
+                  ...subject,
+                  ...updates,
+                }
+              : subject,
+        ),
+    );
+  }
+
+  function updateOutputConfidence(
+    outputType:
+      LearningOutputType,
+    confidenceLevel: string,
+  ): void {
+    setOutputConfidences(
+      (
+        currentConfidences,
+      ) =>
+        currentConfidences.map(
+          (confidence) =>
+            confidence.outputType ===
+            outputType
+              ? {
+                  ...confidence,
+                  confidenceLevel,
+                }
+              : confidence,
+        ),
     );
   }
 
   function addSubject(): void {
-    if (subjects.length >= 30) {
+    if (
+      subjects.length >= 30
+    ) {
       return;
     }
 
-    setSubjects((currentSubjects) => [
-      ...currentSubjects,
-      {
-        id: crypto.randomUUID(),
-        subjectName: "",
-        subjectStrength: "weak",
-        confidenceLevel: "3",
-      },
-    ]);
+    setSubjects(
+      (
+        currentSubjects,
+      ) => [
+        ...currentSubjects,
+        {
+          id:
+            crypto.randomUUID(),
+          subjectName: "",
+          subjectStrength:
+            "weak",
+        },
+      ],
+    );
   }
 
   function removeSubject(
     subjectId: string,
   ): void {
-    setSubjects((currentSubjects) =>
-      currentSubjects.filter(
-        (subject) =>
-          subject.id !== subjectId,
-      ),
+    setSubjects(
+      (
+        currentSubjects,
+      ) =>
+        currentSubjects.filter(
+          (subject) =>
+            subject.id !==
+            subjectId,
+        ),
     );
   }
 
@@ -164,25 +230,34 @@ export function SubjectsForm({
       ({
         subjectName,
         subjectStrength,
-        confidenceLevel,
       }) => ({
         subjectName,
         subjectStrength,
-        confidenceLevel,
       }),
     );
 
   const generalErrors = [
     state.fieldErrors.subjects,
-    state.fieldErrors.strongSubjects,
-    state.fieldErrors.weakSubjects,
+    state.fieldErrors
+      .strongSubjects,
+    state.fieldErrors
+      .weakSubjects,
+    state.fieldErrors
+      .outputConfidences,
   ].filter(
-    (message): message is string =>
-      Boolean(message),
+    (
+      message,
+    ): message is string =>
+      Boolean(
+        message,
+      ),
   );
 
   return (
-    <form action={formAction} noValidate>
+    <form
+      action={formAction}
+      noValidate
+    >
       <input
         name="subjectsJson"
         type="hidden"
@@ -191,14 +266,25 @@ export function SubjectsForm({
         )}
       />
 
+      <input
+        name="outputConfidencesJson"
+        type="hidden"
+        value={JSON.stringify(
+          outputConfidences,
+        )}
+      />
+
       <Stack gap="xl">
-        {state.status === "error" && (
+        {state.status ===
+          "error" && (
           <Alert
             color="red"
             icon={
-              <IconAlertCircle size={18} />
+              <IconAlertCircle
+                size={18}
+              />
             }
-            title="Subjects need attention"
+            title="Learning profile needs attention"
           >
             <Stack gap={4}>
               <Text size="sm">
@@ -208,7 +294,9 @@ export function SubjectsForm({
               {generalErrors.map(
                 (message) => (
                   <Text
-                    key={message}
+                    key={
+                      message
+                    }
                     size="sm"
                   >
                     {message}
@@ -221,23 +309,28 @@ export function SubjectsForm({
 
         <Stack gap={4}>
           <Text fw={700}>
-            Subjects and confidence
+            Strong and weak
+            subjects
           </Text>
 
           <Text
             c="dimmed"
             size="sm"
           >
-            Add at least one strong subject
-            and one weak subject. Rate your
-            confidence in each subject from
-            1 to 5.
+            Add at least one
+            subject you consider
+            strong and one you
+            currently find
+            challenging.
           </Text>
         </Stack>
 
         <Stack gap="md">
           {subjects.map(
-            (subject, index) => {
+            (
+              subject,
+              index,
+            ) => {
               const nameError =
                 state.fieldErrors[
                   `subjects.${index}.name`
@@ -248,14 +341,11 @@ export function SubjectsForm({
                   `subjects.${index}.strength`
                 ];
 
-              const confidenceError =
-                state.fieldErrors[
-                  `subjects.${index}.confidence`
-                ];
-
               return (
                 <Paper
-                  key={subject.id}
+                  key={
+                    subject.id
+                  }
                   p="md"
                   radius="md"
                   withBorder
@@ -268,15 +358,20 @@ export function SubjectsForm({
                         fw={700}
                         size="sm"
                       >
-                        Subject {index + 1}
+                        Subject{" "}
+                        {index +
+                          1}
                       </Text>
 
                       <ActionIcon
-                        aria-label={`Remove subject ${index + 1}`}
+                        aria-label={
+                          `Remove subject ${index + 1}`
+                        }
                         color="red"
                         disabled={
                           isPending ||
-                          subjects.length <= 2
+                          subjects.length <=
+                            2
                         }
                         onClick={() =>
                           removeSubject(
@@ -295,14 +390,20 @@ export function SubjectsForm({
                     <SimpleGrid
                       cols={{
                         base: 1,
-                        md: 3,
+                        md: 2,
                       }}
                     >
                       <TextInput
-                        disabled={isPending}
-                        error={nameError}
+                        disabled={
+                          isPending
+                        }
+                        error={
+                          nameError
+                        }
                         label="Subject name"
-                        onChange={(event) =>
+                        onChange={(
+                          event,
+                        ) =>
                           updateSubject(
                             subject.id,
                             {
@@ -321,48 +422,34 @@ export function SubjectsForm({
                       />
 
                       <Select
-                        allowDeselect={false}
+                        allowDeselect={
+                          false
+                        }
                         data={
                           SUBJECT_STRENGTH_OPTIONS
                         }
-                        disabled={isPending}
-                        error={strengthError}
+                        disabled={
+                          isPending
+                        }
+                        error={
+                          strengthError
+                        }
                         label="Strength"
-                        onChange={(value) =>
+                        onChange={(
+                          value,
+                        ) =>
                           updateSubject(
                             subject.id,
                             {
                               subjectStrength:
-                                value ?? "",
+                                value ??
+                                "",
                             },
                           )
                         }
                         required
                         value={
                           subject.subjectStrength
-                        }
-                      />
-
-                      <Select
-                        allowDeselect={false}
-                        data={
-                          CONFIDENCE_OPTIONS
-                        }
-                        disabled={isPending}
-                        error={confidenceError}
-                        label="Confidence"
-                        onChange={(value) =>
-                          updateSubject(
-                            subject.id,
-                            {
-                              confidenceLevel:
-                                value ?? "",
-                            },
-                          )
-                        }
-                        required
-                        value={
-                          subject.confidenceLevel
                         }
                       />
                     </SimpleGrid>
@@ -376,17 +463,105 @@ export function SubjectsForm({
         <Button
           disabled={
             isPending ||
-            subjects.length >= 30
+            subjects.length >=
+              30
           }
           leftSection={
-            <IconPlus size={18} />
+            <IconPlus
+              size={18}
+            />
           }
-          onClick={addSubject}
+          onClick={
+            addSubject
+          }
           type="button"
           variant="light"
         >
           Add another subject
         </Button>
+
+        <Stack gap={4}>
+          <Text fw={700}>
+            Confidence by
+            academic output
+          </Text>
+
+          <Text
+            c="dimmed"
+            size="sm"
+          >
+            Rate how confident
+            you currently feel
+            completing each kind
+            of academic work.
+            These ratings will
+            help Study AI
+            prioritize tasks
+            that may require
+            more support.
+          </Text>
+        </Stack>
+
+        <SimpleGrid
+          cols={{
+            base: 1,
+            md: 2,
+          }}
+        >
+          {outputConfidences.map(
+            (
+              confidence,
+              index,
+            ) => {
+              const outputType =
+                confidence.outputType as
+                  LearningOutputType;
+
+              const error =
+                state.fieldErrors[
+                  `outputConfidences.${index}.confidence`
+                ];
+
+              return (
+                <Select
+                  key={
+                    confidence.outputType
+                  }
+                  allowDeselect={
+                    false
+                  }
+                  data={
+                    CONFIDENCE_OPTIONS
+                  }
+                  disabled={
+                    isPending
+                  }
+                  error={
+                    error
+                  }
+                  label={
+                    LEARNING_OUTPUT_TYPE_LABELS[
+                      outputType
+                    ]
+                  }
+                  onChange={(
+                    value,
+                  ) =>
+                    updateOutputConfidence(
+                      outputType,
+                      value ??
+                        "",
+                    )
+                  }
+                  required
+                  value={
+                    confidence.confidenceLevel
+                  }
+                />
+              );
+            },
+          )}
+        </SimpleGrid>
 
         <Button
           fullWidth
@@ -395,9 +570,13 @@ export function SubjectsForm({
               size={18}
             />
           }
-          loading={isPending}
+          loading={
+            isPending
+          }
           rightSection={
-            <IconArrowRight size={18} />
+            <IconArrowRight
+              size={18}
+            />
           }
           size="md"
           type="submit"
@@ -409,7 +588,8 @@ export function SubjectsForm({
           href="/onboarding/study-challenges"
           ta="center"
         >
-          Return to study challenges
+          Return to study
+          challenges
         </Anchor>
       </Stack>
     </form>

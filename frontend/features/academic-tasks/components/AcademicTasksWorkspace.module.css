@@ -1,0 +1,94 @@
+/* File: /frontend/features/academic-tasks/components/AcademicTasksWorkspace.module.css */
+/* Purpose: Styles the Academic Tasks workspace, task cards,
+   loading states, and responsive page layout. */
+
+.page {
+  width: 100%;
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 2rem;
+}
+
+.header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.eyebrow {
+  color: var(--mantine-color-violet-7);
+  font-size: var(--mantine-font-size-sm);
+  letter-spacing: 0.04em;
+}
+
+.emptyState {
+  min-height: 300px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1.25rem;
+}
+
+/*
+ * Two independent columns prevent a tall or expanded task
+ * from pushing down the next task in the opposite column.
+ */
+.taskGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: start;
+  gap: var(--mantine-spacing-lg);
+}
+
+.taskColumn {
+  display: flex;
+  flex-direction: column;
+  gap: var(--mantine-spacing-lg);
+  min-width: 0;
+}
+
+.taskCard {
+  width: 100%;
+  height: fit-content;
+}
+
+.taskMeta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+  padding-top: 0.25rem;
+}
+
+@media (max-width: 48em) {
+  .page {
+    padding: 1.25rem;
+  }
+
+  .header {
+    flex-direction: column;
+  }
+
+  /*
+   * On mobile, remove the two column wrappers from layout.
+   * Card order is restored with each card's order value.
+   */
+  .taskGrid {
+    display: flex;
+    flex-direction: column;
+    gap: var(--mantine-spacing-lg);
+  }
+
+  .taskColumn {
+    display: contents;
+  }
+
+  .taskMeta {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}

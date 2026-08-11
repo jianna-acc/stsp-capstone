@@ -21,7 +21,7 @@ export const ONBOARDING_STEP_LABELS:
     1: "Student profile",
     2: "Study preferences",
     3: "Study challenges",
-    4: "Subjects and confidence",
+    4: "Subjects and output confidence",
     5: "Available schedule",
     6: "Review and finish",
   };
