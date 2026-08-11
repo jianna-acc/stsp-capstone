@@ -23,6 +23,10 @@ import {
 } from "@mantine/core";
 
 import {
+  LEARNING_OUTPUT_TYPE_LABELS,
+  LEARNING_OUTPUT_TYPES,
+} from "@/features/learning-profile/constants";
+import {
   formatClockTime,
   formatDuration,
   getLearningMethodLabel,
@@ -91,7 +95,9 @@ export default async function ProfilePage() {
     snapshot.learningProfile;
 
   if (!learningProfile) {
-    redirect("/onboarding");
+    redirect(
+      "/onboarding",
+    );
   }
 
   const strongSubjects =
@@ -108,9 +114,33 @@ export default async function ProfilePage() {
         "weak",
     );
 
+  const outputConfidenceByType =
+    new Map(
+      snapshot.outputConfidences.map(
+        (confidence) => [
+          confidence.output_type,
+          confidence.confidence_level,
+        ],
+      ),
+    );
+
+  const orderedOutputConfidences =
+    LEARNING_OUTPUT_TYPES.map(
+      (outputType) => ({
+        outputType,
+        confidenceLevel:
+          outputConfidenceByType.get(
+            outputType,
+          ),
+      }),
+    );
+
   return (
     <Container
-      py={{ base: 32, sm: 56 }}
+      py={{
+        base: 32,
+        sm: 56,
+      }}
       size="lg"
     >
       <Stack gap="xl">
@@ -265,16 +295,18 @@ export default async function ProfilePage() {
               <Group gap="xs">
                 {learningProfile
                   .preferred_study_times
-                  .map((value) => (
-                    <Badge
-                      key={value}
-                      variant="light"
-                    >
-                      {getStudyTimeLabel(
-                        value,
-                      )}
-                    </Badge>
-                  ))}
+                  .map(
+                    (value) => (
+                      <Badge
+                        key={value}
+                        variant="light"
+                      >
+                        {getStudyTimeLabel(
+                          value,
+                        )}
+                      </Badge>
+                    ),
+                  )}
               </Group>
             </Stack>
 
@@ -289,16 +321,18 @@ export default async function ProfilePage() {
               <Group gap="xs">
                 {learningProfile
                   .preferred_learning_methods
-                  .map((value) => (
-                    <Badge
-                      key={value}
-                      variant="light"
-                    >
-                      {getLearningMethodLabel(
-                        value,
-                      )}
-                    </Badge>
-                  ))}
+                  .map(
+                    (value) => (
+                      <Badge
+                        key={value}
+                        variant="light"
+                      >
+                        {getLearningMethodLabel(
+                          value,
+                        )}
+                      </Badge>
+                    ),
+                  )}
               </Group>
             </Stack>
           </SimpleGrid>
@@ -326,17 +360,19 @@ export default async function ProfilePage() {
               <Group gap="xs">
                 {learningProfile
                   .common_study_challenges
-                  .map((value) => (
-                    <Badge
-                      color="orange"
-                      key={value}
-                      variant="light"
-                    >
-                      {getStudyChallengeLabel(
-                        value,
-                      )}
-                    </Badge>
-                  ))}
+                  .map(
+                    (value) => (
+                      <Badge
+                        color="orange"
+                        key={value}
+                        variant="light"
+                      >
+                        {getStudyChallengeLabel(
+                          value,
+                        )}
+                      </Badge>
+                    ),
+                  )}
               </Group>
             </Stack>
 
@@ -360,89 +396,133 @@ export default async function ProfilePage() {
 
         <ProfileSection
           editPath="/onboarding/subjects"
-          title="Subjects and confidence"
+          title="Subjects and output confidence"
         >
-          <SimpleGrid
-            cols={{
-              base: 1,
-              md: 2,
-            }}
-            spacing="lg"
-          >
-            <Stack gap="sm">
-              <Text fw={700}>
-                Strong subjects
-              </Text>
+          <Stack gap="lg">
+            <SimpleGrid
+              cols={{
+                base: 1,
+                md: 2,
+              }}
+              spacing="lg"
+            >
+              <Stack gap="sm">
+                <Text fw={700}>
+                  Strong subjects
+                </Text>
 
-              {strongSubjects.map(
-                (subject) => (
-                  <Paper
-                    key={subject.id}
-                    p="sm"
-                    radius="md"
-                    withBorder
-                  >
-                    <Group
-                      justify="space-between"
+                {strongSubjects.map(
+                  (subject) => (
+                    <Paper
+                      key={subject.id}
+                      p="sm"
+                      radius="md"
+                      withBorder
                     >
                       <Text fw={600}>
                         {
                           subject.subject_name
                         }
                       </Text>
+                    </Paper>
+                  ),
+                )}
+              </Stack>
 
-                      <Badge
-                        color="green"
-                        variant="light"
-                      >
-                        {
-                          subject.confidence_level
-                        }
-                        /5
-                      </Badge>
-                    </Group>
-                  </Paper>
-                ),
-              )}
-            </Stack>
+              <Stack gap="sm">
+                <Text fw={700}>
+                  Weak subjects
+                </Text>
 
-            <Stack gap="sm">
-              <Text fw={700}>
-                Weak subjects
-              </Text>
-
-              {weakSubjects.map(
-                (subject) => (
-                  <Paper
-                    key={subject.id}
-                    p="sm"
-                    radius="md"
-                    withBorder
-                  >
-                    <Group
-                      justify="space-between"
+                {weakSubjects.map(
+                  (subject) => (
+                    <Paper
+                      key={subject.id}
+                      p="sm"
+                      radius="md"
+                      withBorder
                     >
                       <Text fw={600}>
                         {
                           subject.subject_name
                         }
                       </Text>
+                    </Paper>
+                  ),
+                )}
+              </Stack>
+            </SimpleGrid>
 
-                      <Badge
-                        color="yellow"
-                        variant="light"
+            <Divider />
+
+            <Stack gap="sm">
+              <Stack gap={2}>
+                <Text fw={700}>
+                  Academic output
+                  confidence
+                </Text>
+
+                <Text
+                  c="dimmed"
+                  size="sm"
+                >
+                  Your confidence in
+                  common types of academic
+                  work.
+                </Text>
+              </Stack>
+
+              <SimpleGrid
+                cols={{
+                  base: 1,
+                  sm: 2,
+                }}
+                spacing="sm"
+              >
+                {orderedOutputConfidences.map(
+                  ({
+                    outputType,
+                    confidenceLevel,
+                  }) => (
+                    <Paper
+                      key={
+                        outputType
+                      }
+                      p="sm"
+                      radius="md"
+                      withBorder
+                    >
+                      <Group
+                        justify="space-between"
+                        wrap="nowrap"
                       >
-                        {
-                          subject.confidence_level
-                        }
-                        /5
-                      </Badge>
-                    </Group>
-                  </Paper>
-                ),
-              )}
+                        <Text
+                          fw={600}
+                          size="sm"
+                        >
+                          {
+                            LEARNING_OUTPUT_TYPE_LABELS[
+                              outputType
+                            ]
+                          }
+                        </Text>
+
+                        <Badge
+                          variant="light"
+                        >
+                          {confidenceLevel ??
+                            "Not rated"}
+                          {confidenceLevel
+                            ? "/5"
+                            : ""}
+                        </Badge>
+                      </Group>
+                    </Paper>
+                  ),
+                )}
+              </SimpleGrid>
             </Stack>
-          </SimpleGrid>
+          </Stack>
         </ProfileSection>
 
         <ProfileSection

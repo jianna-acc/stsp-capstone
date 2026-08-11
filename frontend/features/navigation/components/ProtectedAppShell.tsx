@@ -27,6 +27,7 @@ import {
   IconLogout,
   IconSchool,
   IconSparkles,
+  IconChecklist,
 } from "@tabler/icons-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -54,6 +55,13 @@ const NAVIGATION_ITEMS = [
     description: "Manage subjects and materials",
     href: "/subjects",
     icon: IconBooks,
+  },
+  {
+  label: "Academic Tasks",
+  description:
+    "Manage deadlines and priorities",
+  href: "/academic-tasks",
+  icon: IconChecklist,
   },
   {
     label: "Study Assistant",

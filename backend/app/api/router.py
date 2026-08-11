@@ -13,6 +13,9 @@ from app.api.routes import (
     reviewers,
     study_conversations,
 )
+from app.api.routes.academic_tasks import (
+    router as academic_tasks_router,
+)
 from app.api.routes.file_processing import (
     router as file_processing_router,
 )
@@ -52,4 +55,8 @@ api_router.include_router(
 
 api_router.include_router(
     quiz_attempts.router,
+)
+
+api_router.include_router(
+    academic_tasks_router,
 )

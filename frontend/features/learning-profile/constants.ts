@@ -92,3 +92,33 @@ export const WEEKDAYS = [
     label: "Sunday",
   },
 ] as const;
+
+export const LEARNING_OUTPUT_TYPES = [
+  "writing",
+  "computation",
+  "research",
+  "presentation",
+  "creative",
+  "reading_analysis",
+  "memorization",
+] as const;
+
+export type LearningOutputType =
+  (typeof LEARNING_OUTPUT_TYPES)[number];
+
+export const LEARNING_OUTPUT_TYPE_LABELS: Record<
+  LearningOutputType,
+  string
+> = {
+  writing: "Essay / Writing",
+  computation:
+    "Computation / Problem Solving",
+  research: "Research",
+  presentation:
+    "Presentation / Oral",
+  creative: "Creative Output",
+  reading_analysis:
+    "Reading / Analysis",
+  memorization:
+    "Memorization / Recall",
+};

@@ -12,7 +12,11 @@ import type {
   PreferredStudyTime,
   StudyChallenge,
   SubjectStrength,
+  LearningOutputType,
 } from "./constants";
+
+export type LearningOutputConfidenceRow =
+  Tables<"learning_output_confidences">;
 
 export type StudentProfileRow =
   Tables<"profiles">;
@@ -51,6 +55,10 @@ export interface StudyChallengesInput {
 export interface LearningSubjectInput {
   subjectName: string;
   subjectStrength: SubjectStrength;
+}
+
+export interface LearningOutputConfidenceInput {
+  outputType: LearningOutputType;
   confidenceLevel: number;
 }
 
@@ -82,6 +90,8 @@ export interface OnboardingSnapshot {
   profile: StudentProfileRow;
   learningProfile: LearningProfileRow | null;
   subjects: LearningSubjectRow[];
+  outputConfidences:
+    LearningOutputConfidenceRow[];
   availability: StudyAvailabilityRow[];
   progress: OnboardingProgress;
 }

@@ -42,6 +42,8 @@ import {
   OnboardingShell,
 } from "@/features/learning-profile/components/OnboardingShell";
 import {
+  LEARNING_OUTPUT_TYPE_LABELS,
+  LEARNING_OUTPUT_TYPES,
   ONBOARDING_STEPS,
 } from "@/features/learning-profile/constants";
 import {
@@ -144,12 +146,13 @@ export default async function ReviewPage() {
   const snapshot =
     await getOnboardingSnapshot();
 
-
   if (
     !snapshot.progress.sections
       .studentProfile
   ) {
-    redirect("/onboarding/profile");
+    redirect(
+      "/onboarding/profile",
+    );
   }
 
   if (
@@ -174,7 +177,9 @@ export default async function ReviewPage() {
     !snapshot.progress.sections
       .subjectConfidence
   ) {
-    redirect("/onboarding/subjects");
+    redirect(
+      "/onboarding/subjects",
+    );
   }
 
   if (
@@ -207,6 +212,27 @@ export default async function ReviewPage() {
       (subject) =>
         subject.subject_strength ===
         "weak",
+    );
+
+  const outputConfidenceByType =
+    new Map(
+      snapshot.outputConfidences.map(
+        (confidence) => [
+          confidence.output_type,
+          confidence.confidence_level,
+        ],
+      ),
+    );
+
+  const orderedOutputConfidences =
+    LEARNING_OUTPUT_TYPES.map(
+      (outputType) => ({
+        outputType,
+        confidenceLevel:
+          outputConfidenceByType.get(
+            outputType,
+          ),
+      }),
     );
 
   return (
@@ -309,16 +335,20 @@ export default async function ReviewPage() {
               <Group gap="xs">
                 {learningProfile
                   .preferred_study_times
-                  .map((studyTime) => (
-                    <Badge
-                      key={studyTime}
-                      variant="light"
-                    >
-                      {getStudyTimeLabel(
-                        studyTime,
-                      )}
-                    </Badge>
-                  ))}
+                  .map(
+                    (studyTime) => (
+                      <Badge
+                        key={
+                          studyTime
+                        }
+                        variant="light"
+                      >
+                        {getStudyTimeLabel(
+                          studyTime,
+                        )}
+                      </Badge>
+                    ),
+                  )}
               </Group>
             </ReviewField>
 
@@ -327,7 +357,9 @@ export default async function ReviewPage() {
                 {learningProfile
                   .preferred_learning_methods
                   .map(
-                    (learningMethod) => (
+                    (
+                      learningMethod,
+                    ) => (
                       <Badge
                         key={
                           learningMethod
@@ -363,17 +395,21 @@ export default async function ReviewPage() {
               <Group gap="xs">
                 {learningProfile
                   .common_study_challenges
-                  .map((challenge) => (
-                    <Badge
-                      color="orange"
-                      key={challenge}
-                      variant="light"
-                    >
-                      {getStudyChallengeLabel(
-                        challenge,
-                      )}
-                    </Badge>
-                  ))}
+                  .map(
+                    (challenge) => (
+                      <Badge
+                        color="orange"
+                        key={
+                          challenge
+                        }
+                        variant="light"
+                      >
+                        {getStudyChallengeLabel(
+                          challenge,
+                        )}
+                      </Badge>
+                    ),
+                  )}
               </Group>
             </ReviewField>
 
@@ -391,7 +427,7 @@ export default async function ReviewPage() {
           icon={
             <IconBook size={22} />
           }
-          title="Subjects and confidence"
+          title="Subjects and output confidence"
         >
           <Stack gap="lg">
             <Stack gap="sm">
@@ -407,37 +443,22 @@ export default async function ReviewPage() {
                     radius="sm"
                     withBorder
                   >
-                    <Group
-                      justify="space-between"
-                    >
-                      <Stack gap={1}>
-                        <Text fw={600}>
-                          {
-                            subject.subject_name
-                          }
-                        </Text>
-
-                        <Text
-                          c="dimmed"
-                          size="xs"
-                        >
-                          {getSubjectStrengthLabel(
-                            subject.subject_strength,
-                          )}
-                        </Text>
-                      </Stack>
-
-                      <Badge
-                        color="green"
-                        variant="light"
-                      >
-                        Confidence{" "}
+                    <Stack gap={1}>
+                      <Text fw={600}>
                         {
-                          subject.confidence_level
+                          subject.subject_name
                         }
-                        /5
-                      </Badge>
-                    </Group>
+                      </Text>
+
+                      <Text
+                        c="dimmed"
+                        size="xs"
+                      >
+                        {getSubjectStrengthLabel(
+                          subject.subject_strength,
+                        )}
+                      </Text>
+                    </Stack>
                   </Paper>
                 ),
               )}
@@ -456,40 +477,92 @@ export default async function ReviewPage() {
                     radius="sm"
                     withBorder
                   >
-                    <Group
-                      justify="space-between"
-                    >
-                      <Stack gap={1}>
-                        <Text fw={600}>
-                          {
-                            subject.subject_name
-                          }
-                        </Text>
-
-                        <Text
-                          c="dimmed"
-                          size="xs"
-                        >
-                          {getSubjectStrengthLabel(
-                            subject.subject_strength,
-                          )}
-                        </Text>
-                      </Stack>
-
-                      <Badge
-                        color="yellow"
-                        variant="light"
-                      >
-                        Confidence{" "}
+                    <Stack gap={1}>
+                      <Text fw={600}>
                         {
-                          subject.confidence_level
+                          subject.subject_name
                         }
-                        /5
-                      </Badge>
-                    </Group>
+                      </Text>
+
+                      <Text
+                        c="dimmed"
+                        size="xs"
+                      >
+                        {getSubjectStrengthLabel(
+                          subject.subject_strength,
+                        )}
+                      </Text>
+                    </Stack>
                   </Paper>
                 ),
               )}
+            </Stack>
+
+            <Divider />
+
+            <Stack gap="sm">
+              <Stack gap={2}>
+                <Text fw={700}>
+                  Academic output
+                  confidence
+                </Text>
+
+                <Text
+                  c="dimmed"
+                  size="sm"
+                >
+                  Your confidence in
+                  common types of academic
+                  work.
+                </Text>
+              </Stack>
+
+              <SimpleGrid
+                cols={{
+                  base: 1,
+                  sm: 2,
+                }}
+              >
+                {orderedOutputConfidences.map(
+                  ({
+                    outputType,
+                    confidenceLevel,
+                  }) => (
+                    <Paper
+                      key={
+                        outputType
+                      }
+                      p="sm"
+                      radius="sm"
+                      withBorder
+                    >
+                      <Group
+                        justify="space-between"
+                        wrap="nowrap"
+                      >
+                        <Text
+                          fw={600}
+                          size="sm"
+                        >
+                          {
+                            LEARNING_OUTPUT_TYPE_LABELS[
+                              outputType
+                            ]
+                          }
+                        </Text>
+
+                        <Badge variant="light">
+                          {confidenceLevel ??
+                            "Not rated"}
+                          {confidenceLevel
+                            ? "/5"
+                            : ""}
+                        </Badge>
+                      </Group>
+                    </Paper>
+                  ),
+                )}
+              </SimpleGrid>
             </Stack>
           </Stack>
         </ReviewSection>
@@ -539,7 +612,10 @@ export default async function ReviewPage() {
 
         <Paper
           bg="violet.0"
-          p={{ base: "lg", sm: "xl" }}
+          p={{
+            base: "lg",
+            sm: "xl",
+          }}
           radius="lg"
           withBorder
         >
