@@ -88,3 +88,23 @@ tables and are scoped using the authenticated user's ID.
 
 Performance metrics remain explicitly unavailable until their canonical feature
 sources are merged.
+
+## Track B Quiz Analytics Integration
+
+Track B is now integrated into the Analytics service.
+
+Canonical Quiz performance evidence comes from:
+
+```text
+quiz_attempts
+├── user_id
+├── status
+├── correct_count
+├── question_count
+└── completed_at
+
+quiz_attempt_answers
+├── attempt_id
+├── topic
+├── is_correct
+└── answered_at

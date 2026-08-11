@@ -1,8 +1,13 @@
 # File: /backend/tests/test_analytics_service.py
-# Purpose: Verifies canonical and deferred Track E analytics behavior.
+# Purpose: Verifies canonical Track E Analytics aggregation behavior.
 
+from datetime import datetime, timedelta, timezone
 from uuid import UUID
 
+from app.repositories.analytics_repository import (
+    QuizAnswerAnalyticsRecord,
+    QuizAttemptAnalyticsRecord,
+)
 from app.schemas.analytics import (
     AnalyticsAvailability,
     AnalyticsDataState,
@@ -14,21 +19,91 @@ USER_ID = UUID(
     "11111111-1111-4111-8111-111111111111",
 )
 
+ATTEMPT_ONE_ID = UUID(
+    "22222222-2222-4222-8222-222222222222",
+)
+
+ATTEMPT_TWO_ID = UUID(
+    "33333333-3333-4333-8333-333333333333",
+)
+
+NOW = datetime(
+    2026,
+    8,
+    11,
+    6,
+    0,
+    tzinfo=timezone.utc,
+)
+
 
 class FakeAnalyticsRepository:
-    """Deterministic canonical analytics source for service tests."""
+    """Deterministic canonical Analytics source for service tests."""
 
-    def __init__(
-        self,
-        *,
-        subject_count: int = 3,
-        study_file_count: int = 8,
-        ready_study_file_count: int = 6,
-    ) -> None:
-        self.subject_count = subject_count
-        self.study_file_count = study_file_count
-        self.ready_study_file_count = ready_study_file_count
-        self.user_ids: list[UUID] = []
+    def __init__(self) -> None:
+        self.user_ids: list[
+            UUID
+        ] = []
+
+        self.attempts = (
+            QuizAttemptAnalyticsRecord(
+                id=ATTEMPT_ONE_ID,
+                correct_count=8,
+                question_count=10,
+                completed_at=NOW
+                - timedelta(
+                    days=2,
+                ),
+            ),
+            QuizAttemptAnalyticsRecord(
+                id=ATTEMPT_TWO_ID,
+                correct_count=3,
+                question_count=5,
+                completed_at=NOW
+                - timedelta(
+                    days=20,
+                ),
+            ),
+        )
+
+        self.answers = {
+            ATTEMPT_ONE_ID: (
+                QuizAnswerAnalyticsRecord(
+                    topic="Algebra",
+                    is_correct=True,
+                ),
+                QuizAnswerAnalyticsRecord(
+                    topic="Algebra",
+                    is_correct=True,
+                ),
+                QuizAnswerAnalyticsRecord(
+                    topic="Algebra",
+                    is_correct=True,
+                ),
+                QuizAnswerAnalyticsRecord(
+                    topic="Algebra",
+                    is_correct=False,
+                ),
+                QuizAnswerAnalyticsRecord(
+                    topic="Biology",
+                    is_correct=True,
+                ),
+                QuizAnswerAnalyticsRecord(
+                    topic="Biology",
+                    is_correct=False,
+                ),
+            ),
+            ATTEMPT_TWO_ID: (
+                QuizAnswerAnalyticsRecord(
+                    topic="Biology",
+                    is_correct=False,
+                ),
+                QuizAnswerAnalyticsRecord(
+                    topic="Biology",
+                    is_correct=True,
+                ),
+            ),
+        }
 
     def count_subjects(
         self,
@@ -38,7 +113,7 @@ class FakeAnalyticsRepository:
         self.user_ids.append(
             user_id,
         )
-        return self.subject_count
+        return 3
 
     def count_study_files(
         self,
@@ -48,7 +123,7 @@ class FakeAnalyticsRepository:
         self.user_ids.append(
             user_id,
         )
-        return self.study_file_count
+        return 8
 
     def count_ready_study_files(
         self,
@@ -58,15 +133,52 @@ class FakeAnalyticsRepository:
         self.user_ids.append(
             user_id,
         )
-        return self.ready_study_file_count
+        return 6
+
+    def list_completed_quiz_attempts(
+        self,
+        *,
+        user_id: UUID,
+    ) -> tuple[
+        QuizAttemptAnalyticsRecord,
+        ...,
+    ]:
+        self.user_ids.append(
+            user_id,
+        )
+        return self.attempts
+
+    def list_quiz_attempt_answers(
+        self,
+        *,
+        attempt_id: UUID,
+    ) -> tuple[
+        QuizAnswerAnalyticsRecord,
+        ...,
+    ]:
+        return self.answers.get(
+            attempt_id,
+            (),
+        )
 
 
-def test_overview_returns_canonical_counts_and_partial_state() -> None:
-    """Canonical data is real while deferred performance stays unavailable."""
+def _service(
+    repository: FakeAnalyticsRepository,
+) -> AnalyticsService:
+    """Create an Analytics service with a deterministic clock."""
+
+    return AnalyticsService(
+        repository=repository,
+        clock=lambda: NOW,
+    )
+
+
+def test_all_time_overview_uses_real_quiz_evidence() -> None:
+    """All-time Analytics aggregates completed canonical Quiz attempts."""
 
     repository = FakeAnalyticsRepository()
-    service = AnalyticsService(
-        repository=repository,
+    service = _service(
+        repository,
     )
 
     response = service.get_overview(
@@ -74,78 +186,59 @@ def test_overview_returns_canonical_counts_and_partial_state() -> None:
         period=AnalyticsPeriod.ALL_TIME,
     )
 
-    assert response.period is AnalyticsPeriod.ALL_TIME
     assert response.data_state is AnalyticsDataState.PARTIAL
 
-    assert (
-        response.subject_count.availability
-        is AnalyticsAvailability.AVAILABLE
-    )
     assert response.subject_count.value == 3
-
-    assert (
-        response.study_material_count.availability
-        is AnalyticsAvailability.AVAILABLE
-    )
     assert response.study_material_count.value == 8
-
-    assert (
-        response.ready_study_material_count.availability
-        is AnalyticsAvailability.AVAILABLE
-    )
     assert response.ready_study_material_count.value == 6
 
-    assert (
-        response.quiz_accuracy_percent.availability
-        is AnalyticsAvailability.UNAVAILABLE
+    assert response.quiz_accuracy_percent.availability is (
+        AnalyticsAvailability.AVAILABLE
     )
-    assert response.quiz_accuracy_percent.value is None
+    assert response.quiz_accuracy_percent.value == 73.33
+    assert response.quiz_accuracy_percent.sample_size == 15
 
-    assert (
-        response.flashcard_performance_percent.availability
-        is AnalyticsAvailability.UNAVAILABLE
-    )
-    assert response.flashcard_performance_percent.value is None
-
-    assert (
-        response.study_minutes.availability
-        is AnalyticsAvailability.UNAVAILABLE
-    )
-
-    assert response.strong_topics == ()
-    assert response.weak_topics == ()
-
-
-def test_overview_scopes_all_queries_to_authenticated_user() -> None:
-    """Every canonical query must use the authenticated user's UUID."""
-
-    repository = FakeAnalyticsRepository()
-    service = AnalyticsService(
-        repository=repository,
-    )
-
-    service.get_overview(
-        user_id=USER_ID,
-        period=AnalyticsPeriod.LAST_30_DAYS,
-    )
-
-    assert repository.user_ids == [
-        USER_ID,
-        USER_ID,
-        USER_ID,
+    assert [
+        (
+            item.topic,
+            item.score_percent,
+            item.sample_size,
+        )
+        for item in response.strong_topics
+    ] == [
+        (
+            "Algebra",
+            75.0,
+            4,
+        ),
     ]
 
+    assert [
+        (
+            item.topic,
+            item.score_percent,
+            item.sample_size,
+        )
+        for item in response.weak_topics
+    ] == [
+        (
+            "Biology",
+            50.0,
+            4,
+        ),
+    ]
 
-def test_overview_supports_zero_canonical_records() -> None:
-    """A new student with no records should receive valid zero counts."""
-
-    repository = FakeAnalyticsRepository(
-        subject_count=0,
-        study_file_count=0,
-        ready_study_file_count=0,
+    assert response.flashcard_performance_percent.availability is (
+        AnalyticsAvailability.UNAVAILABLE
     )
-    service = AnalyticsService(
-        repository=repository,
+
+
+def test_last_7_days_excludes_old_quiz_attempts() -> None:
+    """Period-sensitive Quiz Analytics excludes older attempts."""
+
+    repository = FakeAnalyticsRepository()
+    service = _service(
+        repository,
     )
 
     response = service.get_overview(
@@ -153,10 +246,77 @@ def test_overview_supports_zero_canonical_records() -> None:
         period=AnalyticsPeriod.LAST_7_DAYS,
     )
 
-    assert response.subject_count.value == 0
-    assert response.study_material_count.value == 0
-    assert response.ready_study_material_count.value == 0
+    assert response.quiz_accuracy_percent.value == 80.0
+    assert response.quiz_accuracy_percent.sample_size == 10
 
-    assert response.subject_count.availability is (
+    assert len(
+        response.strong_topics,
+    ) == 1
+
+    assert len(
+        response.weak_topics,
+    ) == 1
+
+
+def test_last_30_days_includes_both_quiz_attempts() -> None:
+    """Thirty-day Analytics includes both deterministic attempts."""
+
+    repository = FakeAnalyticsRepository()
+    service = _service(
+        repository,
+    )
+
+    response = service.get_overview(
+        user_id=USER_ID,
+        period=AnalyticsPeriod.LAST_30_DAYS,
+    )
+
+    assert response.quiz_accuracy_percent.value == 73.33
+    assert response.quiz_accuracy_percent.sample_size == 15
+
+
+def test_no_completed_quizzes_returns_available_empty_metric() -> None:
+    """No evidence is different from an unavailable Quiz data source."""
+
+    repository = FakeAnalyticsRepository()
+    repository.attempts = ()
+
+    service = _service(
+        repository,
+    )
+
+    response = service.get_overview(
+        user_id=USER_ID,
+        period=AnalyticsPeriod.ALL_TIME,
+    )
+
+    assert response.quiz_accuracy_percent.availability is (
         AnalyticsAvailability.AVAILABLE
     )
+    assert response.quiz_accuracy_percent.value is None
+    assert response.quiz_accuracy_percent.sample_size == 0
+    assert response.quiz_accuracy_percent.message is not None
+
+    assert response.strong_topics == ()
+    assert response.weak_topics == ()
+
+
+def test_overview_scopes_canonical_queries_to_authenticated_user() -> None:
+    """Owner-scoped Analytics reads must receive the authenticated UUID."""
+
+    repository = FakeAnalyticsRepository()
+    service = _service(
+        repository,
+    )
+
+    service.get_overview(
+        user_id=USER_ID,
+        period=AnalyticsPeriod.ALL_TIME,
+    )
+
+    assert repository.user_ids == [
+        USER_ID,
+        USER_ID,
+        USER_ID,
+        USER_ID,
+    ]

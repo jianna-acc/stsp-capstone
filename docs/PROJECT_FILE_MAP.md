@@ -541,10 +541,10 @@ Large-material generation preserves the complete original source bundle for owne
 |---|---|---|---|
 | `backend/app/api/analytics_dependency.py` | Constructs the Analytics service and repository dependency graph. | Track E — Analytics | Supabase client, Analytics repository, Analytics service |
 | `backend/app/api/routes/analytics.py` | Exposes authenticated Analytics endpoints. | Track E — Analytics | Authentication dependency, Analytics service |
-| `backend/app/repositories/analytics_repository.py` | Reads owner-scoped canonical subject and study-material data. | Track E — Analytics | `subjects`, `study_files`, Supabase client |
+| `backend/app/repositories/analytics_repository.py` | Reads owner-scoped canonical subject and study-material data. | Track E — Analytics | subjects, study_files, quiz_attempts, quiz_attempt_answers, Supabase client |
 | `backend/app/schemas/analytics.py` | Defines Analytics request/response contracts and metric states. | Track E — Analytics | Analytics route and service |
 | `backend/app/services/analytics_errors.py` | Defines controlled Analytics feature errors. | Track E — Analytics | Repository and route |
-| `backend/app/services/analytics_service.py` | Aggregates canonical data and deferred performance metrics. | Track E — Analytics | Analytics repository; future Tracks A/B |
+| `backend/app/services/analytics_service.py` | Aggregates canonical data and deferred performance metrics. | Track E — Analytics | Analytics repository, Track B Quiz attempts; future Flashcard study evidence |
 | `backend/tests/test_analytics_api_endpoint.py` | Tests authentication, periods, responses, and controlled API failures. | Track E — Analytics | Analytics API |
 | `backend/tests/test_analytics_repository.py` | Tests owner-scoped canonical data access. | Track E — Analytics | Analytics repository |
 | `backend/tests/test_analytics_router_registration.py` | Protects Analytics router registration. | Track E — Analytics | FastAPI application router |

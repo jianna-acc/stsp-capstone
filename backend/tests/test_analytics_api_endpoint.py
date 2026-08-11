@@ -20,8 +20,11 @@ from app.schemas.analytics import (
     AnalyticsMetric,
     AnalyticsOverviewResponse,
     AnalyticsPeriod,
+    AnalyticsTopicPerformance,
 )
-from app.services.analytics_errors import AnalyticsRepositoryError
+from app.services.analytics_errors import (
+    AnalyticsRepositoryError,
+)
 
 USER_ID = UUID(
     "11111111-1111-4111-8111-111111111111",
@@ -47,13 +50,6 @@ class FakeAnalyticsService:
     ) -> AnalyticsOverviewResponse:
         assert user_id == USER_ID
 
-        unavailable = AnalyticsMetric(
-            availability=AnalyticsAvailability.UNAVAILABLE,
-            value=None,
-            sample_size=0,
-            message="Canonical source not integrated.",
-        )
-
         return AnalyticsOverviewResponse(
             period=period,
             data_state=AnalyticsDataState.PARTIAL,
@@ -69,18 +65,43 @@ class FakeAnalyticsService:
                 availability=AnalyticsAvailability.AVAILABLE,
                 value=6,
             ),
-            quiz_accuracy_percent=unavailable,
-            flashcard_performance_percent=unavailable,
-            study_minutes=unavailable,
-            strong_topics=(),
-            weak_topics=(),
+            quiz_accuracy_percent=AnalyticsMetric(
+                availability=AnalyticsAvailability.AVAILABLE,
+                value=80.0,
+                sample_size=10,
+            ),
+            flashcard_performance_percent=AnalyticsMetric(
+                availability=AnalyticsAvailability.UNAVAILABLE,
+                value=None,
+                sample_size=0,
+                message=(
+                    "Flashcard correctness evidence is unavailable."
+                ),
+            ),
+            study_minutes=AnalyticsMetric(
+                availability=AnalyticsAvailability.UNAVAILABLE,
+                value=None,
+                sample_size=0,
+                message=(
+                    "Study-duration evidence is unavailable."
+                ),
+            ),
+            strong_topics=(
+                AnalyticsTopicPerformance(
+                    topic="Algebra",
+                    score_percent=75.0,
+                    sample_size=4,
+                ),
+            ),
+            weak_topics=(
+                AnalyticsTopicPerformance(
+                    topic="Biology",
+                    score_percent=50.0,
+                    sample_size=4,
+                ),
+            ),
         )
 
-
-def _analytics_service() -> FakeAnalyticsService:
-    """Return the deterministic API-test Analytics service."""
-
-    return FakeAnalyticsService()
 
 class FailingAnalyticsService:
     """Simulate unavailable canonical Analytics data."""
@@ -100,13 +121,21 @@ class FailingAnalyticsService:
             "Canonical Analytics data failed.",
         )
 
+
+def _analytics_service() -> FakeAnalyticsService:
+    """Return the deterministic API-test Analytics service."""
+
+    return FakeAnalyticsService()
+
+
 def _failing_analytics_service() -> FailingAnalyticsService:
     """Return a failing Analytics service for API tests."""
 
     return FailingAnalyticsService()
 
+
 def test_analytics_overview_requires_authentication() -> None:
-    """Analytics must reject requests without student authentication."""
+    """Analytics must reject requests without authentication."""
 
     with TestClient(app) as client:
         response = client.get(
@@ -117,11 +146,12 @@ def test_analytics_overview_requires_authentication() -> None:
 
 
 def test_authenticated_user_can_get_analytics_overview() -> None:
-    """Authenticated users receive available and deferred metrics."""
+    """Authenticated users receive canonical Quiz Analytics."""
 
     app.dependency_overrides[
         require_authenticated_user
     ] = _authenticated_user
+
     app.dependency_overrides[
         get_analytics_service
     ] = _analytics_service
@@ -151,20 +181,37 @@ def test_authenticated_user_can_get_analytics_overview() -> None:
     assert payload["study_material_count"]["value"] == 8
     assert payload["ready_study_material_count"]["value"] == 6
 
-    assert (
-        payload["quiz_accuracy_percent"]["availability"]
-        == "unavailable"
-    )
-    assert payload["quiz_accuracy_percent"]["value"] is None
+    assert payload["quiz_accuracy_percent"] == {
+        "availability": "available",
+        "value": 80.0,
+        "sample_size": 10,
+        "message": None,
+    }
+
+    assert payload["strong_topics"] == [
+        {
+            "topic": "Algebra",
+            "score_percent": 75.0,
+            "sample_size": 4,
+        },
+    ]
+
+    assert payload["weak_topics"] == [
+        {
+            "topic": "Biology",
+            "score_percent": 50.0,
+            "sample_size": 4,
+        },
+    ]
 
     assert (
-        payload["flashcard_performance_percent"]["availability"]
+        payload[
+            "flashcard_performance_percent"
+        ][
+            "availability"
+        ]
         == "unavailable"
     )
-
-    assert payload["study_minutes"]["availability"] == "unavailable"
-    assert payload["strong_topics"] == []
-    assert payload["weak_topics"] == []
 
 
 def test_analytics_overview_accepts_supported_period() -> None:
@@ -173,6 +220,7 @@ def test_analytics_overview_accepts_supported_period() -> None:
     app.dependency_overrides[
         require_authenticated_user
     ] = _authenticated_user
+
     app.dependency_overrides[
         get_analytics_service
     ] = _analytics_service
@@ -198,6 +246,7 @@ def test_analytics_overview_rejects_unknown_period() -> None:
     app.dependency_overrides[
         require_authenticated_user
     ] = _authenticated_user
+
     app.dependency_overrides[
         get_analytics_service
     ] = _analytics_service
@@ -215,12 +264,14 @@ def test_analytics_overview_rejects_unknown_period() -> None:
 
     assert response.status_code == 422
 
+
 def test_analytics_overview_returns_503_for_data_source_error() -> None:
-    """Controlled canonical-data failures must not leak as server errors."""
+    """Controlled canonical-data failures must return 503."""
 
     app.dependency_overrides[
         require_authenticated_user
     ] = _authenticated_user
+
     app.dependency_overrides[
         get_analytics_service
     ] = _failing_analytics_service
@@ -234,6 +285,7 @@ def test_analytics_overview_returns_503_for_data_source_error() -> None:
         app.dependency_overrides.clear()
 
     assert response.status_code == 503
+
     assert response.json() == {
         "detail": "Analytics data is temporarily unavailable.",
     }
