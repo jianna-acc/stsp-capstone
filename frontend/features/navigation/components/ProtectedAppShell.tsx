@@ -21,7 +21,9 @@ import { useDisclosure } from "@mantine/hooks";
 import {
   IconBook2,
   IconBooks,
+  IconCards,
   IconLayoutDashboard,
+  IconListCheck,
   IconLogout,
   IconSchool,
   IconSparkles,
@@ -65,6 +67,20 @@ const NAVIGATION_ITEMS = [
       "Generate study reviewers",
     href: "/reviewers",
     icon: IconBook2,
+  },
+  {
+    label: "Flashcards",
+    description:
+      "Generate and study cards",
+    href: "/flashcards",
+    icon: IconCards,
+  },
+  {
+    label: "Quizzes",
+    description:
+      "Practice from your materials",
+    href: "/quizzes",
+    icon: IconListCheck,
   },
 ] as const;
 

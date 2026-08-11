@@ -35,7 +35,8 @@ Supabase provides:
 | Conversation messages | Implemented |
 | Conversation summary state | Implemented |
 | Reviewer table | Implemented |
-| Flashcard/quiz tables | Planned |
+| Flashcard decks and cards | Implemented |
+| Quiz tables and attempt history | Implemented |
 | Tasks/study plans | Planned |
 
 ---
@@ -432,6 +433,20 @@ erDiagram
     STUDY_FILES ||--o{ STUDY_CONVERSATIONS : filters
 
     STUDY_CONVERSATIONS ||--o{ STUDY_MESSAGES : contains
+
+    AUTH_USERS ||--o{ FLASHCARD_DECKS : owns
+    SUBJECTS ||--o{ FLASHCARD_DECKS : organizes
+    STUDY_FILES ||--o{ FLASHCARD_DECKS : optional_source
+    FLASHCARD_DECKS ||--o{ FLASHCARDS : contains
+
+    AUTH_USERS ||--o{ QUIZZES : owns
+    AUTH_USERS ||--o{ QUIZ_ATTEMPTS : owns
+    SUBJECTS ||--o{ QUIZZES : organizes
+    STUDY_FILES ||--o{ QUIZZES : optional_source
+    QUIZZES ||--o{ QUIZ_QUESTIONS : contains
+    QUIZZES ||--o{ QUIZ_ATTEMPTS : records
+    QUIZ_ATTEMPTS ||--o{ QUIZ_ATTEMPT_ANSWERS : contains
+    QUIZ_QUESTIONS ||--o{ QUIZ_ATTEMPT_ANSWERS : answered_as
 ```
 
 ---
@@ -477,6 +492,8 @@ Students must not be able to read or modify:
 - Another student's vector chunks
 - Another student's saved conversations
 - Another student's messages
+- Another student's Flashcard decks or cards
+- Another student's Quizzes, attempts, or submitted-answer history
 - Another student's private Storage objects
 
 ---
@@ -495,6 +512,10 @@ fail_study_file_processing
 recover_stale_file_processing_jobs
 replace_study_file_ai_chunks
 complete_learning_profile_onboarding
+create_flashcard_deck_with_cards
+create_quiz_with_questions
+start_quiz_attempt
+submit_quiz_attempt_answer
 ```
 
 Applied database functions are application contracts.
@@ -535,6 +556,269 @@ topics
   summary
   key_points
   definitions
+```
+---
+
+# Saved Flashcards
+
+Flashcard persistence uses two normalized tables:
+
+```text
+public.flashcard_decks
+public.flashcards
+```
+
+## `public.flashcard_decks`
+
+Stores one generated Flashcard deck owned by an authenticated student.
+
+Important columns:
+
+| Column | Purpose |
+|---|---|
+| `id` | Flashcard deck UUID |
+| `user_id` | Authenticated owner |
+| `subject_id` | Subject used for generation |
+| `study_file_id` | Optional source file for file scope |
+| `scope_type` | `subject` or `file` |
+| `title` | Saved deck title |
+| `requested_card_count` | Number of cards requested |
+| `sources` | Safe source-file and chunk metadata |
+| `generation_model` | AI model used |
+| `generation_count` | Generation count for the deck |
+| `generated_at` | Generation timestamp |
+| `created_at` | Creation timestamp |
+| `updated_at` | Latest deck update |
+
+The database constrains Flashcard requests to the supported public card-count range.
+
+Subject/file scope is validated so the selected source remains connected to the authenticated owner.
+
+## `public.flashcards`
+
+Stores individual ordered question-and-answer cards.
+
+Important columns:
+
+| Column | Purpose |
+|---|---|
+| `id` | Flashcard UUID |
+| `deck_id` | Parent Flashcard deck |
+| `position` | Stable zero-based order within the deck |
+| `question` | Flashcard question |
+| `answer` | Flashcard answer |
+| `created_at` | Creation timestamp |
+
+The relationship is:
+
+```text
+flashcard_decks
+    1
+    |
+    | contains
+    |
+    N
+flashcards
+```
+
+Deleting a Flashcard deck cascades to its child Flashcards.
+
+## Flashcard Security
+
+Both Flashcard tables use Row Level Security.
+
+Authenticated browser clients may:
+
+```text
+read owned Flashcard data
+delete owned Flashcard decks
+```
+
+Browser clients may not directly insert generated Flashcard records.
+
+Card reads are authorized through ownership of the parent Flashcard deck.
+
+Trusted creation is performed through:
+
+```text
+create_flashcard_deck_with_cards(...)
+```
+
+The function is `SECURITY DEFINER` and is restricted to the backend `service_role`.
+
+The RPC creates the parent deck and all ordered child cards atomically so a partially created deck cannot remain after a failed operation.
+---
+
+# Saved Quizzes
+
+Track B adds four Quiz resources.
+
+## `public.quizzes`
+
+Stores student-safe Quiz metadata.
+
+Important columns:
+
+| Column | Purpose |
+|---|---|
+| `id` | Quiz UUID |
+| `user_id` | Authenticated owner |
+| `subject_id` | Subject used for generation |
+| `study_file_id` | Optional source file for file scope |
+| `scope_type` | `subject` or `file` |
+| `title` | Generated Quiz title |
+| `quiz_type` | `multiple_choice`, `true_false`, `identification`, or `mixed` |
+| `difficulty` | `easy`, `medium`, or `hard` |
+| `question_count` | Number of questions |
+| `generation_model` | Generation model identity |
+| `generation_count` | Generation count |
+| `generated_at` | Generation timestamp |
+| `created_at` | Creation timestamp |
+| `updated_at` | Update timestamp |
+
+Authenticated browser clients may read/delete only owned Quiz metadata according to the configured policies. Quiz creation is performed through the trusted backend RPC.
+
+## `public.quiz_questions`
+
+Stores generated Quiz questions and the private answer key.
+
+Important data includes:
+
+```text
+id
+quiz_id
+position
+question_type
+topic
+question
+choices
+correct_answer
+accepted_answers
+explanation
+```
+
+The student-safe Quiz API returns only:
+
+```text
+id
+position
+question_type
+topic
+question
+choices
+```
+
+Private fields:
+
+```text
+correct_answer
+accepted_answers
+explanation
+```
+
+are not exposed through normal Quiz reads.
+
+Direct browser access to private Quiz-question answer-key data is restricted. Trusted backend operations use the service role for persistence and grading.
+
+## `public.quiz_attempts`
+
+Stores one student's Quiz-taking state.
+
+Important columns:
+
+```text
+id
+user_id
+quiz_id
+status
+current_position
+correct_count
+question_count
+score_percentage
+started_at
+completed_at
+created_at
+updated_at
+```
+
+Attempt states:
+
+```text
+in_progress
+completed
+```
+
+Authenticated browser clients may read owned attempt state, while trusted backend operations perform attempt writes.
+
+## `public.quiz_attempt_answers`
+
+Stores the safe submitted-answer history for an attempt.
+
+Important columns:
+
+```text
+id
+attempt_id
+quiz_question_id
+position
+topic
+question_type
+submitted_answer
+is_correct
+answered_at
+created_at
+```
+
+This table stores submitted history and correctness but does not duplicate the private correct answer or explanation.
+
+## Quiz Relationships
+
+```mermaid
+erDiagram
+    AUTH_USERS ||--o{ QUIZZES : owns
+    AUTH_USERS ||--o{ QUIZ_ATTEMPTS : owns
+
+    SUBJECTS ||--o{ QUIZZES : organizes
+    STUDY_FILES ||--o{ QUIZZES : optional_source
+
+    QUIZZES ||--o{ QUIZ_QUESTIONS : contains
+    QUIZZES ||--o{ QUIZ_ATTEMPTS : records
+    QUIZ_ATTEMPTS ||--o{ QUIZ_ATTEMPT_ANSWERS : contains
+    QUIZ_QUESTIONS ||--o{ QUIZ_ATTEMPT_ANSWERS : answered_as
+```
+
+Deleting a Quiz cascades to its generated questions and related attempt history through the configured foreign-key relationships.
+
+## Quiz Trusted RPCs
+
+```text
+create_quiz_with_questions
+start_quiz_attempt
+submit_quiz_attempt_answer
+```
+
+`create_quiz_with_questions` atomically persists the Quiz and its generated private questions.
+
+`start_quiz_attempt` creates one fresh attempt for an owned Quiz.
+
+`submit_quiz_attempt_answer` atomically validates the current expected question, loads the private answer key, grades the submitted answer, stores safe answer history, and updates the attempt state.
+
+These RPC operations are trusted backend contracts rather than direct browser-write operations.
+
+## Quiz RLS and Security
+
+Quiz security separates student-safe metadata from private grading data.
+
+Key boundaries:
+
+- Students may access only their own Quiz resources.
+- Normal Quiz responses do not expose the answer key.
+- Browser clients do not directly write attempts or grading state.
+- The trusted backend loads private answer-key data for grading.
+- Completed-attempt review requires an owned completed attempt.
+- An in-progress attempt cannot request the full completed review.
+- Deleting one owned Quiz removes its related Quiz data without affecting another student's resources.
+
 
 # File Deletion Behavior
 
@@ -574,7 +858,6 @@ Deleting a conversation removes its connected messages through cascade behavior.
 |---|---|
 | `20260807230500_create_reviewers.sql` | Retained no-op migration entry matching remote migration history |
 | `20260808053929_create_reviewers_foundation.sql` | Creates reviewer table, ownership/scope validation, indexes, timestamps, triggers, privileges, and RLS |
-```
 
 ---
 
@@ -586,11 +869,6 @@ Future phases may add:
 academic_tasks
 study_plans
 study_sessions
-flashcard_sets
-flashcards
-quizzes
-quiz_questions
-quiz_attempts
 ```
 
 Saved AI conversations are already implemented using:
@@ -606,9 +884,45 @@ Vector storage is already implemented using:
 study_file_ai_chunks
 ```
 
-Do not create duplicate `chat_*` or `document_embeddings` tables for the same purpose.
+Flashcard persistence is already implemented using:
+
+```text
+flashcard_decks
+flashcards
+```
+
+Quiz persistence and attempt history are already implemented using:
+
+```text
+quizzes
+quiz_questions
+quiz_attempts
+quiz_attempt_answers
+```
 
 ---
+
+# Track A Flashcard Migrations
+
+| Migration | Purpose |
+|---|---|
+| `20260809142000_create_flashcard_foundation.sql` | Creates `flashcard_decks`, `flashcards`, ownership/scope validation, constraints, indexes, triggers, privileges, and RLS |
+| `20260809145600_create_flashcard_persistence_rpc.sql` | Adds atomic trusted Flashcard deck-and-card creation |
+
+---
+
+# Track B Quiz Migrations
+
+| Migration | Purpose |
+|---|---|
+| `20260809204500_create_quizzes_foundation.sql` | Creates owned Quiz metadata and private generated Quiz questions |
+| `20260809211600_create_quiz_persistence_rpc.sql` | Adds atomic Quiz/question persistence RPC |
+| `20260809223500_create_quiz_attempt_foundation.sql` | Creates Quiz attempts and submitted-answer history |
+| `20260809225500_create_quiz_attempt_rpcs.sql` | Adds atomic attempt-start and answer-submission/grading RPCs |
+
+The later saved-history and completed-attempt review feature reuses these tables and requires no additional migration.
+
+
 
 # Migration Workflow
 

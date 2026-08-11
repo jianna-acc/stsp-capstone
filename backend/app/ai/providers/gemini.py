@@ -5,6 +5,8 @@
 from typing import Any
 
 from google import genai
+import asyncio
+import logging
 from google.genai import types
 
 from app.ai.contracts import (
@@ -21,7 +23,7 @@ from app.ai.errors import (
 )
 from app.core.config import Settings, get_settings
 
-
+logger = logging.getLogger(__name__)
 class GeminiProvider:
     """Provide Gemini generation and embedding operations."""
 
@@ -79,23 +81,106 @@ class GeminiProvider:
             max_output_tokens=max_output_tokens,
         )
 
-        try:
-            response = await self._client.aio.models.generate_content(
-                model=self._settings.gemini_generation_model,
-                contents=request.prompt,
-                config=config,
-            )
-        except Exception as exc:
-            raise AIProviderRequestError(
-                "Gemini generation request failed.",
-            ) from exc
+        for attempt in range(1, 4):
+            try:
+                response = (
+                    await self._client.aio.models.generate_content(
+                        model=(
+                            self._settings.gemini_generation_model
+                        ),
+                        contents=request.prompt,
+                        config=config,
+                    )
+                )
+                break
+
+            except Exception as exc:
+                code = getattr(
+                    exc,
+                    "code",
+                    None,
+                )
+                status_code = getattr(
+                    exc,
+                    "status_code",
+                    None,
+                )
+
+                is_transient_server_error = (
+                    code in {503, 504}
+                    or status_code in {503, 504}
+                )
+
+                if (
+                    is_transient_server_error
+                    and attempt < 3
+                ):
+                    delay_seconds = (
+                        0.5
+                        * (2 ** (attempt - 1))
+                    )
+
+                    logger.warning(
+                        "Gemini generation returned a transient server error; "
+                        "retrying: attempt=%s delay=%ss",
+                        attempt,
+                        delay_seconds,
+                    )
+
+                    await asyncio.sleep(
+                        delay_seconds,
+                    )
+                    continue
+
+                logger.warning(
+                    "Gemini generation request failed: "
+                    "exception_type=%s code=%s "
+                    "status_code=%s attempt=%s",
+                    type(exc).__name__,
+                    code,
+                    status_code,
+                    attempt,
+                )
+
+                raise AIProviderRequestError(
+                    "Gemini generation request failed.",
+                ) from exc
 
         response_text = getattr(
             response,
             "text",
             None,
         )
+        if (
+            not isinstance(response_text, str)
+            or not response_text.strip()
+        ):
+            candidates = getattr(
+                response,
+                "candidates",
+                None,
+            )
 
+            first_candidate = (
+                candidates[0]
+                if candidates
+                else None
+            )
+
+            logger.warning(
+                "Gemini generation returned no usable text: "
+                "finish_reason=%s usage_metadata=%s",
+                getattr(
+                    first_candidate,
+                    "finish_reason",
+                    None,
+                ),
+                getattr(
+                    response,
+                    "usage_metadata",
+                    None,
+                ),
+            )
         if not isinstance(response_text, str) or not response_text.strip():
             raise AIProviderResponseError(
                 "Gemini returned no usable generated text.",

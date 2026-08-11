@@ -14,6 +14,7 @@ import type {
   ReviewerDefinition,
   ReviewerGenerateRequest,
   ReviewerLength,
+  ReviewerListResponse,
   ReviewerLocatorType,
   ReviewerResponse,
   ReviewerScopeType,
@@ -35,6 +36,19 @@ interface GenerateReviewerOptions {
 }
 
 interface RegenerateReviewerOptions {
+  signal?: AbortSignal;
+}
+
+interface ListReviewersOptions {
+  signal?: AbortSignal;
+  limit?: number;
+}
+
+interface GetReviewerOptions {
+  signal?: AbortSignal;
+}
+
+interface DeleteReviewerOptions {
   signal?: AbortSignal;
 }
 
@@ -144,6 +158,44 @@ function buildReviewerRegenerateUrl(
     encodedReviewerId,
     "/regenerate",
   ].join("");
+}
+
+function buildReviewersUrl(
+  limit?: number,
+): string {
+  const apiBaseUrl =
+    getApiBaseUrl();
+
+  const baseUrl =
+    apiBaseUrl.endsWith("/api")
+      ? `${apiBaseUrl}/reviewers`
+      : `${apiBaseUrl}/api/reviewers`;
+
+  if (limit === undefined) {
+    return baseUrl;
+  }
+
+  return `${baseUrl}?limit=${encodeURIComponent(
+    String(limit),
+  )}`;
+}
+
+function buildReviewerUrl(
+  reviewerId: string,
+): string {
+  const apiBaseUrl =
+    getApiBaseUrl();
+
+  const encodedReviewerId =
+    encodeURIComponent(
+      reviewerId,
+    );
+
+  if (apiBaseUrl.endsWith("/api")) {
+    return `${apiBaseUrl}/reviewers/${encodedReviewerId}`;
+  }
+
+  return `${apiBaseUrl}/api/reviewers/${encodedReviewerId}`;
 }
 
 async function readJsonResponse(
@@ -456,6 +508,21 @@ function isReviewerResponse(
   );
 }
 
+function isReviewerListResponse(
+  value: unknown,
+): value is ReviewerListResponse {
+  if (!isRecord(value)) {
+    return false;
+  }
+
+  return (
+    Array.isArray(value.items) &&
+    value.items.every(
+      isReviewerResponse,
+    )
+  );
+}
+
 export async function generateReviewer(
   request: ReviewerGenerateRequest,
   options: GenerateReviewerOptions = {},
@@ -644,4 +711,295 @@ export async function regenerateReviewer(
   }
 
   return payload;
+}
+
+export async function listReviewers(
+  options: ListReviewersOptions = {},
+): Promise<ReviewerListResponse> {
+  if (
+    options.limit !== undefined &&
+    (
+      !Number.isInteger(options.limit) ||
+      options.limit < 1 ||
+      options.limit > 100
+    )
+  ) {
+    throw new ReviewerApiError(
+      "The reviewer history limit must be between 1 and 100.",
+      400,
+      "REVIEWER_LIMIT_INVALID",
+    );
+  }
+
+  const supabase = createClient();
+
+  const {
+    data: {
+      session,
+    },
+    error: sessionError,
+  } = await supabase.auth.getSession();
+
+  if (
+    sessionError ||
+    !session?.access_token
+  ) {
+    throw new ReviewerApiError(
+      SESSION_EXPIRED_MESSAGE,
+      401,
+      "AUTHENTICATION_REQUIRED",
+    );
+  }
+
+  let response: Response;
+
+  try {
+    response = await fetch(
+      buildReviewersUrl(
+        options.limit,
+      ),
+      {
+        method: "GET",
+
+        headers: {
+          Authorization:
+            `Bearer ${session.access_token}`,
+        },
+
+        cache: "no-store",
+        signal: options.signal,
+      },
+    );
+  } catch (error) {
+    if (
+      error instanceof DOMException &&
+      error.name === "AbortError"
+    ) {
+      throw error;
+    }
+
+    throw new ReviewerApiError(
+      "Saved reviewers could not connect to the backend.",
+      null,
+      "REVIEWER_API_UNREACHABLE",
+    );
+  }
+
+  const payload =
+    await readJsonResponse(
+      response,
+    );
+
+  if (!response.ok) {
+    throw new ReviewerApiError(
+      getErrorMessage(
+        payload,
+        response.status,
+      ),
+      response.status,
+      getErrorCode(payload),
+    );
+  }
+
+  if (
+    !isReviewerListResponse(
+      payload,
+    )
+  ) {
+    throw new ReviewerApiError(
+      "The reviewer service returned an invalid history response.",
+      502,
+      "INVALID_REVIEWER_LIST_RESPONSE",
+    );
+  }
+
+  return payload;
+}
+
+export async function getReviewer(
+  reviewerId: string,
+  options: GetReviewerOptions = {},
+): Promise<ReviewerResponse> {
+  const normalizedReviewerId =
+    reviewerId.trim();
+
+  if (!normalizedReviewerId) {
+    throw new ReviewerApiError(
+      "A reviewer must be selected.",
+      400,
+      "REVIEWER_ID_REQUIRED",
+    );
+  }
+
+  const supabase = createClient();
+
+  const {
+    data: {
+      session,
+    },
+    error: sessionError,
+  } = await supabase.auth.getSession();
+
+  if (
+    sessionError ||
+    !session?.access_token
+  ) {
+    throw new ReviewerApiError(
+      SESSION_EXPIRED_MESSAGE,
+      401,
+      "AUTHENTICATION_REQUIRED",
+    );
+  }
+
+  let response: Response;
+
+  try {
+    response = await fetch(
+      buildReviewerUrl(
+        normalizedReviewerId,
+      ),
+      {
+        method: "GET",
+
+        headers: {
+          Authorization:
+            `Bearer ${session.access_token}`,
+        },
+
+        cache: "no-store",
+        signal: options.signal,
+      },
+    );
+  } catch (error) {
+    if (
+      error instanceof DOMException &&
+      error.name === "AbortError"
+    ) {
+      throw error;
+    }
+
+    throw new ReviewerApiError(
+      "The saved reviewer could not connect to the backend.",
+      null,
+      "REVIEWER_API_UNREACHABLE",
+    );
+  }
+
+  const payload =
+    await readJsonResponse(
+      response,
+    );
+
+  if (!response.ok) {
+    throw new ReviewerApiError(
+      getErrorMessage(
+        payload,
+        response.status,
+      ),
+      response.status,
+      getErrorCode(payload),
+    );
+  }
+
+  if (
+    !isReviewerResponse(
+      payload,
+    )
+  ) {
+    throw new ReviewerApiError(
+      "The reviewer service returned an invalid response.",
+      502,
+      "INVALID_REVIEWER_RESPONSE",
+    );
+  }
+
+  return payload;
+}
+
+export async function deleteReviewer(
+  reviewerId: string,
+  options: DeleteReviewerOptions = {},
+): Promise<void> {
+  const normalizedReviewerId =
+    reviewerId.trim();
+
+  if (!normalizedReviewerId) {
+    throw new ReviewerApiError(
+      "A reviewer must be selected.",
+      400,
+      "REVIEWER_ID_REQUIRED",
+    );
+  }
+
+  const supabase = createClient();
+
+  const {
+    data: {
+      session,
+    },
+    error: sessionError,
+  } = await supabase.auth.getSession();
+
+  if (
+    sessionError ||
+    !session?.access_token
+  ) {
+    throw new ReviewerApiError(
+      SESSION_EXPIRED_MESSAGE,
+      401,
+      "AUTHENTICATION_REQUIRED",
+    );
+  }
+
+  let response: Response;
+
+  try {
+    response = await fetch(
+      buildReviewerUrl(
+        normalizedReviewerId,
+      ),
+      {
+        method: "DELETE",
+
+        headers: {
+          Authorization:
+            `Bearer ${session.access_token}`,
+        },
+
+        cache: "no-store",
+        signal: options.signal,
+      },
+    );
+  } catch (error) {
+    if (
+      error instanceof DOMException &&
+      error.name === "AbortError"
+    ) {
+      throw error;
+    }
+
+    throw new ReviewerApiError(
+      "The reviewer could not connect to the backend.",
+      null,
+      "REVIEWER_API_UNREACHABLE",
+    );
+  }
+
+  if (response.ok) {
+    return;
+  }
+
+  const payload =
+    await readJsonResponse(
+      response,
+    );
+
+  throw new ReviewerApiError(
+    getErrorMessage(
+      payload,
+      response.status,
+    ),
+    response.status,
+    getErrorCode(payload),
+  );
 }
