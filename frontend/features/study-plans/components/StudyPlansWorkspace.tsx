@@ -1722,26 +1722,17 @@ function handleCloseRegeneratePlan():
                     Add session
                 </Button>
 
-                {selectedPlan.generation_mode ===
-                "manual" ? (
-                    <Button
+                <Button
                     size="xs"
                     color="red"
                     variant="light"
-                    leftSection={
-                        <IconTrash
-                        size={15}
-                        />
-                    }
-                    onClick={() =>
-                        setDeletePlanOpened(
-                        true,
-                        )
-                    }
+                    leftSection={<IconTrash size={15} />}
+                    onClick={() => {
+                        setDeletePlanOpened(true);
+                    }}
                     >
                     Delete plan
-                    </Button>
-                ) : null}
+                </Button>
 
                 <Button
                     variant="default"
