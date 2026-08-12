@@ -8,19 +8,24 @@ export const ANALYTICS_PERIODS = [
   "last_30_days",
 ] as const;
 
+
 export type AnalyticsPeriod =
   (typeof ANALYTICS_PERIODS)[number];
+
 
 export type AnalyticsAvailability =
   | "available"
   | "unavailable";
 
+
 export type AnalyticsDataState =
   | "partial"
   | "ready";
 
+
 export type AnalyticsCountScope =
   "current_inventory";
+
 
 export interface AnalyticsMetric {
   availability:
@@ -36,6 +41,7 @@ export interface AnalyticsMetric {
     string | null;
 }
 
+
 export interface AnalyticsCountMetric {
   availability:
     AnalyticsAvailability;
@@ -50,6 +56,7 @@ export interface AnalyticsCountMetric {
     string | null;
 }
 
+
 export interface AnalyticsTopicPerformance {
   topic:
     string;
@@ -60,6 +67,22 @@ export interface AnalyticsTopicPerformance {
   sample_size:
     number;
 }
+
+
+export interface AnalyticsStudyWeek {
+  week_start:
+    string;
+
+  week_end:
+    string;
+
+  study_minutes:
+    number;
+
+  session_count:
+    number;
+}
+
 
 export interface AnalyticsOverviewResponse {
   period:
@@ -86,12 +109,16 @@ export interface AnalyticsOverviewResponse {
   study_minutes:
     AnalyticsMetric;
 
+  study_time_by_week:
+    AnalyticsStudyWeek[];
+
   strong_topics:
     AnalyticsTopicPerformance[];
 
   weak_topics:
     AnalyticsTopicPerformance[];
 }
+
 
 export interface AnalyticsApiErrorResponse {
   detail?:
@@ -104,6 +131,7 @@ export interface AnalyticsApiErrorResponse {
     unknown;
 }
 
+
 export interface AnalyticsPeriodOption {
   value:
     AnalyticsPeriod;
@@ -112,23 +140,29 @@ export interface AnalyticsPeriodOption {
     string;
 }
 
+
 export const ANALYTICS_PERIOD_OPTIONS:
   readonly AnalyticsPeriodOption[] = [
     {
       value:
         "all_time",
+
       label:
         "All Time",
     },
+
     {
       value:
         "last_30_days",
+
       label:
         "Last 30 Days",
     },
+
     {
       value:
         "last_7_days",
+
       label:
         "Last 7 Days",
     },

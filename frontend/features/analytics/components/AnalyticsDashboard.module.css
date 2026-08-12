@@ -1,12 +1,12 @@
 /* File: /frontend/features/analytics/components/AnalyticsDashboard.module.css */
-/* Purpose: Styles the student-facing Analytics dashboard. */
+/* Purpose: Styles the compact student-facing Analytics dashboard. */
 
 .dashboard {
   min-height: 100%;
 }
 
 .header {
-  padding-bottom: 4px;
+  padding-bottom: 2px;
 }
 
 .periodContainer {
@@ -15,6 +15,7 @@
 
 .metricCard {
   height: 100%;
+  min-height: 104px;
   background:
     linear-gradient(
       180deg,
@@ -24,18 +25,57 @@
     var(--mantine-color-body);
 }
 
+.metricIcon {
+  flex: 0 0 auto;
+}
+
+.metricContent {
+  min-width: 0;
+  flex: 1;
+}
+
 .metricValue {
-  margin-top: 4px;
-  font-size: clamp(1.75rem, 3vw, 2.25rem);
-  line-height: 1.1;
+  margin-top: 1px;
+  font-size: clamp(1.45rem, 2.2vw, 1.9rem);
+  line-height: 1.05;
+}
+
+.metricDescription {
+  margin-top: 5px;
+  line-height: 1.25;
+}
+
+.chartGrid {
+  align-items: stretch;
 }
 
 .chartCard {
+  height: 100%;
   overflow: hidden;
+}
+
+.weeklyChartScroll {
+  width: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding-bottom: 2px;
+}
+
+.weeklyChartInner {
+  width: 100%;
+  min-width: 420px;
+}
+
+.weeklyNote {
+  max-width: 580px;
 }
 
 .topicPanel {
   height: 100%;
+}
+
+.topicRow {
+  min-width: 0;
 }
 
 .topicRow + .topicRow {
@@ -43,16 +83,36 @@
   border-top: 1px solid var(--mantine-color-gray-2);
 }
 
+.topicName {
+  min-width: 0;
+  flex: 1;
+}
+
+.topicToggle {
+  align-self: flex-start;
+  padding-inline: 0;
+}
+
 .emptyState {
   background: var(--mantine-color-gray-0);
 }
 
-@media (max-width: 48em) {
+@media (max-width: 62em) {
   .header {
     align-items: stretch;
   }
 
   .periodContainer {
     width: 100%;
+  }
+}
+
+@media (max-width: 48em) {
+  .weeklyChartInner {
+    min-width: 520px;
+  }
+
+  .metricCard {
+    min-height: 96px;
   }
 }

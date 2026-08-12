@@ -340,6 +340,9 @@ const ANALYTICS_OVERVIEW:
       "Study-duration tracking is not available yet.",
   },
 
+  study_time_by_week:
+    [],
+
   strong_topics: [
     {
       topic:

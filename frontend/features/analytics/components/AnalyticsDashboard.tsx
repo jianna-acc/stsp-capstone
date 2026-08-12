@@ -1,6 +1,6 @@
 // File: /frontend/features/analytics/components/AnalyticsDashboard.tsx
-// Purpose: Displays authenticated overall study performance,
-// evidence availability, Quiz topics, and performance charts.
+// Purpose: Displays authenticated study performance,
+// compact charts, weekly Study Time, and expandable topic evidence.
 
 "use client";
 
@@ -62,6 +62,10 @@ import type {
 import classes from "./AnalyticsDashboard.module.css";
 
 
+const TOPIC_PREVIEW_LIMIT =
+  3;
+
+
 interface MetricCardProps {
   title: string;
   value: string;
@@ -76,12 +80,20 @@ interface TopicPanelProps {
   description: string;
   topics: AnalyticsTopicPerformance[];
   strong: boolean;
+  expanded: boolean;
+  onToggle: () => void;
 }
 
 
 interface PerformanceChartRow {
   metric: string;
   score: number;
+}
+
+
+interface WeeklyStudyChartRow {
+  week: string;
+  minutes: number;
 }
 
 
@@ -94,6 +106,72 @@ function formatPercentage(
     ) / 100;
 
   return `${rounded}%`;
+}
+
+
+function formatStudyMinutes(
+  value: number,
+): string {
+  const rounded =
+    Math.round(
+      value * 10,
+    ) / 10;
+
+  if (
+    Number.isInteger(
+      rounded,
+    )
+  ) {
+    return `${rounded} min`;
+  }
+
+  return `${rounded.toFixed(
+    1,
+  )} min`;
+}
+
+
+function formatWeekDate(
+  value: string,
+): string {
+  const parsed =
+    new Date(
+      `${value}T00:00:00Z`,
+    );
+
+  return new Intl.DateTimeFormat(
+    "en-US",
+    {
+      month:
+        "short",
+
+      day:
+        "numeric",
+
+      timeZone:
+        "UTC",
+    },
+  ).format(
+    parsed,
+  );
+}
+
+
+function formatWeekRange(
+  weekStart: string,
+  weekEnd: string,
+): string {
+  return [
+    formatWeekDate(
+      weekStart,
+    ),
+    " – ",
+    formatWeekDate(
+      weekEnd,
+    ),
+  ].join(
+    "",
+  );
 }
 
 
@@ -196,12 +274,43 @@ function getStudyTimeValue(
     return "—";
   }
 
-  const rounded =
-    Math.round(
-      metric.value,
-    );
+  return formatStudyMinutes(
+    metric.value,
+  );
+}
 
-  return `${rounded} min`;
+
+function getStudyTimeDescription(
+  metric: AnalyticsMetric,
+): string {
+  if (
+    metric.availability ===
+      "unavailable"
+  ) {
+    return (
+      metric.message ??
+      "Study Time is not available yet."
+    );
+  }
+
+  if (
+    metric.value === null
+  ) {
+    return (
+      metric.message ??
+      "No completed study sessions are available for this period."
+    );
+  }
+
+  const label =
+    metric.sample_size ===
+      1
+      ? "session"
+      : "sessions";
+
+  return (
+    `${metric.sample_size} completed ${label}`
+  );
 }
 
 
@@ -228,32 +337,35 @@ function MetricCard({
     <Paper
       withBorder
       radius="lg"
-      p="lg"
+      p="md"
       className={
         classes.metricCard
       }
     >
-      <Stack
+      <Group
+        align="center"
         gap="md"
-        h="100%"
+        wrap="nowrap"
       >
-        <Group
-          justify="space-between"
-          align="flex-start"
+        <ThemeIcon
+          variant="light"
+          color={color}
+          radius="md"
+          size={38}
+          className={
+            classes.metricIcon
+          }
         >
-          <ThemeIcon
-            variant="light"
-            color={color}
-            radius="md"
-            size={42}
-          >
-            {icon}
-          </ThemeIcon>
-        </Group>
+          {icon}
+        </ThemeIcon>
 
-        <div>
+        <div
+          className={
+            classes.metricContent
+          }
+        >
           <Text
-            size="sm"
+            size="xs"
             c="dimmed"
           >
             {title}
@@ -267,16 +379,18 @@ function MetricCard({
           >
             {value}
           </Text>
-        </div>
 
-        <Text
-          size="xs"
-          c="dimmed"
-          mt="auto"
-        >
-          {description}
-        </Text>
-      </Stack>
+          <Text
+            size="xs"
+            c="dimmed"
+            className={
+              classes.metricDescription
+            }
+          >
+            {description}
+          </Text>
+        </div>
+      </Group>
     </Paper>
   );
 }
@@ -287,20 +401,35 @@ function TopicPanel({
   description,
   topics,
   strong,
+  expanded,
+  onToggle,
 }: Readonly<TopicPanelProps>) {
+  const visibleTopics =
+    expanded
+      ? topics
+      : topics.slice(
+          0,
+          TOPIC_PREVIEW_LIMIT,
+        );
+
+  const canExpand =
+    topics.length >
+    TOPIC_PREVIEW_LIMIT;
+
   return (
     <Paper
       withBorder
       radius="lg"
-      p="lg"
+      p="md"
       className={
         classes.topicPanel
       }
     >
-      <Stack gap="lg">
+      <Stack gap="md">
         <Group
           gap="sm"
           align="flex-start"
+          wrap="nowrap"
         >
           <ThemeIcon
             variant="light"
@@ -310,20 +439,24 @@ function TopicPanel({
                 : "orange"
             }
             radius="md"
+            size={34}
           >
             {strong ? (
               <IconTrendingUp
-                size={18}
+                size={17}
               />
             ) : (
               <IconTargetArrow
-                size={18}
+                size={17}
               />
             )}
           </ThemeIcon>
 
           <div>
-            <Text fw={700}>
+            <Text
+              fw={700}
+              size="sm"
+            >
               {title}
             </Text>
 
@@ -336,82 +469,128 @@ function TopicPanel({
           </div>
         </Group>
 
-        {topics.length === 0 ? (
+
+        {topics.length ===
+        0 ? (
           <Text
             size="sm"
             c="dimmed"
           >
-            No Quiz topics are available
-            in this group for the selected
-            period.
+            No Quiz topics are
+            available in this group
+            for the selected period.
           </Text>
         ) : (
-          <Stack gap="md">
-            {topics.map(
-              (
-                topic,
-              ) => (
-                <div
-                  key={
-                    topic.topic
-                  }
-                  className={
-                    classes.topicRow
-                  }
-                >
-                  <Group
-                    justify="space-between"
-                    align="flex-start"
-                    gap="md"
-                    wrap="nowrap"
-                    mb={6}
+          <>
+            <Stack gap="sm">
+              {visibleTopics.map(
+                (
+                  topic,
+                ) => (
+                  <div
+                    key={
+                      topic.topic
+                    }
+                    className={
+                      classes.topicRow
+                    }
                   >
-                    <div>
-                      <Text
-                        size="sm"
-                        fw={650}
+                    <Group
+                      justify="space-between"
+                      align="center"
+                      gap="sm"
+                      wrap="nowrap"
+                      mb={4}
+                    >
+                      <div
+                        className={
+                          classes.topicName
+                        }
                       >
-                        {topic.topic}
-                      </Text>
+                        <Text
+                          size="xs"
+                          fw={650}
+                          lineClamp={1}
+                          title={
+                            topic.topic
+                          }
+                        >
+                          {topic.topic}
+                        </Text>
+
+                        <Text
+                          size="xs"
+                          c="dimmed"
+                        >
+                          {
+                            topic.sample_size
+                          }{" "}
+                          {
+                            topic.sample_size ===
+                            1
+                              ? "answer"
+                              : "answers"
+                          }
+                        </Text>
+                      </div>
 
                       <Text
                         size="xs"
-                        c="dimmed"
+                        fw={700}
                       >
-                        Sample size:{" "}
                         {
-                          topic.sample_size
+                          formatPercentage(
+                            topic.score_percent,
+                          )
                         }
                       </Text>
-                    </div>
+                    </Group>
 
-                    <Text
-                      size="sm"
-                      fw={700}
-                    >
-                      {
-                        formatPercentage(
-                          topic.score_percent,
-                        )
+                    <Progress
+                      value={
+                        topic.score_percent
                       }
-                    </Text>
-                  </Group>
+                      color={
+                        strong
+                          ? "green"
+                          : "orange"
+                      }
+                      radius="xl"
+                      size="sm"
+                    />
+                  </div>
+                ),
+              )}
+            </Stack>
 
-                  <Progress
-                    value={
-                      topic.score_percent
-                    }
-                    color={
-                      strong
-                        ? "green"
-                        : "orange"
-                    }
-                    radius="xl"
-                  />
-                </div>
-              ),
-            )}
-          </Stack>
+            {canExpand ? (
+              <Button
+                type="button"
+                size="xs"
+                variant="subtle"
+                color={
+                  strong
+                    ? "green"
+                    : "orange"
+                }
+                onClick={
+                  onToggle
+                }
+                aria-expanded={
+                  expanded
+                }
+                className={
+                  classes.topicToggle
+                }
+              >
+                {expanded
+                  ? "Show less"
+                  : (
+                      `Show all (${topics.length})`
+                    )}
+              </Button>
+            ) : null}
+          </>
         )}
       </Stack>
     </Paper>
@@ -423,9 +602,10 @@ export function AnalyticsDashboard() {
   const [
     period,
     setPeriod,
-  ] = useState<AnalyticsPeriod>(
-    "all_time",
-  );
+  ] =
+    useState<AnalyticsPeriod>(
+      "all_time",
+    );
 
   const [
     overview,
@@ -457,6 +637,20 @@ export function AnalyticsDashboard() {
     setRetryVersion,
   ] = useState(
     0,
+  );
+
+  const [
+    strongTopicsExpanded,
+    setStrongTopicsExpanded,
+  ] = useState(
+    false,
+  );
+
+  const [
+    weakTopicsExpanded,
+    setWeakTopicsExpanded,
+  ] = useState(
+    false,
   );
 
 
@@ -609,6 +803,48 @@ export function AnalyticsDashboard() {
     );
 
 
+  const weeklyStudyChartData =
+    useMemo<
+      WeeklyStudyChartRow[]
+    >(
+      () => {
+        if (
+          !overview
+        ) {
+          return [];
+        }
+
+        return overview
+          .study_time_by_week
+          .map(
+            (
+              week,
+            ) => ({
+              week:
+                formatWeekRange(
+                  week.week_start,
+                  week.week_end,
+                ),
+
+              minutes:
+                week.study_minutes,
+            }),
+          );
+      },
+      [
+        overview,
+      ],
+    );
+
+
+  const weeklyChartMinWidth =
+    Math.max(
+      420,
+      weeklyStudyChartData
+        .length * 100,
+    );
+
+
   function handlePeriodChange(
     value: string,
   ): void {
@@ -632,6 +868,14 @@ export function AnalyticsDashboard() {
 
     setOverview(
       null,
+    );
+
+    setStrongTopicsExpanded(
+      false,
+    );
+
+    setWeakTopicsExpanded(
+      false,
     );
 
     setPeriod(
@@ -667,14 +911,17 @@ export function AnalyticsDashboard() {
     <Container
       size="xl"
       py={{
-        base: 28,
-        sm: 48,
+        base:
+          20,
+
+        sm:
+          28,
       }}
       className={
         classes.dashboard
       }
     >
-      <Stack gap="xl">
+      <Stack gap="lg">
         <Group
           justify="space-between"
           align="flex-end"
@@ -687,7 +934,7 @@ export function AnalyticsDashboard() {
             <Text
               c="violet.7"
               fw={700}
-              size="sm"
+              size="xs"
             >
               Study analytics
             </Text>
@@ -698,18 +945,18 @@ export function AnalyticsDashboard() {
 
             <Text
               c="dimmed"
-              mt={4}
+              mt={2}
+              size="sm"
               maw={680}
             >
-              Track your Quiz results,
-              Flashcard recall, study
-              materials, and topic-level
-              performance.
+              Track performance,
+              materials, and actual
+              focus time in one place.
             </Text>
           </div>
 
           <Stack
-            gap={6}
+            gap={4}
             className={
               classes.periodContainer
             }
@@ -736,19 +983,21 @@ export function AnalyticsDashboard() {
                 loading
               }
               fullWidth
+              size="sm"
             />
           </Stack>
         </Group>
+
 
         {loading && (
           <Paper
             withBorder
             radius="lg"
-            p="xl"
+            p="lg"
           >
             <Group
               justify="center"
-              py="xl"
+              py="lg"
             >
               <Loader
                 size="sm"
@@ -756,12 +1005,15 @@ export function AnalyticsDashboard() {
 
               <Text
                 c="dimmed"
+                size="sm"
               >
-                Loading your Analytics...
+                Loading your
+                Analytics...
               </Text>
             </Group>
           </Paper>
         )}
+
 
         {!loading &&
           errorMessage && (
@@ -796,58 +1048,68 @@ export function AnalyticsDashboard() {
             </Alert>
           )}
 
+
         {!loading &&
           overview && (
             <>
               <Group
                 justify="space-between"
                 align="center"
+                gap="md"
               >
                 <div>
                   <Title
                     order={2}
-                    size="h3"
+                    size="h4"
                   >
                     Learning Overview
                   </Title>
 
                   <Text
-                    size="sm"
+                    size="xs"
                     c="dimmed"
                   >
-                    Inventory counts are
-                    current. Performance
-                    metrics follow the
-                    selected reporting
-                    period.
+                    Current inventory and
+                    selected-period
+                    performance.
                   </Text>
                 </div>
 
                 <Badge
                   variant="light"
                   color={
-                    overview.data_state ===
+                    overview
+                      .data_state ===
                     "ready"
                       ? "green"
                       : "yellow"
                   }
                 >
                   {
-                    overview.data_state ===
+                    overview
+                      .data_state ===
                     "ready"
-                      ? "All metrics ready"
+                      ? (
+                          "All metrics ready"
+                        )
                       : "Partial data"
                   }
                 </Badge>
               </Group>
 
+
               <SimpleGrid
                 cols={{
-                  base: 1,
-                  sm: 2,
-                  lg: 3,
+                  base:
+                    1,
+
+                  xs:
+                    2,
+
+                  lg:
+                    3,
                 }}
-                spacing="lg"
+                spacing="md"
               >
                 <MetricCard
                   title="Subjects"
@@ -866,7 +1128,7 @@ export function AnalyticsDashboard() {
                   color="violet"
                   icon={
                     <IconBooks
-                      size={21}
+                      size={19}
                     />
                   }
                 />
@@ -888,7 +1150,7 @@ export function AnalyticsDashboard() {
                   color="blue"
                   icon={
                     <IconBook2
-                      size={21}
+                      size={19}
                     />
                   }
                 />
@@ -910,39 +1172,11 @@ export function AnalyticsDashboard() {
                   color="green"
                   icon={
                     <IconCircleCheck
-                      size={21}
+                      size={19}
                     />
                   }
                 />
-              </SimpleGrid>
 
-              <div>
-                <Title
-                  order={2}
-                  size="h3"
-                >
-                  Performance
-                </Title>
-
-                <Text
-                  size="sm"
-                  c="dimmed"
-                >
-                  Quiz accuracy and
-                  self-assessed Flashcard
-                  recall for the selected
-                  period.
-                </Text>
-              </div>
-
-              <SimpleGrid
-                cols={{
-                  base: 1,
-                  sm: 2,
-                  lg: 3,
-                }}
-                spacing="lg"
-              >
                 <MetricCard
                   title="Quiz Accuracy"
                   value={
@@ -960,7 +1194,7 @@ export function AnalyticsDashboard() {
                   color="violet"
                   icon={
                     <IconListCheck
-                      size={21}
+                      size={19}
                     />
                   }
                 />
@@ -982,7 +1216,7 @@ export function AnalyticsDashboard() {
                   color="teal"
                   icon={
                     <IconCards
-                      size={21}
+                      size={19}
                     />
                   }
                 />
@@ -996,7 +1230,7 @@ export function AnalyticsDashboard() {
                     )
                   }
                   description={
-                    getMetricDescription(
+                    getStudyTimeDescription(
                       overview
                         .study_minutes,
                     )
@@ -1004,147 +1238,293 @@ export function AnalyticsDashboard() {
                   color="gray"
                   icon={
                     <IconClock
-                      size={21}
+                      size={19}
                     />
                   }
                 />
               </SimpleGrid>
 
-              <Paper
-                withBorder
-                radius="lg"
-                p={{
-                  base: "md",
-                  sm: "xl",
-                }}
-                className={
-                  classes.chartCard
-                }
-              >
-                <Stack gap="lg">
-                  <div>
-                    <Title
-                      order={3}
-                      size="h4"
-                    >
-                      Performance Comparison
-                    </Title>
-
-                    <Text
-                      size="sm"
-                      c="dimmed"
-                    >
-                      Compare the available
-                      Quiz and Flashcard
-                      performance evidence.
-                    </Text>
-                  </div>
-
-                  {
-                    performanceChartData
-                      .length === 0 ? (
-                      <Paper
-                        withBorder
-                        radius="md"
-                        p="xl"
-                        className={
-                          classes.emptyState
-                        }
-                      >
-                        <Text
-                          ta="center"
-                          c="dimmed"
-                          size="sm"
-                        >
-                          Complete a Quiz or
-                          rate Flashcards to
-                          begin building your
-                          performance chart.
-                        </Text>
-                      </Paper>
-                    ) : (
-                      <BarChart
-                        h={280}
-                        data={
-                          performanceChartData
-                        }
-                        dataKey="metric"
-                        series={[
-                          {
-                            name:
-                              "score",
-
-                            label:
-                              "Performance",
-
-                            color:
-                              "violet.6",
-                          },
-                        ]}
-                        yAxisProps={{
-                          domain: [
-                            0,
-                            100,
-                          ],
-                        }}
-                        valueFormatter={(
-                          value,
-                        ) =>
-                          String(
-                            Math.round(
-                              value * 100,
-                            ) / 100,
-                          )
-                        }
-                        unit="%"
-                        gridAxis="y"
-                        tickLine="y"
-                        withTooltip
-                        withBarValueLabel
-                      />
-                    )
-                  }
-                </Stack>
-              </Paper>
-
-              <div>
-                <Title
-                  order={2}
-                  size="h3"
-                >
-                  Quiz Topic Performance
-                </Title>
-
-                <Text
-                  size="sm"
-                  c="dimmed"
-                >
-                  Topic classifications use
-                  your completed Quiz-answer
-                  evidence.
-                </Text>
-              </div>
 
               <SimpleGrid
                 cols={{
-                  base: 1,
-                  md: 2,
+                  base:
+                    1,
+
+                  lg:
+                    2,
                 }}
-                spacing="lg"
+                spacing="md"
+                className={
+                  classes.chartGrid
+                }
+              >
+                <Paper
+                  withBorder
+                  radius="lg"
+                  p="md"
+                  className={
+                    classes.chartCard
+                  }
+                >
+                  <Stack gap="sm">
+                    <div>
+                      <Title
+                        order={3}
+                        size="h5"
+                      >
+                        Weekly Study Time
+                      </Title>
+
+                      <Text
+                        size="xs"
+                        c="dimmed"
+                        className={
+                          classes.weeklyNote
+                        }
+                      >
+                        Completed focus
+                        minutes by
+                        Monday–Sunday week.
+                        Breaks and pauses
+                        are excluded.
+                      </Text>
+                    </div>
+
+                    {
+                      weeklyStudyChartData
+                        .length ===
+                      0 ? (
+                        <Paper
+                          withBorder
+                          radius="md"
+                          p="lg"
+                          className={
+                            classes.emptyState
+                          }
+                        >
+                          <Text
+                            ta="center"
+                            c="dimmed"
+                            size="xs"
+                          >
+                            Complete a study
+                            session to build
+                            your weekly chart.
+                          </Text>
+                        </Paper>
+                      ) : (
+                        <div
+                          className={
+                            classes.weeklyChartScroll
+                          }
+                        >
+                          <div
+                            className={
+                              classes.weeklyChartInner
+                            }
+                            style={{
+                              minWidth:
+                                `${weeklyChartMinWidth}px`,
+                            }}
+                          >
+                            <BarChart
+                              h={210}
+                              data={
+                                weeklyStudyChartData
+                              }
+                              dataKey="week"
+                              series={[
+                                {
+                                  name:
+                                    "minutes",
+
+                                  label:
+                                    "Study Time",
+
+                                  color:
+                                    "violet.6",
+                                },
+                              ]}
+                              valueFormatter={(
+                                value,
+                              ) =>
+                                String(
+                                  Math.round(
+                                    value *
+                                      100,
+                                  ) /
+                                    100,
+                                )
+                              }
+                              unit=" min"
+                              gridAxis="y"
+                              tickLine="y"
+                              withTooltip
+                            />
+                          </div>
+                        </div>
+                      )
+                    }
+                  </Stack>
+                </Paper>
+
+
+                <Paper
+                  withBorder
+                  radius="lg"
+                  p="md"
+                  className={
+                    classes.chartCard
+                  }
+                >
+                  <Stack gap="sm">
+                    <div>
+                      <Title
+                        order={3}
+                        size="h5"
+                      >
+                        Performance
+                        Comparison
+                      </Title>
+
+                      <Text
+                        size="xs"
+                        c="dimmed"
+                      >
+                        Quiz accuracy and
+                        Flashcard recall for
+                        this period.
+                      </Text>
+                    </div>
+
+                    {
+                      performanceChartData
+                        .length ===
+                      0 ? (
+                        <Paper
+                          withBorder
+                          radius="md"
+                          p="lg"
+                          className={
+                            classes.emptyState
+                          }
+                        >
+                          <Text
+                            ta="center"
+                            c="dimmed"
+                            size="xs"
+                          >
+                            Complete a Quiz
+                            or review
+                            Flashcards to
+                            build this chart.
+                          </Text>
+                        </Paper>
+                      ) : (
+                        <BarChart
+                          h={210}
+                          data={
+                            performanceChartData
+                          }
+                          dataKey="metric"
+                          series={[
+                            {
+                              name:
+                                "score",
+
+                              label:
+                                "Performance",
+
+                              color:
+                                "violet.6",
+                            },
+                          ]}
+                          yAxisProps={{
+                            domain: [
+                              0,
+                              100,
+                            ],
+                          }}
+                          valueFormatter={(
+                            value,
+                          ) =>
+                            String(
+                              Math.round(
+                                value *
+                                  100,
+                              ) /
+                                100,
+                            )
+                          }
+                          unit="%"
+                          gridAxis="y"
+                          tickLine="y"
+                          withTooltip
+                        />
+                      )
+                    }
+                  </Stack>
+                </Paper>
+              </SimpleGrid>
+
+
+              <Group
+                justify="space-between"
+                align="flex-end"
+              >
+                <div>
+                  <Title
+                    order={2}
+                    size="h4"
+                  >
+                    Quiz Topic Performance
+                  </Title>
+
+                  <Text
+                    size="xs"
+                    c="dimmed"
+                  >
+                    Showing the most useful
+                    topic evidence first.
+                  </Text>
+                </div>
+              </Group>
+
+
+              <SimpleGrid
+                cols={{
+                  base:
+                    1,
+
+                  md:
+                    2,
+                }}
+                spacing="md"
               >
                 <TopicPanel
                   title="Strong Topics"
-                  description="Currently at or above the strong-topic threshold"
+                  description="At or above the strong-topic threshold"
                   topics={
                     overview
                       .strong_topics
                   }
                   strong
+                  expanded={
+                    strongTopicsExpanded
+                  }
+                  onToggle={() => {
+                    setStrongTopicsExpanded(
+                      (
+                        current,
+                      ) =>
+                        !current,
+                    );
+                  }}
                 />
 
                 <TopicPanel
                   title="Topics to Review"
-                  description="Currently below the strong-topic threshold"
+                  description="Below the strong-topic threshold"
                   topics={
                     overview
                       .weak_topics
@@ -1152,6 +1532,17 @@ export function AnalyticsDashboard() {
                   strong={
                     false
                   }
+                  expanded={
+                    weakTopicsExpanded
+                  }
+                  onToggle={() => {
+                    setWeakTopicsExpanded(
+                      (
+                        current,
+                      ) =>
+                        !current,
+                    );
+                  }}
                 />
               </SimpleGrid>
             </>

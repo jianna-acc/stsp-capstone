@@ -1,6 +1,4 @@
 /* File: /frontend/features/study-plans/components/StudyPlansWorkspace.module.css */
-/* Purpose: Styles the responsive Track D study-plan list and
-weekly session calendar. */
 
 .page {
   width: 100%;
@@ -58,6 +56,15 @@ weekly session calendar. */
   background: var(--mantine-color-violet-0);
 }
 
+.planActions {
+  justify-content: flex-end;
+}
+
+.tooltipTarget,
+.studyActionTarget {
+  display: inline-flex;
+}
+
 .emptyState,
 .noSelection {
   display: flex;
@@ -105,6 +112,7 @@ weekly session calendar. */
 }
 
 .sessionCard {
+  min-width: 0;
   background:
     light-dark(
       var(--mantine-color-white),
@@ -112,48 +120,35 @@ weekly session calendar. */
     );
 }
 
-.deadlineButton {
-  display: block;
-  width: 100%;
-  text-align: left;
-}
-
-.deadlineCard {
-  border-color: var(--mantine-color-red-4);
+.sessionCardActive {
+  border-color: var(--mantine-color-violet-4);
   background:
     light-dark(
-      var(--mantine-color-red-0),
-      var(--mantine-color-dark-6)
-    );
-  transition:
-    transform 120ms ease,
-    border-color 120ms ease,
-    box-shadow 120ms ease;
-}
-
-.deadlineButton:hover .deadlineCard {
-  transform: translateY(-1px);
-  border-color: var(--mantine-color-red-6);
-  box-shadow: var(--mantine-shadow-xs);
-}
-
-.deadlineCardCompleted {
-  border-color: var(--mantine-color-green-4);
-  background:
-    light-dark(
-      var(--mantine-color-green-0),
+      var(--mantine-color-violet-0),
       var(--mantine-color-dark-6)
     );
 }
 
-.deadlineButton:hover
-  .deadlineCardCompleted {
-  border-color: var(--mantine-color-green-6);
+.sessionTitle {
+  line-height: 1.25;
+  overflow-wrap: anywhere;
+}
+
+.sessionTime {
+  color: var(--mantine-color-dimmed);
+}
+
+.activeSessionText {
+  line-height: 1.2;
 }
 
 @media (max-width: 62em) {
   .workspace {
     grid-template-columns: 1fr;
+  }
+
+  .planActions {
+    justify-content: flex-start;
   }
 }
 

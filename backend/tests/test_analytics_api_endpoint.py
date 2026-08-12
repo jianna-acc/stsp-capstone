@@ -1,6 +1,7 @@
 # File: /backend/tests/test_analytics_api_endpoint.py
 # Purpose: Verifies authentication and response behavior for Analytics.
 
+from datetime import date
 from types import SimpleNamespace
 from uuid import UUID
 
@@ -20,6 +21,7 @@ from app.schemas.analytics import (
     AnalyticsMetric,
     AnalyticsOverviewResponse,
     AnalyticsPeriod,
+    AnalyticsStudyWeek,
     AnalyticsTopicPerformance,
 )
 from app.services.analytics_errors import (
@@ -52,7 +54,7 @@ class FakeAnalyticsService:
 
         return AnalyticsOverviewResponse(
             period=period,
-            data_state=AnalyticsDataState.PARTIAL,
+            data_state=AnalyticsDataState.READY,
             subject_count=AnalyticsCountMetric(
                 availability=AnalyticsAvailability.AVAILABLE,
                 value=3,
@@ -76,11 +78,24 @@ class FakeAnalyticsService:
                 sample_size=8,
             ),
             study_minutes=AnalyticsMetric(
-                availability=AnalyticsAvailability.UNAVAILABLE,
-                value=None,
-                sample_size=0,
-                message=(
-                    "Study-duration evidence is unavailable."
+                availability=AnalyticsAvailability.AVAILABLE,
+                value=45.0,
+                sample_size=2,
+            ),
+            study_time_by_week=(
+                AnalyticsStudyWeek(
+                    week_start=date(
+                        2026,
+                        8,
+                        10,
+                    ),
+                    week_end=date(
+                        2026,
+                        8,
+                        16,
+                    ),
+                    study_minutes=45.0,
+                    session_count=2,
                 ),
             ),
             strong_topics=(
@@ -134,7 +149,9 @@ def _failing_analytics_service() -> FailingAnalyticsService:
 def test_analytics_overview_requires_authentication() -> None:
     """Analytics must reject requests without authentication."""
 
-    with TestClient(app) as client:
+    with TestClient(
+        app,
+    ) as client:
         response = client.get(
             "/api/analytics/overview",
         )
@@ -154,7 +171,9 @@ def test_authenticated_user_can_get_analytics_overview() -> None:
     ] = _analytics_service
 
     try:
-        with TestClient(app) as client:
+        with TestClient(
+            app,
+        ) as client:
             response = client.get(
                 "/api/analytics/overview",
             )
@@ -166,7 +185,7 @@ def test_authenticated_user_can_get_analytics_overview() -> None:
     payload = response.json()
 
     assert payload["period"] == "all_time"
-    assert payload["data_state"] == "partial"
+    assert payload["data_state"] == "ready"
 
     assert payload["subject_count"] == {
         "availability": "available",
@@ -175,8 +194,23 @@ def test_authenticated_user_can_get_analytics_overview() -> None:
         "message": None,
     }
 
-    assert payload["study_material_count"]["value"] == 8
-    assert payload["ready_study_material_count"]["value"] == 6
+    assert (
+        payload[
+            "study_material_count"
+        ][
+            "value"
+        ]
+        == 8
+    )
+
+    assert (
+        payload[
+            "ready_study_material_count"
+        ][
+            "value"
+        ]
+        == 6
+    )
 
     assert payload["quiz_accuracy_percent"] == {
         "availability": "available",
@@ -191,6 +225,22 @@ def test_authenticated_user_can_get_analytics_overview() -> None:
         "sample_size": 8,
         "message": None,
     }
+
+    assert payload["study_minutes"] == {
+        "availability": "available",
+        "value": 45.0,
+        "sample_size": 2,
+        "message": None,
+    }
+
+    assert payload["study_time_by_week"] == [
+        {
+            "week_start": "2026-08-10",
+            "week_end": "2026-08-16",
+            "study_minutes": 45.0,
+            "session_count": 2,
+        },
+    ]
 
     assert payload["strong_topics"] == [
         {
@@ -221,7 +271,9 @@ def test_analytics_overview_accepts_supported_period() -> None:
     ] = _analytics_service
 
     try:
-        with TestClient(app) as client:
+        with TestClient(
+            app,
+        ) as client:
             response = client.get(
                 (
                     "/api/analytics/overview"
@@ -232,7 +284,13 @@ def test_analytics_overview_accepts_supported_period() -> None:
         app.dependency_overrides.clear()
 
     assert response.status_code == 200
-    assert response.json()["period"] == "last_7_days"
+
+    assert (
+        response.json()[
+            "period"
+        ]
+        == "last_7_days"
+    )
 
 
 def test_analytics_overview_rejects_unknown_period() -> None:
@@ -247,7 +305,9 @@ def test_analytics_overview_rejects_unknown_period() -> None:
     ] = _analytics_service
 
     try:
-        with TestClient(app) as client:
+        with TestClient(
+            app,
+        ) as client:
             response = client.get(
                 (
                     "/api/analytics/overview"
@@ -272,7 +332,9 @@ def test_analytics_overview_returns_503_for_data_source_error() -> None:
     ] = _failing_analytics_service
 
     try:
-        with TestClient(app) as client:
+        with TestClient(
+            app,
+        ) as client:
             response = client.get(
                 "/api/analytics/overview",
             )
@@ -282,5 +344,7 @@ def test_analytics_overview_returns_503_for_data_source_error() -> None:
     assert response.status_code == 503
 
     assert response.json() == {
-        "detail": "Analytics data is temporarily unavailable.",
+        "detail": (
+            "Analytics data is temporarily unavailable."
+        ),
     }

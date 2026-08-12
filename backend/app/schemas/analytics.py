@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+from datetime import date
 from enum import Enum
 
 from pydantic import BaseModel, Field
@@ -40,11 +41,14 @@ class AnalyticsMetric(BaseModel):
     """One percentage or duration metric and its evidence state."""
 
     availability: AnalyticsAvailability
+
     value: float | None = None
+
     sample_size: int = Field(
         default=0,
         ge=0,
     )
+
     message: str | None = None
 
 
@@ -52,13 +56,16 @@ class AnalyticsCountMetric(BaseModel):
     """One current-inventory count metric."""
 
     availability: AnalyticsAvailability
+
     value: int | None = Field(
         default=None,
         ge=0,
     )
+
     scope: AnalyticsCountScope = (
         AnalyticsCountScope.CURRENT_INVENTORY
     )
+
     message: str | None = None
 
 
@@ -66,11 +73,29 @@ class AnalyticsTopicPerformance(BaseModel):
     """Performance summary for one study topic."""
 
     topic: str
+
     score_percent: float = Field(
         ge=0.0,
         le=100.0,
     )
+
     sample_size: int = Field(
+        ge=1,
+    )
+
+
+class AnalyticsStudyWeek(BaseModel):
+    """Actual completed focus time grouped into one Monday-Sunday week."""
+
+    week_start: date
+
+    week_end: date
+
+    study_minutes: float = Field(
+        ge=0.0,
+    )
+
+    session_count: int = Field(
         ge=1,
     )
 
@@ -85,20 +110,31 @@ class AnalyticsOverviewResponse(BaseModel):
     """Top-level analytics overview for the authenticated student."""
 
     period: AnalyticsPeriod
+
     data_state: AnalyticsDataState
 
     subject_count: AnalyticsCountMetric
+
     study_material_count: AnalyticsCountMetric
+
     ready_study_material_count: AnalyticsCountMetric
 
     quiz_accuracy_percent: AnalyticsMetric
+
     flashcard_performance_percent: AnalyticsMetric
+
     study_minutes: AnalyticsMetric
+
+    study_time_by_week: tuple[
+        AnalyticsStudyWeek,
+        ...,
+    ] = ()
 
     strong_topics: tuple[
         AnalyticsTopicPerformance,
         ...,
     ] = ()
+
     weak_topics: tuple[
         AnalyticsTopicPerformance,
         ...,
