@@ -9,7 +9,7 @@ from typing import Annotated
 
 from fastapi import Depends
 
-from app.ai.providers import GeminiProvider
+from app.ai.provider_factory import create_generation_provider
 from app.api.reviewer_dependency import (
     get_reviewer_service,
 )
@@ -52,15 +52,12 @@ async def get_reviewer_orchestration_service(
 ]:
     """Build the complete reviewer-generation workflow."""
 
-    provider = GeminiProvider(
+    provider = create_generation_provider(
         settings=settings,
     )
 
     generation_service = ReviewerGenerationService(
         provider=provider,
-        temperature=(
-            settings.gemini_generation_temperature
-        ),
     )
 
     admin_service = SupabaseAdminService(

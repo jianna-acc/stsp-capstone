@@ -39,18 +39,12 @@ SUBJECT_ID = UUID(
 )
 
 
-class FakeGeminiProvider:
+class FakeGenerationProvider:
     """Provide controlled generation without external requests."""
 
-    instances: ClassVar[list[FakeGeminiProvider]] = []
+    instances: ClassVar[list[FakeGenerationProvider]] = []
 
-    def __init__(
-        self,
-        settings: object | None = None,
-        client: object | None = None,
-    ) -> None:
-        self.settings = settings
-        self.client = client
+    def __init__(self) -> None:
         self.requests: list[GenerationRequest] = []
         self.closed = False
 
@@ -62,9 +56,9 @@ class FakeGeminiProvider:
     def provider_name(
         self,
     ) -> str:
-        """Return the configured fake provider name."""
+        """Return a provider-independent fake name."""
 
-        return "gemini"
+        return "bedrock"
 
     async def generate(
         self,
@@ -81,8 +75,8 @@ class FakeGeminiProvider:
                 "Photosynthesis converts light energy "
                 "into chemical energy. [Source 1]"
             ),
-            provider="gemini",
-            model="fake-generation-model",
+            provider="bedrock",
+            model="fake-bedrock-model",
             input_tokens=100,
             output_tokens=20,
         )
@@ -142,7 +136,7 @@ async def exercise_dependency() -> None:
         dependency,
     )
 
-    provider = FakeGeminiProvider.instances[-1]
+    provider = FakeGenerationProvider.instances[-1]
 
     assert isinstance(
         service,
@@ -163,8 +157,8 @@ async def exercise_dependency() -> None:
             GroundedAnswerOutcome.ANSWERED
         )
 
-        assert result.provider == "gemini"
-        assert result.model == "fake-generation-model"
+        assert result.provider == "bedrock"
+        assert result.model == "fake-bedrock-model"
         assert result.source_count == 1
         assert "[Source 1]" in result.answer
 
@@ -174,10 +168,11 @@ async def exercise_dependency() -> None:
 
         generation_request = provider.requests[0]
 
-        assert generation_request.temperature == 0.2
-        assert generation_request.max_output_tokens == 1024
+        assert generation_request.temperature is None
+        assert generation_request.max_output_tokens is None
         assert generation_request.system_instruction
         assert "REQUEST_JSON" in generation_request.prompt
+
     finally:
         await dependency.aclose()
 
@@ -193,14 +188,30 @@ def test_service_is_exported() -> None:
 def test_dependency_wires_and_closes_service(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """Dependency must configure, yield, and close Gemini."""
+    """Dependency must use the configured generation-provider factory."""
 
     settings = SimpleNamespace(
-        gemini_generation_temperature=0.2,
-        gemini_generation_max_output_tokens=1024,
+        ai_provider="bedrock",
     )
 
-    FakeGeminiProvider.instances.clear()
+    provider = FakeGenerationProvider()
+
+    captured_settings: list[object] = []
+
+    def fake_create_generation_provider(
+        *,
+        settings: object,
+    ) -> FakeGenerationProvider:
+        captured_settings.append(
+            settings,
+        )
+
+        return provider
+
+    FakeGenerationProvider.instances.clear()
+    FakeGenerationProvider.instances.append(
+        provider,
+    )
 
     monkeypatch.setattr(
         dependency_module,
@@ -210,19 +221,16 @@ def test_dependency_wires_and_closes_service(
 
     monkeypatch.setattr(
         dependency_module,
-        "GeminiProvider",
-        FakeGeminiProvider,
+        "create_generation_provider",
+        fake_create_generation_provider,
     )
 
     asyncio.run(
         exercise_dependency()
     )
 
-    assert len(
-        FakeGeminiProvider.instances,
-    ) == 1
+    assert captured_settings == [
+        settings,
+    ]
 
-    assert (
-        FakeGeminiProvider.instances[0].settings
-        is settings
-    )
+    assert provider.closed is True
