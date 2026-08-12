@@ -40,7 +40,7 @@ class Settings(BaseSettings):
 
     file_processing_worker_enabled: bool = True
 
-    ai_provider: Literal["gemini"] = "gemini"
+    ai_provider: Literal["gemini", "bedrock"] = "gemini"
 
     gemini_api_key: str = ""
     gemini_generation_model: str = "gemini-3.6-flash"
@@ -50,6 +50,12 @@ class Settings(BaseSettings):
     gemini_generation_temperature: float = 0.2
     gemini_generation_max_output_tokens: int = 1024
     gemini_request_timeout_seconds: float = 30.0
+
+    bedrock_region: str = "ap-southeast-1"
+    bedrock_generation_model: str = "global.amazon.nova-2-lite-v1:0"
+    bedrock_generation_temperature: float = 0.2
+    bedrock_generation_max_output_tokens: int = 1024
+    bedrock_request_timeout_seconds: float = 60.0
 
     ai_live_smoke_tests_enabled: bool = False
     ai_chunk_target_characters: int = 2400

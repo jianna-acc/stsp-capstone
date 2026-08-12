@@ -1,6 +1,7 @@
 // File: /frontend/features/academic-tasks/components/AcademicTasksWorkspace.tsx
-// Purpose: Displays prioritized Academic Tasks and supports
-// create, edit, status, delete, and automatic priority recalculation.
+// Purpose: Displays Academic Tasks in a responsive deadline calendar with a
+// prioritized to-do sidebar, task details drawer, CRUD actions,
+// status management, and automatic priority recalculation.
 
 "use client";
 
@@ -12,9 +13,8 @@ import {
   Group,
   Loader,
   Modal,
-  NativeSelect,
   NumberInput,
-  Progress,
+  SegmentedControl,
   Select,
   SimpleGrid,
   Stack,
@@ -24,19 +24,22 @@ import {
   ThemeIcon,
   Title,
 } from "@mantine/core";
-import { useDisclosure } from "@mantine/hooks";
-import { modals } from "@mantine/modals";
-import { notifications } from "@mantine/notifications";
+import {
+  useDisclosure,
+} from "@mantine/hooks";
+import {
+  modals,
+} from "@mantine/modals";
+import {
+  notifications,
+} from "@mantine/notifications";
 import {
   IconAlertCircle,
-  IconCalendarEvent,
   IconChecklist,
-  IconClock,
   IconEdit,
   IconFolderOpen,
   IconPlus,
   IconRefresh,
-  IconTrash,
 } from "@tabler/icons-react";
 import Link from "next/link";
 import {
@@ -62,10 +65,6 @@ import {
 import {
   academicTaskToFormValues,
 } from "../form";
-import {
-  formatAcademicTaskPriorityScore,
-  getAcademicTaskPriorityPresentation,
-} from "../priority-presentation";
 import type {
   AcademicTaskPriorityBreakdown as AcademicTaskPriorityBreakdownData,
   AcademicTaskPriorityResponse,
@@ -83,8 +82,14 @@ import {
 } from "../validation";
 
 import {
-  AcademicTaskPriorityBreakdown,
-} from "./AcademicTaskPriorityBreakdown";
+  AcademicTaskCalendar,
+} from "./AcademicTaskCalendar";
+import {
+  AcademicTaskDetailsDrawer,
+} from "./AcademicTaskDetailsDrawer";
+import {
+  AcademicTaskTodoSidebar,
+} from "./AcademicTaskTodoSidebar";
 
 import classes from "./AcademicTasksWorkspace.module.css";
 
@@ -98,125 +103,9 @@ type PriorityByTaskId =
     AcademicTaskPriorityBreakdownData
   >;
 
-const ACADEMIC_TASK_STATUS_OPTIONS = [
-  {
-    value: "pending",
-    label: "Pending",
-  },
-  {
-    value: "in_progress",
-    label: "In progress",
-  },
-  {
-    value: "completed",
-    label: "Completed",
-  },
-  {
-    value: "cancelled",
-    label: "Cancelled",
-  },
-] as const;
-
-function formatDeadline(
-  deadline: string,
-): string {
-  const date =
-    new Date(deadline);
-
-  if (
-    Number.isNaN(
-      date.getTime(),
-    )
-  ) {
-    return deadline;
-  }
-
-  return new Intl.DateTimeFormat(
-    undefined,
-    {
-      month: "short",
-      day: "numeric",
-      year: "numeric",
-      hour: "numeric",
-      minute: "2-digit",
-    },
-  ).format(date);
-}
-
-function formatEstimatedTime(
-  estimatedMinutes: number,
-): string {
-  if (
-    estimatedMinutes < 60
-  ) {
-    return `${estimatedMinutes} min`;
-  }
-
-  const hours =
-    Math.floor(
-      estimatedMinutes / 60,
-    );
-
-  const minutes =
-    estimatedMinutes % 60;
-
-  if (minutes === 0) {
-    return `${hours} hr`;
-  }
-
-  return `${hours} hr ${minutes} min`;
-}
-
-function getStatusLabel(
-  status: AcademicTaskResponse["status"],
-): string {
-  switch (status) {
-    case "pending":
-      return "Pending";
-
-    case "in_progress":
-      return "In progress";
-
-    case "completed":
-      return "Completed";
-
-    case "cancelled":
-      return "Cancelled";
-  }
-}
-
-function getStatusColor(
-  status: AcademicTaskResponse["status"],
-): string {
-  switch (status) {
-    case "pending":
-      return "yellow";
-
-    case "in_progress":
-      return "blue";
-
-    case "completed":
-      return "green";
-
-    case "cancelled":
-      return "gray";
-  }
-}
-
-function getDifficultyColor(
-  difficulty: AcademicTaskResponse["difficulty"],
-): string {
-  switch (difficulty) {
-    case "easy":
-      return "green";
-
-    case "medium":
-      return "yellow";
-
-    case "hard":
-      return "red";
-  }
-}
+type MobileWorkspaceView =
+  | "calendar"
+  | "todo";
 
 function createEmptyForm(
   subjects: SubjectSummary[],
@@ -231,15 +120,22 @@ function createEmptyForm(
   };
 }
 
-function isAcademicTaskStatus(
-  value: string,
-): value is AcademicTaskStatus {
-  return (
-    value === "pending" ||
-    value === "in_progress" ||
-    value === "completed" ||
-    value === "cancelled"
-  );
+function formatStatusLabel(
+  status: AcademicTaskStatus,
+): string {
+  switch (status) {
+    case "pending":
+      return "pending";
+
+    case "in_progress":
+      return "in progress";
+
+    case "completed":
+      return "completed";
+
+    case "cancelled":
+      return "cancelled";
+  }
 }
 
 export function AcademicTasksWorkspace({
@@ -248,17 +144,24 @@ export function AcademicTasksWorkspace({
   const [
     taskModalOpened,
     {
-      open: openTaskModal,
-      close: closeTaskModal,
+      open:
+        openTaskModal,
+
+      close:
+        closeTaskModal,
     },
-  ] = useDisclosure(false);
+  ] =
+    useDisclosure(
+      false,
+    );
 
   const [
     tasks,
     setTasks,
-  ] = useState<
-    AcademicTaskResponse[]
-  >([]);
+  ] =
+    useState<
+      AcademicTaskResponse[]
+    >([]);
 
   const [
     priorityByTaskId,
@@ -271,16 +174,20 @@ export function AcademicTasksWorkspace({
   const [
     isLoading,
     setIsLoading,
-  ] = useState(
-    subjects.length > 0,
-  );
+  ] =
+    useState(
+      subjects.length > 0,
+    );
 
   const [
     loadError,
     setLoadError,
-  ] = useState<
-    string | null
-  >(null);
+  ] =
+    useState<
+      string | null
+    >(
+      null,
+    );
 
   const [
     form,
@@ -305,20 +212,45 @@ export function AcademicTasksWorkspace({
     editingTask,
     setEditingTask,
   ] =
-    useState<AcademicTaskResponse | null>(
+    useState<
+      AcademicTaskResponse | null
+    >(
       null,
+    );
+
+  const [
+    selectedTaskId,
+    setSelectedTaskId,
+  ] =
+    useState<
+      string | null
+    >(
+      null,
+    );
+
+  const [
+    mobileView,
+    setMobileView,
+  ] =
+    useState<MobileWorkspaceView>(
+      "calendar",
     );
 
   const [
     isSaving,
     setIsSaving,
-  ] = useState(false);
+  ] =
+    useState(
+      false,
+    );
 
   const [
     updatingStatusId,
     setUpdatingStatusId,
   ] =
-    useState<string | null>(
+    useState<
+      string | null
+    >(
       null,
     );
 
@@ -326,43 +258,77 @@ export function AcademicTasksWorkspace({
     deletingTaskId,
     setDeletingTaskId,
   ] =
-    useState<string | null>(
+    useState<
+      string | null
+    >(
       null,
     );
 
-  const subjectById =
+  const selectedTask =
     useMemo(
       () =>
-        new Map(
-          subjects.map(
-            (subject) => [
-              subject.id,
-              subject,
-            ],
-          ),
-        ),
-      [subjects],
+        tasks.find(
+          (
+            task,
+          ) =>
+            task.id ===
+            selectedTaskId,
+        ) ??
+        null,
+      [
+        tasks,
+        selectedTaskId,
+      ],
+    );
+
+  const selectedTaskSubject =
+    useMemo(
+      () => {
+        if (
+          !selectedTask
+        ) {
+          return undefined;
+        }
+
+        return subjects.find(
+          (
+            subject,
+          ) =>
+            subject.id ===
+            selectedTask.subject_id,
+        );
+      },
+      [
+        selectedTask,
+        subjects,
+      ],
     );
 
   const subjectOptions =
     useMemo(
       () =>
         subjects.map(
-          (subject) => ({
+          (
+            subject,
+          ) => ({
             value:
               subject.id,
+
             label:
               subject.name,
           }),
         ),
-      [subjects],
+      [
+        subjects,
+      ],
     );
 
   const requestPrioritizedTasks =
     useCallback(
       async () => {
         return await listPrioritizedAcademicTasks({
-          limit: 100,
+          limit:
+            100,
         });
       },
       [],
@@ -376,7 +342,9 @@ export function AcademicTasksWorkspace({
       ) => {
         setTasks(
           items.map(
-            (item) =>
+            (
+              item,
+            ) =>
               item.task,
           ),
         );
@@ -384,7 +352,9 @@ export function AcademicTasksWorkspace({
         setPriorityByTaskId(
           Object.fromEntries(
             items.map(
-              (item) => [
+              (
+                item,
+              ) => [
                 item.task.id,
                 item.priority,
               ],
@@ -399,7 +369,9 @@ export function AcademicTasksWorkspace({
     taskId: string,
   ) {
     setPriorityByTaskId(
-      (currentPriorities) => {
+      (
+        currentPriorities,
+      ) => {
         const nextPriorities = {
           ...currentPriorities,
         };
@@ -424,9 +396,13 @@ export function AcademicTasksWorkspace({
         refreshedItems,
       );
 
-      setLoadError(null);
+      setLoadError(
+        null,
+      );
     } catch {
-      if (changedTaskId) {
+      if (
+        changedTaskId
+      ) {
         clearPriorityForTask(
           changedTaskId,
         );
@@ -446,8 +422,13 @@ export function AcademicTasksWorkspace({
   }
 
   async function retryLoadTasks() {
-    setIsLoading(true);
-    setLoadError(null);
+    setIsLoading(
+      true,
+    );
+
+    setLoadError(
+      null,
+    );
 
     try {
       const loadedItems =
@@ -456,7 +437,9 @@ export function AcademicTasksWorkspace({
       applyPrioritizedTasks(
         loadedItems,
       );
-    } catch (error) {
+    } catch (
+      error
+    ) {
       if (
         error instanceof
         AcademicTaskApiError
@@ -470,24 +453,32 @@ export function AcademicTasksWorkspace({
         );
       }
     } finally {
-      setIsLoading(false);
+      setIsLoading(
+        false,
+      );
     }
   }
 
   useEffect(
     () => {
       if (
-        subjects.length === 0
+        subjects.length ===
+        0
       ) {
         return;
       }
 
-      let isActive = true;
+      let isActive =
+        true;
 
       void requestPrioritizedTasks()
         .then(
-          (loadedItems) => {
-            if (!isActive) {
+          (
+            loadedItems,
+          ) => {
+            if (
+              !isActive
+            ) {
               return;
             }
 
@@ -502,9 +493,12 @@ export function AcademicTasksWorkspace({
         )
         .catch(
           (
-            error: unknown,
+            error:
+              unknown,
           ) => {
-            if (!isActive) {
+            if (
+              !isActive
+            ) {
               return;
             }
 
@@ -524,7 +518,9 @@ export function AcademicTasksWorkspace({
         )
         .finally(
           () => {
-            if (isActive) {
+            if (
+              isActive
+            ) {
               setIsLoading(
                 false,
               );
@@ -533,7 +529,8 @@ export function AcademicTasksWorkspace({
         );
 
       return () => {
-        isActive = false;
+        isActive =
+          false;
       };
     },
     [
@@ -544,7 +541,9 @@ export function AcademicTasksWorkspace({
   );
 
   function handleOpenCreateModal() {
-    setEditingTask(null);
+    setEditingTask(
+      null,
+    );
 
     setForm(
       createEmptyForm(
@@ -552,7 +551,10 @@ export function AcademicTasksWorkspace({
       ),
     );
 
-    setFieldErrors({});
+    setFieldErrors(
+      {},
+    );
+
     openTaskModal();
   }
 
@@ -569,18 +571,25 @@ export function AcademicTasksWorkspace({
       ),
     );
 
-    setFieldErrors({});
+    setFieldErrors(
+      {},
+    );
+
     openTaskModal();
   }
 
   function handleCloseTaskModal() {
-    if (isSaving) {
+    if (
+      isSaving
+    ) {
       return;
     }
 
     closeTaskModal();
 
-    setEditingTask(null);
+    setEditingTask(
+      null,
+    );
 
     setForm(
       createEmptyForm(
@@ -588,11 +597,14 @@ export function AcademicTasksWorkspace({
       ),
     );
 
-    setFieldErrors({});
+    setFieldErrors(
+      {},
+    );
   }
 
   async function handleSubmitTask(
-    event: FormEvent<HTMLFormElement>,
+    event:
+      FormEvent<HTMLFormElement>,
   ) {
     event.preventDefault();
 
@@ -601,7 +613,9 @@ export function AcademicTasksWorkspace({
         form,
       );
 
-    if (!validation.success) {
+    if (
+      !validation.success
+    ) {
       setFieldErrors(
         validation.fieldErrors,
       );
@@ -622,8 +636,13 @@ export function AcademicTasksWorkspace({
       return;
     }
 
-    setIsSaving(true);
-    setFieldErrors({});
+    setIsSaving(
+      true,
+    );
+
+    setFieldErrors(
+      {},
+    );
 
     try {
       const savedTask =
@@ -637,10 +656,16 @@ export function AcademicTasksWorkspace({
             );
 
       setTasks(
-        (currentTasks) => {
-          if (editingTask) {
+        (
+          currentTasks,
+        ) => {
+          if (
+            editingTask
+          ) {
             return currentTasks.map(
-              (task) =>
+              (
+                task,
+              ) =>
                 task.id ===
                 savedTask.id
                   ? savedTask
@@ -652,7 +677,9 @@ export function AcademicTasksWorkspace({
             savedTask,
 
             ...currentTasks.filter(
-              (task) =>
+              (
+                task,
+              ) =>
                 task.id !==
                 savedTask.id,
             ),
@@ -664,7 +691,9 @@ export function AcademicTasksWorkspace({
         savedTask.id,
       );
 
-      setLoadError(null);
+      setLoadError(
+        null,
+      );
 
       notifications.show({
         title:
@@ -683,14 +712,18 @@ export function AcademicTasksWorkspace({
 
       closeTaskModal();
 
-      setEditingTask(null);
+      setEditingTask(
+        null,
+      );
 
       setForm(
         createEmptyForm(
           subjects,
         ),
       );
-    } catch (error) {
+    } catch (
+      error
+    ) {
       const message =
         error instanceof
         AcademicTaskApiError
@@ -711,20 +744,19 @@ export function AcademicTasksWorkspace({
           "red",
       });
     } finally {
-      setIsSaving(false);
+      setIsSaving(
+        false,
+      );
     }
   }
 
   async function handleStatusChange(
     task: AcademicTaskResponse,
-    value: string | null,
+    status: AcademicTaskStatus,
   ) {
     if (
-      !value ||
-      !isAcademicTaskStatus(
-        value,
-      ) ||
-      value === task.status
+      status ===
+      task.status
     ) {
       return;
     }
@@ -738,15 +770,18 @@ export function AcademicTasksWorkspace({
         await updateAcademicTaskStatus(
           task.id,
           {
-            status:
-              value,
+            status,
           },
         );
 
       setTasks(
-        (currentTasks) =>
+        (
+          currentTasks,
+        ) =>
           currentTasks.map(
-            (currentTask) =>
+            (
+              currentTask,
+            ) =>
               currentTask.id ===
               updatedTask.id
                 ? updatedTask
@@ -763,14 +798,16 @@ export function AcademicTasksWorkspace({
           "Task status updated",
 
         message:
-          `${updatedTask.title} is now ${getStatusLabel(
+          `${updatedTask.title} is now ${formatStatusLabel(
             updatedTask.status,
-          ).toLowerCase()}.`,
+          )}.`,
 
         color:
           "green",
       });
-    } catch (error) {
+    } catch (
+      error
+    ) {
       const message =
         error instanceof
         AcademicTaskApiError
@@ -806,9 +843,13 @@ export function AcademicTasksWorkspace({
       );
 
       setTasks(
-        (currentTasks) =>
+        (
+          currentTasks,
+        ) =>
           currentTasks.filter(
-            (currentTask) =>
+            (
+              currentTask,
+            ) =>
               currentTask.id !==
               task.id,
           ),
@@ -830,6 +871,15 @@ export function AcademicTasksWorkspace({
         },
       );
 
+      if (
+        selectedTaskId ===
+        task.id
+      ) {
+        setSelectedTaskId(
+          null,
+        );
+      }
+
       await refreshPrioritiesAfterMutation();
 
       notifications.show({
@@ -842,7 +892,9 @@ export function AcademicTasksWorkspace({
         color:
           "green",
       });
-    } catch (error) {
+    } catch (
+      error
+    ) {
       const message =
         error instanceof
         AcademicTaskApiError
@@ -876,10 +928,14 @@ export function AcademicTasksWorkspace({
         true,
 
       children: (
-        <Text size="sm">
+        <Text
+          size="sm"
+        >
           Delete{" "}
           <strong>
-            {task.title}
+            {
+              task.title
+            }
           </strong>
           ? This action cannot be
           undone.
@@ -907,6 +963,14 @@ export function AcademicTasksWorkspace({
     });
   }
 
+  function handleTaskSelect(
+    task: AcademicTaskResponse,
+  ) {
+    setSelectedTaskId(
+      task.id,
+    );
+  }
+
   return (
     <main
       className={
@@ -923,47 +987,66 @@ export function AcademicTasksWorkspace({
             className={
               classes.eyebrow
             }
-            fw={700}
+            fw={
+              700
+            }
           >
             ACADEMIC TASKS
           </Text>
 
-          <Title order={1}>
+          <Title
+            order={
+              1
+            }
+          >
             Your tasks
           </Title>
 
           <Text
             c="dimmed"
-            maw={680}
+            maw={
+              680
+            }
             mt="xs"
           >
-            Tasks are ordered using your
-            deterministic priority score,
-            which considers deadline,
-            difficulty, workload,
-            confidence, available study
-            time, status, and previous
-            performance.
+            View your academic deadlines
+            across the calendar while
+            STUDY AI keeps their
+            deterministic priority scores
+            synchronized with your
+            workload, confidence,
+            available study time, status,
+            and previous performance.
           </Text>
         </div>
 
-        <Group>
+        <Group
+          className={
+            classes.headerActions
+          }
+        >
           <Badge
             size="lg"
             variant="light"
             color="violet"
           >
-            {tasks.length}{" "}
-            {tasks.length === 1
+            {
+              tasks.length
+            }{" "}
+            {tasks.length ===
+            1
               ? "task"
               : "tasks"}
           </Badge>
 
-          {subjects.length > 0 ? (
+          {subjects.length >
+          0 ? (
             <Button
               leftSection={
                 <IconPlus
-                  size={18}
+                  size={
+                    18
+                  }
                 />
               }
               onClick={
@@ -976,7 +1059,8 @@ export function AcademicTasksWorkspace({
         </Group>
       </div>
 
-      {subjects.length === 0 ? (
+      {subjects.length ===
+      0 ? (
         <Card
           withBorder
           radius="lg"
@@ -986,27 +1070,39 @@ export function AcademicTasksWorkspace({
           }
         >
           <ThemeIcon
-            size={58}
+            size={
+              58
+            }
             radius="xl"
             variant="light"
           >
             <IconFolderOpen
-              size={30}
+              size={
+                30
+              }
             />
           </ThemeIcon>
 
           <Stack
-            gap={6}
+            gap={
+              6
+            }
             align="center"
           >
-            <Title order={3}>
+            <Title
+              order={
+                3
+              }
+            >
               Create a subject first
             </Title>
 
             <Text
               c="dimmed"
               ta="center"
-              maw={460}
+              maw={
+                460
+              }
             >
               Academic tasks belong to
               subjects. Create at least
@@ -1016,7 +1112,9 @@ export function AcademicTasksWorkspace({
           </Stack>
 
           <Button
-            component={Link}
+            component={
+              Link
+            }
             href="/subjects"
           >
             Open subjects
@@ -1034,10 +1132,16 @@ export function AcademicTasksWorkspace({
           <Loader />
 
           <Stack
-            gap={4}
+            gap={
+              4
+            }
             align="center"
           >
-            <Text fw={700}>
+            <Text
+              fw={
+                700
+              }
+            >
               Prioritizing your tasks
             </Text>
 
@@ -1057,13 +1161,21 @@ export function AcademicTasksWorkspace({
           title="Tasks could not be loaded"
           icon={
             <IconAlertCircle
-              size={20}
+              size={
+                20
+              }
             />
           }
         >
-          <Stack gap="sm">
-            <Text size="sm">
-              {loadError}
+          <Stack
+            gap="sm"
+          >
+            <Text
+              size="sm"
+            >
+              {
+                loadError
+              }
             </Text>
 
             <Button
@@ -1073,7 +1185,9 @@ export function AcademicTasksWorkspace({
               w="fit-content"
               leftSection={
                 <IconRefresh
-                  size={16}
+                  size={
+                    16
+                  }
                 />
               }
               onClick={() => {
@@ -1084,7 +1198,8 @@ export function AcademicTasksWorkspace({
             </Button>
           </Stack>
         </Alert>
-      ) : tasks.length === 0 ? (
+      ) : tasks.length ===
+        0 ? (
         <Card
           withBorder
           radius="lg"
@@ -1094,27 +1209,39 @@ export function AcademicTasksWorkspace({
           }
         >
           <ThemeIcon
-            size={58}
+            size={
+              58
+            }
             radius="xl"
             variant="light"
           >
             <IconChecklist
-              size={30}
+              size={
+                30
+              }
             />
           </ThemeIcon>
 
           <Stack
-            gap={6}
+            gap={
+              6
+            }
             align="center"
           >
-            <Title order={3}>
+            <Title
+              order={
+                3
+              }
+            >
               No academic tasks yet
             </Title>
 
             <Text
               c="dimmed"
               ta="center"
-              maw={460}
+              maw={
+                460
+              }
             >
               Add your assignments,
               projects, exams, readings,
@@ -1125,7 +1252,9 @@ export function AcademicTasksWorkspace({
           <Button
             leftSection={
               <IconPlus
-                size={18}
+                size={
+                  18
+                }
               />
             }
             onClick={
@@ -1136,378 +1265,161 @@ export function AcademicTasksWorkspace({
           </Button>
         </Card>
       ) : (
-        <div
-          className={
-            classes.taskGrid
-          }
-        >
-          {[0, 1].map(
-            (columnIndex) => (
-              <div
-                key={
-                  columnIndex
+        <div>
+          <div
+            className={
+              classes.mobileWorkspaceToggle
+            }
+          >
+            <SegmentedControl
+              fullWidth
+              value={
+                mobileView
+              }
+              data={[
+                {
+                  value:
+                    "calendar",
+
+                  label:
+                    "Calendar",
+                },
+
+                {
+                  value:
+                    "todo",
+
+                  label:
+                    "To-Do",
+                },
+              ]}
+              onChange={(
+                value,
+              ) => {
+                if (
+                  value ===
+                    "calendar" ||
+                  value ===
+                    "todo"
+                ) {
+                  setMobileView(
+                    value,
+                  );
                 }
-                className={
-                  classes.taskColumn
+              }}
+            />
+          </div>
+
+          <div
+            className={
+              classes.calendarWorkspace
+            }
+            data-mobile-view={
+              mobileView
+            }
+          >
+            <div
+              className={
+                classes.calendarWorkspaceCalendar
+              }
+            >
+              <AcademicTaskCalendar
+                tasks={
+                  tasks
                 }
-              >
-                {tasks.map(
-                  (
-                    task,
-                    taskIndex,
-                  ) => {
-                    if (
-                      taskIndex % 2 !==
-                      columnIndex
-                    ) {
-                      return null;
-                    }
+                priorityByTaskId={
+                  priorityByTaskId
+                }
+                subjects={
+                  subjects
+                }
+                selectedTaskId={
+                  selectedTaskId
+                }
+                onTaskSelect={
+                  handleTaskSelect
+                }
+              />
+            </div>
 
-                    const subject =
-                      subjectById.get(
-                        task.subject_id,
-                      );
-
-                    const priority =
-                      priorityByTaskId[
-                        task.id
-                      ];
-
-                    const priorityPresentation =
-                      priority
-                        ? getAcademicTaskPriorityPresentation(
-                            priority.total_score,
-                          )
-                        : null;
-
-                    const statusUpdating =
-                      updatingStatusId ===
-                        task.id;
-
-                    const deleting =
-                      deletingTaskId ===
-                        task.id;
-
-                    return (
-                      <Card
-                        key={
-                          task.id
-                        }
-                        withBorder
-                        radius="lg"
-                        padding="lg"
-                        className={
-                          classes.taskCard
-                        }
-                        style={{
-                          order:
-                            taskIndex,
-                        }}
-                      >
-                        <Stack gap="md">
-                          <Group
-                            justify="space-between"
-                            align="flex-start"
-                            wrap="nowrap"
-                          >
-                            <Group
-                              align="flex-start"
-                              wrap="nowrap"
-                            >
-                              <ThemeIcon
-                                color={
-                                  subject?.color ??
-                                  "violet"
-                                }
-                                size={
-                                  42
-                                }
-                                radius="md"
-                                variant="light"
-                              >
-                                <IconChecklist
-                                  size={
-                                    22
-                                  }
-                                />
-                              </ThemeIcon>
-
-                              <div>
-                                <Text
-                                  fw={
-                                    700
-                                  }
-                                  size="lg"
-                                >
-                                  {
-                                    task.title
-                                  }
-                                </Text>
-
-                                <Text
-                                  c="dimmed"
-                                  size="sm"
-                                >
-                                  {subject?.name ??
-                                    "Unknown subject"}
-                                </Text>
-                              </div>
-                            </Group>
-
-                            <Badge
-                              color={
-                                getStatusColor(
-                                  task.status,
-                                )
-                              }
-                              variant="light"
-                            >
-                              {getStatusLabel(
-                                task.status,
-                              )}
-                            </Badge>
-                          </Group>
-
-                          {priority &&
-                          priorityPresentation ? (
-                            <Stack gap="xs">
-                              <Group
-                                justify="space-between"
-                                gap="xs"
-                              >
-                                <Badge
-                                  color={
-                                    priorityPresentation.color
-                                  }
-                                  variant="light"
-                                >
-                                  {
-                                    priorityPresentation.label
-                                  }
-                                </Badge>
-
-                                <Text
-                                  fw={
-                                    700
-                                  }
-                                  size="sm"
-                                >
-                                  Priority{" "}
-                                  {formatAcademicTaskPriorityScore(
-                                    priority.total_score,
-                                  )}
-                                </Text>
-                              </Group>
-
-                              <Progress
-                                value={
-                                  priority.total_score
-                                }
-                                color={
-                                  priorityPresentation.color
-                                }
-                                size="sm"
-                                radius="xl"
-                                aria-label={
-                                  `Priority score for ${task.title}`
-                                }
-                              />
-
-                              <AcademicTaskPriorityBreakdown
-                                taskTitle={
-                                  task.title
-                                }
-                                priority={
-                                  priority
-                                }
-                              />
-                            </Stack>
-                          ) : (
-                            <Text
-                              c="dimmed"
-                              size="sm"
-                            >
-                              Priority will
-                              be recalculated
-                              shortly.
-                            </Text>
-                          )}
-
-                          {task.description ? (
-                            <Text
-                              c="dimmed"
-                              size="sm"
-                              lineClamp={
-                                2
-                              }
-                            >
-                              {
-                                task.description
-                              }
-                            </Text>
-                          ) : null}
-
-                          <Group gap="xs">
-                            <Badge
-                              variant="outline"
-                              color={
-                                getDifficultyColor(
-                                  task.difficulty,
-                                )
-                              }
-                              tt="capitalize"
-                            >
-                              {
-                                task.difficulty
-                              }
-                            </Badge>
-
-                            <Badge
-                              variant="outline"
-                              color="gray"
-                              tt="capitalize"
-                            >
-                              {
-                                task.task_type
-                              }
-                            </Badge>
-                          </Group>
-
-                          <div
-                            className={
-                              classes.taskMeta
-                            }
-                          >
-                            <Group
-                              gap={
-                                7
-                              }
-                              wrap="nowrap"
-                            >
-                              <IconCalendarEvent
-                                size={
-                                  17
-                                }
-                              />
-
-                              <Text
-                                size="sm"
-                                c="dimmed"
-                              >
-                                {formatDeadline(
-                                  task.deadline,
-                                )}
-                              </Text>
-                            </Group>
-
-                            <Group
-                              gap={
-                                7
-                              }
-                              wrap="nowrap"
-                            >
-                              <IconClock
-                                size={
-                                  17
-                                }
-                              />
-
-                              <Text
-                                size="sm"
-                                c="dimmed"
-                              >
-                                {formatEstimatedTime(
-                                  task.estimated_minutes,
-                                )}
-                              </Text>
-                            </Group>
-                          </div>
-
-                          <NativeSelect
-                            label="Status"
-                            aria-label={
-                              `Status for ${task.title}`
-                            }
-                            data={[
-                              ...ACADEMIC_TASK_STATUS_OPTIONS,
-                            ]}
-                            value={
-                              task.status
-                            }
-                            disabled={
-                              statusUpdating ||
-                              deleting
-                            }
-                            onChange={(
-                              event,
-                            ) => {
-                              void handleStatusChange(
-                                task,
-                                event
-                                  .currentTarget
-                                  .value,
-                              );
-                            }}
-                          />
-
-                          <Group grow>
-                            <Button
-                              variant="light"
-                              leftSection={
-                                <IconEdit
-                                  size={
-                                    17
-                                  }
-                                />
-                              }
-                              disabled={
-                                statusUpdating ||
-                                deleting
-                              }
-                              onClick={() => {
-                                handleOpenEditModal(
-                                  task,
-                                );
-                              }}
-                            >
-                              Edit task
-                            </Button>
-
-                            <Button
-                              variant="light"
-                              color="red"
-                              loading={
-                                deleting
-                              }
-                              disabled={
-                                statusUpdating
-                              }
-                              leftSection={
-                                <IconTrash
-                                  size={
-                                    17
-                                  }
-                                />
-                              }
-                              onClick={() => {
-                                confirmDeleteTask(
-                                  task,
-                                );
-                              }}
-                            >
-                              Delete task
-                            </Button>
-                          </Group>
-                        </Stack>
-                      </Card>
-                    );
-                  },
-                )}
-              </div>
-            ),
-          )}
+            <div
+              className={
+                classes.calendarWorkspaceTodo
+              }
+            >
+              <AcademicTaskTodoSidebar
+                tasks={
+                  tasks
+                }
+                priorityByTaskId={
+                  priorityByTaskId
+                }
+                subjects={
+                  subjects
+                }
+                selectedTaskId={
+                  selectedTaskId
+                }
+                onTaskSelect={
+                  handleTaskSelect
+                }
+              />
+            </div>
+          </div>
         </div>
       )}
+
+      <AcademicTaskDetailsDrawer
+        task={
+          selectedTask
+        }
+        priority={
+          selectedTask
+            ? priorityByTaskId[
+                selectedTask.id
+              ]
+            : undefined
+        }
+        subject={
+          selectedTaskSubject
+        }
+        opened={
+          selectedTask !==
+          null
+        }
+        statusUpdating={
+          selectedTask
+            ? updatingStatusId ===
+              selectedTask.id
+            : false
+        }
+        deleting={
+          selectedTask
+            ? deletingTaskId ===
+              selectedTask.id
+            : false
+        }
+        onClose={() => {
+          setSelectedTaskId(
+            null,
+          );
+        }}
+        onEdit={
+          handleOpenEditModal
+        }
+        onStatusChange={(
+          task,
+          status,
+        ) => {
+          void handleStatusChange(
+            task,
+            status,
+          );
+        }}
+        onDelete={
+          confirmDeleteTask
+        }
+      />
 
       <Modal
         opened={
@@ -1555,7 +1467,9 @@ export function AcademicTasksWorkspace({
               disabled={
                 isSaving
               }
-              onChange={(value) => {
+              onChange={(
+                value,
+              ) => {
                 setForm(
                   (
                     currentForm,
@@ -1563,7 +1477,8 @@ export function AcademicTasksWorkspace({
                     ...currentForm,
 
                     subjectId:
-                      value ?? "",
+                      value ??
+                      "",
                   }),
                 );
               }}
@@ -1586,9 +1501,12 @@ export function AcademicTasksWorkspace({
               disabled={
                 isSaving
               }
-              onChange={(event) => {
+              onChange={(
+                event,
+              ) => {
                 const title =
-                  event.currentTarget
+                  event
+                    .currentTarget
                     .value;
 
                 setForm(
@@ -1596,6 +1514,7 @@ export function AcademicTasksWorkspace({
                     currentForm,
                   ) => ({
                     ...currentForm,
+
                     title,
                   }),
                 );
@@ -1622,9 +1541,12 @@ export function AcademicTasksWorkspace({
               disabled={
                 isSaving
               }
-              onChange={(event) => {
+              onChange={(
+                event,
+              ) => {
                 const description =
-                  event.currentTarget
+                  event
+                    .currentTarget
                     .value;
 
                 setForm(
@@ -1632,6 +1554,7 @@ export function AcademicTasksWorkspace({
                     currentForm,
                   ) => ({
                     ...currentForm,
+
                     description,
                   }),
                 );
@@ -1652,9 +1575,12 @@ export function AcademicTasksWorkspace({
               disabled={
                 isSaving
               }
-              onChange={(event) => {
+              onChange={(
+                event,
+              ) => {
                 const deadline =
-                  event.currentTarget
+                  event
+                    .currentTarget
                     .value;
 
                 setForm(
@@ -1662,6 +1588,7 @@ export function AcademicTasksWorkspace({
                     currentForm,
                   ) => ({
                     ...currentForm,
+
                     deadline,
                   }),
                 );
@@ -1690,7 +1617,9 @@ export function AcademicTasksWorkspace({
               disabled={
                 isSaving
               }
-              onChange={(value) => {
+              onChange={(
+                value,
+              ) => {
                 setForm(
                   (
                     currentForm,
@@ -1731,7 +1660,9 @@ export function AcademicTasksWorkspace({
                 disabled={
                   isSaving
                 }
-                onChange={(value) => {
+                onChange={(
+                  value,
+                ) => {
                   setForm(
                     (
                       currentForm,
@@ -1766,7 +1697,9 @@ export function AcademicTasksWorkspace({
                 disabled={
                   isSaving
                 }
-                onChange={(value) => {
+                onChange={(
+                  value,
+                ) => {
                   setForm(
                     (
                       currentForm,
@@ -1803,7 +1736,9 @@ export function AcademicTasksWorkspace({
               disabled={
                 isSaving
               }
-              onChange={(value) => {
+              onChange={(
+                value,
+              ) => {
                 setForm(
                   (
                     currentForm,

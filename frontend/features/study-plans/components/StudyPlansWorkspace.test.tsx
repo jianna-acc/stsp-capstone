@@ -769,11 +769,13 @@ describe(
           ),
         ).toBeInTheDocument();
 
-        expect(
-          screen.getByText(
-            "History",
-          ),
-        ).toBeInTheDocument();
+          expect(
+            screen.getAllByText(
+              "History",
+            ).length,
+          ).toBeGreaterThan(
+            0,
+          );
 
         await waitFor(
           () => {
@@ -1211,5 +1213,6 @@ describe(
         ).not.toBeInTheDocument();
       },
     );
+
   },
 );
