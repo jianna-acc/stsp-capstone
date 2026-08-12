@@ -1,9 +1,10 @@
 // File: /frontend/features/academic-tasks/components/AcademicTasksWorkspace.test.tsx
 // Purpose: Tests prioritized Academic Tasks loading, empty,
-// error, populated, and create-task workspace behavior.
+// error, populated, drawer, and create-task workspace behavior.
 
 import {
   createTheme,
+  Drawer,
   MantineProvider,
   Modal,
 } from "@mantine/core";
@@ -12,6 +13,7 @@ import {
   render,
   screen,
   waitFor,
+  within,
 } from "@testing-library/react";
 import {
   beforeEach,
@@ -89,7 +91,17 @@ const testTheme =
       Modal: Modal.extend({
         defaultProps: {
           transitionProps: {
-            duration: 0,
+            duration:
+              0,
+          },
+        },
+      }),
+
+      Drawer: Drawer.extend({
+        defaultProps: {
+          transitionProps: {
+            duration:
+              0,
           },
         },
       }),
@@ -189,12 +201,16 @@ const PRIORITIZED_TASK:
 };
 
 function renderWorkspace(
-  subjects = [SUBJECT],
+  subjects = [
+    SUBJECT,
+  ],
 ) {
   return render(
     <MantineProvider
       env="test"
-      theme={testTheme}
+      theme={
+        testTheme
+      }
     >
       <AcademicTasksWorkspace
         subjects={
@@ -217,7 +233,9 @@ function getCreateTaskForm():
       "form",
     );
 
-  if (!form) {
+  if (
+    !form
+  ) {
     throw new Error(
       "Create academic task form was not found.",
     );
@@ -250,12 +268,50 @@ async function openCreateTaskModal() {
   ).toBeInTheDocument();
 }
 
+async function openTaskDrawer():
+  Promise<HTMLElement> {
+  const taskButton =
+    await screen.findByRole(
+      "button",
+      {
+        name:
+          "View to-do task: STS reflection paper",
+      },
+    );
+
+  fireEvent.click(
+    taskButton,
+  );
+
+  const drawerTitle =
+    await screen.findByText(
+      "Academic task details",
+    );
+
+  const drawer =
+    drawerTitle.closest(
+      '[role="dialog"]',
+    );
+
+  if (
+    !drawer
+  ) {
+    throw new Error(
+      "Academic task details drawer was not found.",
+    );
+  }
+
+  return drawer as HTMLElement;
+}
+
 describe(
   "AcademicTasksWorkspace",
   () => {
-    beforeEach(() => {
-      vi.clearAllMocks();
-    });
+    beforeEach(
+      () => {
+        vi.clearAllMocks();
+      },
+    );
 
     it(
       "requires a subject before loading academic tasks",
@@ -348,12 +404,25 @@ describe(
 
         expect(
           screen.getByText(
+            "1 task",
+          ),
+        ).toBeInTheDocument();
+
+        const drawer =
+          await openTaskDrawer();
+
+        expect(
+          within(
+            drawer,
+          ).getByText(
             "Write the final course reflection.",
           ),
         ).toBeInTheDocument();
 
         expect(
-          screen.getByLabelText(
+          within(
+            drawer,
+          ).getByLabelText(
             "Status for STS reflection paper",
           ),
         ).toHaveValue(
@@ -361,43 +430,49 @@ describe(
         );
 
         expect(
-          screen.getByText(
-            "medium",
+          within(
+            drawer,
+          ).getByText(
+            "Medium",
           ),
         ).toBeInTheDocument();
 
         expect(
-          screen.getByText(
-            "assignment",
+          within(
+            drawer,
+          ).getByText(
+            "Assignment",
           ),
         ).toBeInTheDocument();
 
         expect(
-          screen.getByText(
+          within(
+            drawer,
+          ).getByText(
             "2 hr",
           ),
         ).toBeInTheDocument();
 
         expect(
-          screen.getByText(
-            "1 task",
-          ),
-        ).toBeInTheDocument();
-
-        expect(
-          screen.getByText(
+          within(
+            drawer,
+          ).getByText(
             "Highest priority",
           ),
         ).toBeInTheDocument();
 
         expect(
-          screen.getByText(
+          within(
+            drawer,
+          ).getByText(
             "Priority 78.5/100",
           ),
         ).toBeInTheDocument();
 
         expect(
-          screen.getByRole(
+          within(
+            drawer,
+          ).getByRole(
             "progressbar",
             {
               name:
@@ -748,7 +823,9 @@ describe(
               createRequest.deadline,
             ).getTime(),
           ),
-        ).toBe(false);
+        ).toBe(
+          false,
+        );
 
         await waitFor(
           () => {
@@ -772,8 +849,13 @@ describe(
           ),
         ).toBeInTheDocument();
 
+        const drawer =
+          await openTaskDrawer();
+
         expect(
-          screen.getByText(
+          within(
+            drawer,
+          ).getByText(
             "Priority 78.5/100",
           ),
         ).toBeInTheDocument();

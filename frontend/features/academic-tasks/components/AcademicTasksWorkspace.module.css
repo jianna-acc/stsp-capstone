@@ -64,6 +64,421 @@
   padding-top: 0.25rem;
 }
 
+/* Week calendar foundation. */
+
+.calendarPanel {
+  min-width: 0;
+}
+
+.calendarNavigation {
+  flex-shrink: 0;
+}
+
+.calendarWeekGrid {
+  display: grid;
+  grid-template-columns: repeat(
+    7,
+    minmax(150px, 1fr)
+  );
+  gap: 0.75rem;
+  min-width: 1080px;
+  padding-bottom: 0.25rem;
+}
+
+.calendarDay {
+  min-height: 340px;
+  background:
+    light-dark(
+      var(--mantine-color-gray-0),
+      var(--mantine-color-dark-7)
+    );
+  transition:
+    border-color 120ms ease,
+    box-shadow 120ms ease;
+}
+
+.calendarDay[data-today="true"] {
+  border-color:
+    var(--mantine-color-violet-5);
+  box-shadow:
+    0 0 0 1px
+    var(--mantine-color-violet-2);
+}
+
+.calendarDayHeader {
+  min-height: 52px;
+  padding-bottom: 0.5rem;
+  border-bottom:
+    1px solid
+    light-dark(
+      var(--mantine-color-gray-3),
+      var(--mantine-color-dark-4)
+    );
+}
+
+.calendarDay[data-today="true"]
+  .calendarDayHeader {
+  border-bottom-color:
+    var(--mantine-color-violet-3);
+}
+
+.calendarEmptyDay {
+  display: flex;
+  min-height: 84px;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+
+.calendarTask {
+  background:
+    light-dark(
+      var(--mantine-color-white),
+      var(--mantine-color-dark-6)
+    );
+  transition:
+    transform 120ms ease,
+    border-color 120ms ease,
+    box-shadow 120ms ease;
+}
+
+.calendarTask:hover {
+  transform: translateY(-1px);
+  border-color:
+    var(--mantine-color-violet-4);
+  box-shadow:
+    var(--mantine-shadow-xs);
+}
+
+.calendarTaskCompleted {
+  border-color:
+    var(--mantine-color-green-3);
+
+  background:
+    light-dark(
+      var(--mantine-color-green-0),
+      var(--mantine-color-dark-6)
+    );
+
+  opacity: 0.8;
+}
+
+.calendarTaskCompleted:hover {
+  border-color:
+    var(--mantine-color-green-5);
+}
+
+.calendarTaskButton {
+  display: block;
+  width: 100%;
+  text-align: left;
+  border-radius: var(--mantine-radius-md);
+}
+
+.calendarTaskButton:focus-visible {
+  outline:
+    2px solid
+    var(--mantine-color-violet-5);
+  outline-offset: 2px;
+}
+
+.calendarTaskSelected {
+  border-color:
+    var(--mantine-color-violet-6);
+
+  box-shadow:
+    0 0 0 2px
+    var(--mantine-color-violet-1);
+}
+
+.calendarTaskSelected:hover {
+  border-color:
+    var(--mantine-color-violet-7);
+}
+
+/* Calendar + priority to-do workspace. */
+
+.calendarWorkspace {
+  display: grid;
+  grid-template-columns:
+    minmax(0, 1fr)
+    minmax(270px, 320px);
+  gap: var(--mantine-spacing-lg);
+  align-items: start;
+}
+
+.todoPanel {
+  min-width: 0;
+  position: sticky;
+  top: var(--mantine-spacing-md);
+}
+
+.todoEmptyState {
+  min-height: 180px;
+  justify-content: center;
+  color: var(--mantine-color-dimmed);
+}
+
+.todoTaskButton {
+  display: block;
+  width: 100%;
+  padding: 0.75rem;
+  text-align: left;
+  border: 1px solid
+    light-dark(
+      var(--mantine-color-gray-3),
+      var(--mantine-color-dark-4)
+    );
+  border-radius:
+    var(--mantine-radius-md);
+  background:
+    light-dark(
+      var(--mantine-color-white),
+      var(--mantine-color-dark-6)
+    );
+  transition:
+    transform 120ms ease,
+    border-color 120ms ease,
+    box-shadow 120ms ease,
+    background-color 120ms ease;
+}
+
+.todoTaskButton:hover {
+  transform: translateY(-1px);
+  border-color:
+    var(--mantine-color-violet-4);
+  box-shadow:
+    var(--mantine-shadow-xs);
+}
+
+.todoTaskButton:focus-visible {
+  outline:
+    2px solid
+    var(--mantine-color-violet-5);
+  outline-offset: 2px;
+}
+
+.todoTaskButtonSelected {
+  border-color:
+    var(--mantine-color-violet-6);
+
+  background:
+    light-dark(
+      var(--mantine-color-violet-0),
+      var(--mantine-color-dark-6)
+    );
+
+  box-shadow:
+    0 0 0 1px
+    var(--mantine-color-violet-2);
+}
+
+.todoTaskButtonSelected:hover {
+  border-color:
+    var(--mantine-color-violet-7);
+}
+
+.todoRank {
+  display: flex;
+  flex: 0 0 1.75rem;
+  width: 1.75rem;
+  height: 1.75rem;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  background:
+    light-dark(
+      var(--mantine-color-violet-0),
+      var(--mantine-color-dark-5)
+    );
+  color:
+    var(--mantine-color-violet-7);
+  font-size:
+    var(--mantine-font-size-xs);
+  font-weight: 800;
+}
+
+.todoTaskContent {
+  flex: 1;
+  min-width: 0;
+}
+
+@media (max-width: 72em) {
+  .calendarWorkspace {
+    grid-template-columns: 1fr;
+  }
+
+  .todoPanel {
+    position: static;
+  }
+}
+
+/* Week / month calendar controls. */
+
+.calendarToolbar {
+  gap: 1rem;
+}
+
+.calendarControls {
+  justify-content: flex-end;
+  flex-wrap: wrap;
+}
+
+.calendarMonthContainer {
+  min-width: 1080px;
+}
+
+.calendarMonthWeekdays {
+  display: grid;
+  grid-template-columns:
+    repeat(
+      7,
+      minmax(150px, 1fr)
+    );
+  gap: 0.75rem;
+  margin-bottom: 0.5rem;
+}
+
+.calendarMonthWeekday {
+  padding: 0.35rem 0.5rem;
+}
+
+.calendarMonthGrid {
+  display: grid;
+  grid-template-columns:
+    repeat(
+      7,
+      minmax(150px, 1fr)
+    );
+  gap: 0.75rem;
+  padding-bottom: 0.25rem;
+}
+
+.calendarMonthDay {
+  min-height: 215px;
+}
+
+.calendarMonthDayHeader {
+  min-height: 28px;
+  padding-bottom: 0.4rem;
+  border-bottom:
+    1px solid
+    light-dark(
+      var(--mantine-color-gray-3),
+      var(--mantine-color-dark-4)
+    );
+}
+
+.calendarMonthDay[data-outside-month="true"] {
+  opacity: 0.55;
+}
+
+.calendarMonthDay[data-today="true"] {
+  opacity: 1;
+}
+
+/* Header action responsiveness. */
+
+.headerActions {
+  justify-content: flex-end;
+}
+
+/* Mobile Calendar / To-Do switching. */
+
+.mobileWorkspaceToggle {
+  display: none;
+  margin-bottom: var(--mantine-spacing-md);
+}
+
+.calendarWorkspaceCalendar,
+.calendarWorkspaceTodo {
+  min-width: 0;
+}
+
+@media (max-width: 48em) {
+  .headerActions {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .mobileWorkspaceToggle {
+    display: block;
+  }
+
+  .calendarWorkspace {
+    display: block;
+  }
+
+  .calendarWorkspace[data-mobile-view="calendar"]
+    .calendarWorkspaceTodo {
+    display: none;
+  }
+
+  .calendarWorkspace[data-mobile-view="todo"]
+    .calendarWorkspaceCalendar {
+    display: none;
+  }
+
+  .todoPanel {
+    position: static;
+  }
+
+  .calendarPanel {
+    padding: var(--mantine-spacing-md);
+  }
+
+  .calendarControls {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .calendarNavigation {
+    display: grid;
+    grid-template-columns:
+      auto 1fr auto;
+    width: 100%;
+  }
+
+  .calendarNavigation > * {
+    width: 100%;
+  }
+
+  .calendarWeekGrid {
+    min-width: 980px;
+  }
+
+  .calendarMonthContainer {
+    min-width: 980px;
+  }
+
+  .calendarMonthWeekdays,
+  .calendarMonthGrid {
+    grid-template-columns:
+      repeat(
+        7,
+        minmax(135px, 1fr)
+      );
+  }
+}
+
+@media (max-width: 48em) {
+  .calendarToolbar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .calendarControls {
+    width: 100%;
+    justify-content: space-between;
+  }
+}
+
+@media (max-width: 48em) {
+  .calendarNavigation {
+    width: 100%;
+  }
+}
+
 @media (max-width: 48em) {
   .page {
     padding: 1.25rem;
