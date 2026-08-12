@@ -40,6 +40,7 @@ def test_ai_settings_have_safe_defaults() -> None:
     assert settings.gemini_generation_max_output_tokens == 1024
     assert settings.gemini_request_timeout_seconds == 30.0
     assert settings.ai_live_smoke_tests_enabled is False
+    assert settings.file_processing_worker_enabled is True
 
 
 def test_ai_string_settings_are_trimmed() -> None:

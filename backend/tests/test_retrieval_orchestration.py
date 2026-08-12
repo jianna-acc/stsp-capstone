@@ -159,10 +159,18 @@ class FakeRetrievalPersistence:
         self,
         *,
         chunks: tuple[RetrievedStudyChunk, ...] = (),
+        chunks_by_threshold: (
+            dict[
+                float,
+                tuple[RetrievedStudyChunk, ...],
+            ]
+            | None
+        ) = None,
         error: Exception | None = None,
         response: object | None = None,
     ) -> None:
         self.chunks = chunks
+        self.chunks_by_threshold = chunks_by_threshold
         self.error = error
         self.response = response
         self.requests: list[RetrievalRequest] = []
@@ -181,9 +189,17 @@ class FakeRetrievalPersistence:
         if self.response is not None:
             return self.response
 
+        chunks = self.chunks
+
+        if self.chunks_by_threshold is not None:
+            chunks = self.chunks_by_threshold.get(
+                request.similarity_threshold,
+                (),
+            )
+
         return RetrievalResult(
             request=request,
-            chunks=self.chunks,
+            chunks=chunks,
         )
 
 
@@ -358,6 +374,167 @@ def test_retrieve_returns_normal_no_context_result() -> None:
     assert result.context_available is False
     assert result.retrieved_count == 0
     assert result.no_context_message is not None
+
+def test_file_retrieval_does_not_fallback_when_default_matches() -> None:
+    persistence = FakeRetrievalPersistence(
+        chunks=(
+            make_chunk(),
+        ),
+    )
+
+    service = RetrievalOrchestrationService(
+        query_embedding_service=(
+            FakeQueryEmbeddingService()
+        ),
+        retrieval_persistence=persistence,
+    )
+
+    result = asyncio.run(
+        service.retrieve(
+            make_orchestration_request(
+                study_file_id=FILE_ID,
+            ),
+        )
+    )
+
+    assert result.outcome == RetrievalOutcome.MATCHES
+    assert result.retrieved_count == 1
+
+    assert len(
+        persistence.requests,
+    ) == 1
+
+    assert (
+        persistence.requests[
+            0
+        ].similarity_threshold
+        == 0.60
+    )
+
+def test_file_retrieval_falls_back_when_default_has_no_match() -> None:
+    persistence = FakeRetrievalPersistence(
+        chunks_by_threshold={
+            0.60: (),
+            0.50: (
+                make_chunk(),
+            ),
+        },
+    )
+
+    service = RetrievalOrchestrationService(
+        query_embedding_service=(
+            FakeQueryEmbeddingService()
+        ),
+        retrieval_persistence=persistence,
+    )
+
+    result = asyncio.run(
+        service.retrieve(
+            make_orchestration_request(
+                study_file_id=FILE_ID,
+            ),
+        )
+    )
+
+    assert result.outcome == RetrievalOutcome.MATCHES
+    assert result.context_available is True
+    assert result.retrieved_count == 1
+
+    assert len(
+        persistence.requests,
+    ) == 2
+
+    assert [
+        retrieval_request.similarity_threshold
+        for retrieval_request in persistence.requests
+    ] == [
+        0.60,
+        0.50,
+    ]
+
+    assert all(
+        retrieval_request.study_file_id == FILE_ID
+        for retrieval_request in persistence.requests
+    )
+
+def test_subject_retrieval_does_not_use_file_fallback() -> None:
+    persistence = FakeRetrievalPersistence(
+        chunks_by_threshold={
+            0.60: (),
+            0.50: (
+                make_chunk(),
+            ),
+        },
+    )
+
+    service = RetrievalOrchestrationService(
+        query_embedding_service=(
+            FakeQueryEmbeddingService()
+        ),
+        retrieval_persistence=persistence,
+    )
+
+    result = asyncio.run(
+        service.retrieve(
+            make_orchestration_request(
+                subject_id=SUBJECT_ID,
+            ),
+        )
+    )
+
+    assert result.outcome == RetrievalOutcome.NO_CONTEXT
+    assert result.retrieved_count == 0
+
+    assert len(
+        persistence.requests,
+    ) == 1
+
+    assert (
+        persistence.requests[
+            0
+        ].similarity_threshold
+        == 0.60
+    )
+
+def test_file_retrieval_respects_custom_threshold() -> None:
+    persistence = FakeRetrievalPersistence(
+        chunks_by_threshold={
+            0.70: (),
+            0.50: (
+                make_chunk(),
+            ),
+        },
+    )
+
+    service = RetrievalOrchestrationService(
+        query_embedding_service=(
+            FakeQueryEmbeddingService()
+        ),
+        retrieval_persistence=persistence,
+    )
+
+    result = asyncio.run(
+        service.retrieve(
+            make_orchestration_request(
+                study_file_id=FILE_ID,
+                similarity_threshold=0.70,
+            ),
+        )
+    )
+
+    assert result.outcome == RetrievalOutcome.NO_CONTEXT
+    assert result.retrieved_count == 0
+
+    assert len(
+        persistence.requests,
+    ) == 1
+
+    assert (
+        persistence.requests[
+            0
+        ].similarity_threshold
+        == 0.70
+    )
 
 
 def test_retrieve_rejects_invalid_request_type() -> None:
