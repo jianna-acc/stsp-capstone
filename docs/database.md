@@ -36,7 +36,7 @@ Supabase provides:
 | Conversation summary state | Implemented |
 | Reviewer table | Implemented |
 | Flashcard decks and cards | Implemented |
-| Flashcard review events | Ready in Track E; shared remote application pending |
+| Flashcard review events | Implemented |
 | Quiz tables and attempt history | Implemented |
 | Academic tasks | Implemented |
 | Study plans | Implemented |
@@ -664,7 +664,7 @@ review_again
 
 Deleting the parent Flashcard deck cascades to its review events.
 
-The migration that creates this table is present on the Track E branch but remains intentionally unapplied to the shared remote database until linked migration history is re-inspected after synchronizing Track C and Track D into the Analytics branch.
+The migration that creates this table has been applied to the shared remote database. Linked local and remote migration history is aligned through `20260811162000`.
 
 **## Flashcard Security**
 
@@ -1035,7 +1035,7 @@ flashcards
 flashcard_review_events
 ```
 
-The `flashcard_review_events` migration is ready on Track E but remains unapplied to the shared remote database pending team migration coordination.
+The `flashcard_review_events` migration is applied to the shared remote database and is included in the aligned local and remote migration history.
 
 Quiz persistence and attempt history are already implemented using:
 
@@ -1065,7 +1065,7 @@ quiz_attempt_answers
 
 This migration is owned by Track E because the persisted review evidence provides the canonical Flashcard-performance source used by Analytics.
 
-The migration file is ready and tested locally. Shared remote application remains intentionally pending until linked migration history is re-inspected after synchronizing Track C and Track D into the Analytics branch.
+The migration file is applied to the shared remote database and has passed its migration and post-application Track E validation. Linked migration history is aligned, and the subsequent linked dry run reports that the remote database is up to date.
 
 ---
 

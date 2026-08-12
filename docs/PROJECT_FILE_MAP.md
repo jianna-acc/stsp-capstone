@@ -39,7 +39,7 @@ Update it whenever files, APIs, migrations, owners, or major system connections 
 | Phase 6D | Large-material multi-pass reviewer generation | Integrated |
 | Track A | Flashcard backend, large-material generation, frontend study UI, and saved-deck management | Integrated |
 | Track B | Quiz generation, attempts, history, review, and deletion | Integrated |
-| Track E | Analytics and Flashcard self-assessment evidence | Ready; shared migration pending coordination |
+| Track E | Analytics and Flashcard self-assessment evidence | Integrated |
 | Phase 7A–7E | Academic Tasks, output confidence, deterministic priority, frontend, live integration | Integrated |
 | Track D | Study plans, scheduling, calendar workspace, Academic Task integration, and regeneration | Integrated |
 | Later | Additional Analytics, deployment, and monitoring | Planned |
@@ -401,7 +401,7 @@ Update it whenever files, APIs, migrations, owners, or major system connections 
 | `/supabase/migrations/20260810002500_create_study_plans_foundation.sql` | Ready | Database | Creates owned study plans and study sessions with validation and RLS | Study Plan backend |
 | `/supabase/migrations/20260811002500_add_study_plan_regeneration_rpc.sql` | Ready | Database | Adds transactional generated-session replacement | Regeneration backend |
 
-The Track D migration files are committed but shared database application is coordinated separately.
+The Track D migration files are committed and applied to the shared linked database.
 
 **## Study Plan Backend**
 
@@ -529,12 +529,12 @@ The Track D migration files are committed but shared database application is coo
 | `backend/tests/test_flashcard_review_service.py` | Ready | Tests Flashcard-review service delegation. | Track E — Analytics | Flashcard review service |
 | `frontend/features/flashcards/api.test.ts` | Ready | Tests authenticated Flashcard review requests and response validation alongside existing Flashcard API behavior. | Track A + Track E integration | Frontend Flashcard API |
 | `frontend/features/flashcards/components/FlashcardStudyViewer.test.tsx` | Ready | Tests review controls, known/review-again persistence, failures, and navigation behavior. | Track A + Track E integration | Flashcard study viewer |
-| `supabase/migrations/20260811162000_create_flashcard_review_events.sql` | Ready; remote pending | Adds durable owner-scoped Flashcard self-assessment evidence for Analytics. | Track E — Analytics | `flashcard_decks`, `flashcards`, RLS |
+| `supabase/migrations/20260811162000_create_flashcard_review_events.sql` | Integrated | Adds durable owner-scoped Flashcard self-assessment evidence for Analytics. | Track E — Analytics | `flashcard_decks`, `flashcards`, RLS |
 | `docs/ANALYTICS_DESIGN.md` | Ready | Documents Track E architecture, canonical metrics, security, validation, and remaining unavailable metrics. | Track E — Analytics | Phase 6 implementation |
 
 Track E's currently implemented metrics remain based on canonical Quiz and Flashcard evidence.
 
-The Track E migration remains intentionally unapplied to the shared remote database until linked migration history is re-inspected after this C/D synchronization merge.
+The Track E migration has been applied to the shared remote database. Linked migration history is aligned through `20260811162000`, and a subsequent linked dry run reports that the remote database is up to date.
 
 
 **# Important Supabase Resources**

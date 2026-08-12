@@ -904,6 +904,17 @@ Run after documentation edits:
 - [x] Owner-scoped Analytics reads are covered
 - [x] General study minutes remain explicitly unavailable without a canonical duration source
 
+**## Track E Live Integration**
+
+- [x] `/analytics` loads successfully against the shared database
+- [x] All-time reporting works
+- [x] Last-30-days reporting works
+- [x] Last-7-days reporting works
+- [x] Quiz performance displays persisted evidence
+- [x] Flashcard self-assessment persists successfully
+- [x] Analytics reflects persisted Flashcard review evidence
+- [x] General study time remains explicitly unavailable without canonical actual-duration evidence
+
 **## Flashcard Review Evidence**
 
 - [x] Flashcard review migration contract tests pass
@@ -935,9 +946,11 @@ Run after documentation edits:
 
 **## Final Regression**
 
-- [x] Full backend regression: 1042 passed
-- [x] Full frontend regression: 23 test files passed
-- [x] Full frontend regression: 135 tests passed
+- [x] Full backend regression after C/D synchronization: 1296 passed
+- [x] Full frontend regression after C/D synchronization: 25 test files passed
+- [x] Full frontend regression after C/D synchronization: 153 tests passed
+- [x] Focused C/D/E frontend regression: 6 test files, 58 tests passed
+- [x] Post-migration Track E backend regression: 29 passed
 - [x] Production frontend build passes
 - [x] Production build completes TypeScript successfully
 
@@ -968,10 +981,12 @@ Current shared-database status:
 - [x] `20260809153000` belongs to Track C Academic Tasks
 - [x] `20260810002500` belongs to Track D Study Plans
 - [x] `20260811002500` belongs to Track D Study Plans
-- [ ] Track E migration applied to the shared remote database
-- [ ] Linked migration history re-inspected after merging Track C/Track D into Track E
+- [x] Track E migration applied to the shared remote database
+- [x] Linked migration history re-inspected after merging Track C/Track D into Track E
+- [x] Local and remote histories match through `20260811162000`
+- [x] Post-application linked dry run reports the remote database is up to date
 
-The Track E migration remains intentionally unapplied to the shared remote database until linked migration history is re-inspected after the C/D synchronization merge.
+The Track E migration has been applied successfully. Linked migration history now matches locally and remotely through `20260811162000`, and the post-application dry run reports the remote database is up to date.
 
 Do not use migration repair to force migration-history alignment; inspect the linked migration state first.
 
@@ -990,7 +1005,7 @@ self-assessed Flashcard performance
 
 General study minutes remain intentionally unavailable until a canonical study-duration source exists.
 
-Shared remote migration application remains a coordinated integration step rather than an unfinished Track E code task.
+Shared remote migration application and migration-history verification are complete.
 
 ---
 
@@ -1054,9 +1069,9 @@ npx supabase db push --linked --dry-run
 
 Confirm:
 
-- [ ] Local and remote migration histories match
-- [ ] Remote database is up to date
-- [ ] Generated database types match hosted schema
+- [x] Local and remote migration histories match
+- [x] Remote database is up to date
+- [x] Generated database types match hosted schema
 
 ---
 

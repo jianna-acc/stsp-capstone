@@ -1418,7 +1418,7 @@ If the selected period has no completed Quiz attempts or no Flashcard review eve
 7. Analytics does not expose Quiz answer keys.
 8. Controlled failures do not expose database credentials, backend secrets, or provider traces.
 
-The Flashcard review persistence migration may be present on the Track E branch before it is applied to the shared remote database. Shared database application must remain coordinated and should occur only after linked migration history is re-inspected following the C/D synchronization merge.
+The Flashcard review persistence migration is applied to the shared remote database. Linked migration history was re-inspected after the C/D synchronization merge, and a subsequent linked dry run confirmed that the remote database is up to date.
 
 ---
 

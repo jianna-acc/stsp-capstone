@@ -93,7 +93,7 @@ Future phases may add additional activity-based Analytics, deployment, and monit
 | Phase 6D | Large-material multi-pass reviewer generation | Implemented |
 | Track A | Flashcard backend, large-material generation, protected frontend, saved-deck access, and interactive study UI | Implemented |
 | Track B | Quiz generation, attempts, scoring, history, review, retake, deletion | Implemented |
-| Track E | Analytics, Quiz performance aggregation, and Flashcard self-assessment evidence | Implemented in code; shared migration pending coordination |
+| Track E | Analytics, Quiz performance aggregation, and Flashcard self-assessment evidence | Implemented |
 | Phase 7A–7E | Academic Task persistence, output confidence, CRUD, deterministic priority, frontend, and live integration | Implemented |
 | Track D | Study-plan persistence, deterministic scheduling, Academic Task integration, calendar workspace, manual sessions, and regeneration | Implemented |
 | Later phases | Additional Analytics, deployment, and monitoring | Planned |
@@ -1295,7 +1295,7 @@ data_state = partial
 
 Track E's currently implemented metrics remain derived from canonical Quiz and Flashcard evidence and do not fabricate Academic Task or Study Plan performance.
 
-The Track E Flashcard review migration remains intentionally unapplied to the shared remote database until linked migration history is re-inspected after this C/D synchronization merge.
+The Track E Flashcard review migration has been applied to the shared linked Supabase database. Linked migration history was re-inspected after the C/D synchronization merge and is fully aligned.
 
 ---
 
@@ -1508,7 +1508,7 @@ trusted backend write access
 
 The review target is validated against the owned Flashcard deck and an existing card position.
 
-The Track E migration remains intentionally unapplied to the shared remote database until linked migration history is re-inspected after synchronizing Track C and Track D into the Analytics branch.
+The Track E migration has been applied to the shared linked Supabase database. Local and remote migration histories now match through `20260811162000`, and a subsequent linked dry run reports the remote database is up to date.
 
 ---
 

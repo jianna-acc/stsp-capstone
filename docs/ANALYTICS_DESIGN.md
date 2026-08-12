@@ -52,7 +52,7 @@ The current implementation provides:
 
 General study duration remains unavailable because the application does not yet have a canonical persisted study-duration source.
 
-The Flashcard review migration exists locally on Track E but is intentionally not yet applied to the shared remote database while other team migrations are still in progress.
+The Flashcard review migration has been applied to the shared remote database. Linked local and remote migration history is aligned through `20260811162000`, and a subsequent linked dry run reports that the remote database is up to date.
 
 ---
 
@@ -342,7 +342,7 @@ Current Track E metric state:
 | Quiz accuracy | Available | `quiz_attempts` |
 | Strong topics | Available | `quiz_attempt_answers` |
 | Weak topics | Available | `quiz_attempt_answers` |
-| Flashcard performance | Available after the Track E migration is applied | `flashcard_review_events` |
+| Flashcard performance | Available | `flashcard_review_events` |
 | General study minutes | Unavailable | No canonical duration source yet |
 
 Because at least one requested Analytics area remains unavailable, the overview currently reports:
@@ -365,11 +365,9 @@ Track B
 └── Quiz attempts and answer history
 ```
 
-Track C and Track D are not required for the currently implemented Track E metrics.
+Track C and Track D are now synchronized into the Track E branch but are not required for the currently implemented Track E metrics.
 
-Future integration may use their canonical data only if later Analytics requirements include task, workload, scheduling, or study-plan metrics.
-
-Track E should not depend on unmerged Track C or Track D code.
+Future integration may use their canonical data only when later Analytics requirements define trustworthy task, workload, scheduling, or study-plan evidence.
 
 ---
 
@@ -400,23 +398,30 @@ with:
 - restricted authenticated browser privileges;
 - trusted service-role write access.
 
-The migration is committed as part of Track E but may remain unapplied to the shared remote database until migration-history coordination is complete.
+The migration has been applied to the shared remote database.
 
-Current linked migration history also contains remote-only migrations owned by the in-progress Track C and Track D branches. Track E must not repair, overwrite, or copy those migrations merely to make its branch match the remote.
+Track C and Track D migration files were first synchronized into the Track E branch and linked migration history was re-inspected. Local and remote history now match through `20260811162000`, and a subsequent `db push --linked --dry-run` reports that the remote database is up to date. No migration repair was required.
 
 ---
 
 # Current Validation
 
-Track E and its Flashcard-review integration have passed:
+Track E and its C/D synchronization have passed:
 
 ```text
 Backend full suite:
-1042 passed
+1296 passed
+
+Post-migration Track E targeted suite:
+29 passed
 
 Frontend full suite:
-23 test files passed
-135 tests passed
+25 test files passed
+153 tests passed
+
+Focused C/D/E frontend suite:
+6 test files passed
+58 tests passed
 
 Production frontend build:
 successful
@@ -425,6 +430,9 @@ TypeScript:
 successful
 
 Ruff:
+successful
+
+pip check:
 successful
 ```
 
@@ -436,15 +444,15 @@ Known Python warnings are dependency/deprecation warnings and do not represent T
 
 # Remaining Work
 
-Track E's application code is complete for the available canonical Quiz and Flashcard evidence.
+Track E's application code and shared database migration are complete for the available canonical Quiz and Flashcard evidence.
 
-Before live use of Flashcard performance on the shared environment, the Track E migration must be applied in coordination with the team.
+Live browser validation is complete. The Analytics overview loads successfully against the shared database, all supported reporting periods work, persisted Flashcard review evidence is reflected in Analytics, and general study time remains explicitly unavailable because no canonical actual study-duration source exists.
 
 Future Analytics expansion may include:
 
 - canonical study-duration tracking;
-- task/workload analytics after the responsible track is merged;
-- study-plan adherence after the responsible track is merged;
+- task/workload analytics when trustworthy canonical task evidence is defined;
+- study-plan adherence only when canonical completion or adherence evidence exists;
 - calendar/schedule analytics;
 - longer-term progress visualization.
 
