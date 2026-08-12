@@ -531,10 +531,10 @@ export function FlashcardGenerationForm({
             />
           )}
 
+          <div>
           <NumberInput
             label="Number of cards"
             aria-label="Number of cards"
-            description="Choose between 5 and 50 cards."
             value={
               cardCount
             }
@@ -562,6 +562,15 @@ export function FlashcardGenerationForm({
             }
             required
           />
+
+          <Text
+            size="xs"
+            c="dimmed"
+            mt={4}
+          >
+            Choose between 5 and 50 cards.
+          </Text>
+        </div>
         </div>
 
         {scopeType === "file" &&
