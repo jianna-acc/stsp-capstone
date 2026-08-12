@@ -31,7 +31,10 @@
 }
 
 .navigation {
-  flex: 1;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
 }
 
 .navLink {
@@ -56,6 +59,7 @@
 }
 
 .navbarFooter {
+  flex-shrink: 0;
   margin-top: auto;
   padding-top: 20px;
 }
