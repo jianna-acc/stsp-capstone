@@ -1,6 +1,6 @@
 // File: /frontend/features/flashcards/types.ts
 // Purpose: Defines Flashcard generation, saved-deck, source,
-// filter-option, and API error contracts for the frontend.
+// filter-option, review, and API error contracts for the frontend.
 
 export type FlashcardScopeType =
   | "subject"
@@ -16,6 +16,23 @@ export type FlashcardLocatorType =
 export interface FlashcardItem {
   question: string;
   answer: string;
+}
+
+export type FlashcardReviewOutcome =
+  | "known"
+  | "review_again";
+
+export interface FlashcardReviewCreateRequest {
+  card_position: number;
+  outcome: FlashcardReviewOutcome;
+}
+
+export interface FlashcardReviewResponse {
+  id: string;
+  deck_id: string;
+  card_position: number;
+  outcome: FlashcardReviewOutcome;
+  reviewed_at: string;
 }
 
 export interface FlashcardSource {

@@ -1,7 +1,7 @@
 <!-- File: /docs/database.md -->
 <!-- Purpose: Documents implemented Supabase tables, relationships, Storage, RLS, vector storage, conversations, and database functions. -->
 
-# Database Documentation
+**# Database Documentation**
 
 STUDY AI uses hosted Supabase PostgreSQL.
 
@@ -17,7 +17,7 @@ Supabase provides:
 
 ---
 
-# Database Status
+**# Database Status**
 
 | Area | Status |
 |---|---|
@@ -36,13 +36,14 @@ Supabase provides:
 | Conversation summary state | Implemented |
 | Reviewer table | Implemented |
 | Flashcard decks and cards | Implemented |
+| Flashcard review events | Implemented |
 | Quiz tables and attempt history | Implemented |
 | Academic tasks | Implemented |
 | Study plans | Implemented |
 | Study sessions | Implemented |
 ---
 
-# Authentication
+**# Authentication**
 
 Supabase stores student identities in:
 
@@ -54,7 +55,7 @@ The application does not maintain its own password table.
 
 ---
 
-# Generated Types
+**# Generated Types**
 
 Generated frontend definitions:
 
@@ -65,19 +66,19 @@ frontend/types/database.ts
 Generate after schema changes:
 
 ```bash
-npx supabase gen types typescript \
-  --linked \
-  --schema public \
-  > frontend/types/database.ts
+npx supabase gen types typescript \\
+  --linked \\
+  --schema public \\
+  > frontend/types/database.ts
 ```
 
 Do not manually edit the generated file.
 
 ---
 
-# Core Student Tables
+**# Core Student Tables**
 
-## `public.profiles`
+**##** `public.profiles`
 
 Stores:
 
@@ -94,7 +95,7 @@ profiles.id = auth.users.id
 
 ---
 
-## `public.learning_profiles`
+**##** `public.learning_profiles`
 
 Stores:
 
@@ -112,7 +113,7 @@ learning_profiles.user_id = auth.uid()
 
 ---
 
-## `public.learning_profile_subjects`
+**##** `public.learning_profile_subjects`
 
 Stores:
 
@@ -124,7 +125,7 @@ These records are onboarding profile information and are separate from academic 
 
 ---
 
-## `public.study_availability`
+**##** `public.study_availability`
 
 Stores recurring weekly study periods.
 
@@ -136,9 +137,9 @@ Important validation:
 
 ---
 
-# Subject and File Tables
+**# Subject and File Tables**
 
-## `public.subjects`
+**##** `public.subjects`
 
 Stores academic subject workspaces.
 
@@ -155,7 +156,7 @@ updated_at
 
 ---
 
-## `public.study_files`
+**##** `public.study_files`
 
 Stores metadata for uploaded materials.
 
@@ -191,7 +192,7 @@ failed
 
 ---
 
-## `public.file_processing_jobs`
+**##** `public.file_processing_jobs`
 
 Stores background processing state.
 
@@ -222,7 +223,7 @@ failed
 
 ---
 
-## `public.study_file_contents`
+**##** `public.study_file_contents`
 
 Stores complete extracted text and file-specific extraction metadata.
 
@@ -244,7 +245,7 @@ updated_at
 
 ---
 
-## `public.study_file_chunks`
+**##** `public.study_file_chunks`
 
 Stores source-aware extracted chunks.
 
@@ -275,9 +276,9 @@ document
 
 ---
 
-# AI Vector Storage
+**# AI Vector Storage**
 
-## `public.study_file_ai_chunks`
+**##** `public.study_file_ai_chunks`
 
 Stores deterministic AI-oriented chunks and embeddings used for semantic retrieval.
 
@@ -315,9 +316,9 @@ Vector writes are performed through trusted backend operations.
 
 ---
 
-# Saved Study Assistant Conversations
+**# Saved Study Assistant Conversations**
 
-## `public.study_conversations`
+**##** `public.study_conversations`
 
 Stores one owned Study Assistant conversation.
 
@@ -347,7 +348,7 @@ Validation includes:
 
 ---
 
-## `public.study_messages`
+**##** `public.study_messages`
 
 Stores chronological messages.
 
@@ -378,7 +379,7 @@ outcome = answered or no_context
 
 ---
 
-# Conversation Summary State
+**# Conversation Summary State**
 
 Internal fields:
 
@@ -406,53 +407,55 @@ Summary updates are backend-managed.
 
 ---
 
-# Relationships
+**# Relationships**
 
 ```mermaid
 erDiagram
-    AUTH_USERS ||--|| PROFILES : has
-    AUTH_USERS ||--|| LEARNING_PROFILES : has
-    AUTH_USERS ||--o{ LEARNING_PROFILE_SUBJECTS : defines
-    AUTH_USERS ||--o{ STUDY_AVAILABILITY : schedules
+    AUTH_USERS ||--|| PROFILES : has
+    AUTH_USERS ||--|| LEARNING_PROFILES : has
+    AUTH_USERS ||--o{ LEARNING_PROFILE_SUBJECTS : defines
+    AUTH_USERS ||--o{ STUDY_AVAILABILITY : schedules
 
-    AUTH_USERS ||--o{ SUBJECTS : creates
-    AUTH_USERS ||--o{ STUDY_FILES : uploads
-    AUTH_USERS ||--o{ FILE_PROCESSING_JOBS : owns
-    AUTH_USERS ||--o{ STUDY_FILE_CONTENTS : owns
-    AUTH_USERS ||--o{ STUDY_FILE_CHUNKS : owns
-    AUTH_USERS ||--o{ STUDY_FILE_AI_CHUNKS : owns
+    AUTH_USERS ||--o{ SUBJECTS : creates
+    AUTH_USERS ||--o{ STUDY_FILES : uploads
+    AUTH_USERS ||--o{ FILE_PROCESSING_JOBS : owns
+    AUTH_USERS ||--o{ STUDY_FILE_CONTENTS : owns
+    AUTH_USERS ||--o{ STUDY_FILE_CHUNKS : owns
+    AUTH_USERS ||--o{ STUDY_FILE_AI_CHUNKS : owns
 
-    AUTH_USERS ||--o{ STUDY_CONVERSATIONS : owns
+    AUTH_USERS ||--o{ STUDY_CONVERSATIONS : owns
 
-    SUBJECTS ||--o{ STUDY_FILES : contains
-    SUBJECTS ||--o{ STUDY_CONVERSATIONS : filters
+    SUBJECTS ||--o{ STUDY_FILES : contains
+    SUBJECTS ||--o{ STUDY_CONVERSATIONS : filters
 
-    STUDY_FILES ||--|| FILE_PROCESSING_JOBS : processed_by
-    STUDY_FILES ||--o| STUDY_FILE_CONTENTS : produces
-    STUDY_FILES ||--o{ STUDY_FILE_CHUNKS : produces
-    STUDY_FILES ||--o{ STUDY_FILE_AI_CHUNKS : indexes
-    STUDY_FILES ||--o{ STUDY_CONVERSATIONS : filters
+    STUDY_FILES ||--|| FILE_PROCESSING_JOBS : processed_by
+    STUDY_FILES ||--o| STUDY_FILE_CONTENTS : produces
+    STUDY_FILES ||--o{ STUDY_FILE_CHUNKS : produces
+    STUDY_FILES ||--o{ STUDY_FILE_AI_CHUNKS : indexes
+    STUDY_FILES ||--o{ STUDY_CONVERSATIONS : filters
 
-    STUDY_CONVERSATIONS ||--o{ STUDY_MESSAGES : contains
+    STUDY_CONVERSATIONS ||--o{ STUDY_MESSAGES : contains
 
-    AUTH_USERS ||--o{ FLASHCARD_DECKS : owns
-    SUBJECTS ||--o{ FLASHCARD_DECKS : organizes
-    STUDY_FILES ||--o{ FLASHCARD_DECKS : optional_source
-    FLASHCARD_DECKS ||--o{ FLASHCARDS : contains
+    AUTH_USERS ||--o{ FLASHCARD_DECKS : owns
+    SUBJECTS ||--o{ FLASHCARD_DECKS : organizes
+    STUDY_FILES ||--o{ FLASHCARD_DECKS : optional_source
+    FLASHCARD_DECKS ||--o{ FLASHCARDS : contains
+    AUTH_USERS ||--o{ FLASHCARD_REVIEW_EVENTS : owns
+    FLASHCARD_DECKS ||--o{ FLASHCARD_REVIEW_EVENTS : reviewed_in
 
-    AUTH_USERS ||--o{ QUIZZES : owns
-    AUTH_USERS ||--o{ QUIZ_ATTEMPTS : owns
-    SUBJECTS ||--o{ QUIZZES : organizes
-    STUDY_FILES ||--o{ QUIZZES : optional_source
-    QUIZZES ||--o{ QUIZ_QUESTIONS : contains
-    QUIZZES ||--o{ QUIZ_ATTEMPTS : records
-    QUIZ_ATTEMPTS ||--o{ QUIZ_ATTEMPT_ANSWERS : contains
-    QUIZ_QUESTIONS ||--o{ QUIZ_ATTEMPT_ANSWERS : answered_as
+    AUTH_USERS ||--o{ QUIZZES : owns
+    AUTH_USERS ||--o{ QUIZ_ATTEMPTS : owns
+    SUBJECTS ||--o{ QUIZZES : organizes
+    STUDY_FILES ||--o{ QUIZZES : optional_source
+    QUIZZES ||--o{ QUIZ_QUESTIONS : contains
+    QUIZZES ||--o{ QUIZ_ATTEMPTS : records
+    QUIZ_ATTEMPTS ||--o{ QUIZ_ATTEMPT_ANSWERS : contains
+    QUIZ_QUESTIONS ||--o{ QUIZ_ATTEMPT_ANSWERS : answered_as
 ```
 
 ---
 
-# Private Storage
+**# Private Storage**
 
 Bucket:
 
@@ -472,7 +475,7 @@ Students may access only objects belonging to their own authenticated folder.
 
 ---
 
-# Row Level Security
+**# Row Level Security**
 
 RLS protects student-owned data.
 
@@ -493,13 +496,13 @@ Students must not be able to read or modify:
 - Another student's vector chunks
 - Another student's saved conversations
 - Another student's messages
-- Another student's Flashcard decks or cards
+- Another student's Flashcard decks, cards, or review events
 - Another student's Quizzes, attempts, or submitted-answer history
 - Another student's private Storage objects
 
 ---
 
-# Trusted Processing Functions
+**# Trusted Processing Functions**
 
 Implemented database functions include:
 
@@ -525,7 +528,7 @@ Changes require a new migration.
 
 ---
 
-# Saved Reviewers
+**# Saved Reviewers**
 
 `public.reviewers` stores generated study reviewers owned by authenticated students.
 
@@ -553,23 +556,24 @@ Reviewer `content` is stored as a JSON object containing:
 ```text
 overview
 topics
-  title
-  summary
-  key_points
-  definitions
+  title
+  summary
+  key_points
+  definitions
 ```
 ---
 
-# Saved Flashcards
+**# Saved Flashcards**
 
-Flashcard persistence uses two normalized tables:
+Flashcard study persistence uses the existing generated-deck/card tables plus durable Track E review evidence:
 
 ```text
 public.flashcard_decks
 public.flashcards
+public.flashcard_review_events
 ```
 
-## `public.flashcard_decks`
+**##** `public.flashcard_decks`
 
 Stores one generated Flashcard deck owned by an authenticated student.
 
@@ -595,7 +599,7 @@ The database constrains Flashcard requests to the supported public card-count ra
 
 Subject/file scope is validated so the selected source remains connected to the authenticated owner.
 
-## `public.flashcards`
+**##** `public.flashcards`
 
 Stores individual ordered question-and-answer cards.
 
@@ -614,19 +618,57 @@ The relationship is:
 
 ```text
 flashcard_decks
-    1
-    |
-    | contains
-    |
-    N
+    1
+    |
+    | contains
+    |
+    N
 flashcards
 ```
 
 Deleting a Flashcard deck cascades to its child Flashcards.
 
-## Flashcard Security
+**##** `public.flashcard_review_events`
 
-Both Flashcard tables use Row Level Security.
+Stores durable student self-assessment evidence created while studying saved Flashcards.
+
+Important columns:
+
+| Column | Purpose |
+|---|---|
+| `id` | Review-event UUID |
+| `user_id` | Authenticated student owner |
+| `deck_id` | Reviewed Flashcard deck |
+| `card_position` | Stable zero-based card position within the deck |
+| `outcome` | `known` or `review_again` |
+| `reviewed_at` | Time the student submitted the self-assessment |
+| `created_at` | Row creation timestamp |
+
+A review event is valid only for a deck owned by the authenticated student and a card position that exists in that deck.
+
+Conceptually, validation preserves:
+
+```text
+flashcard_decks.id = deck_id
+flashcard_decks.user_id = user_id
+flashcards.deck_id = deck_id
+flashcards.position = card_position
+```
+
+Supported outcomes:
+
+```text
+known
+review_again
+```
+
+Deleting the parent Flashcard deck cascades to its review events.
+
+The migration that creates this table has been applied to the shared remote database. Linked local and remote migration history is aligned through `20260811162000`.
+
+**## Flashcard Security**
+
+The Flashcard deck/card resources and Flashcard review events use Row Level Security and authenticated ownership boundaries.
 
 Authenticated browser clients may:
 
@@ -636,6 +678,12 @@ delete owned Flashcard decks
 ```
 
 Browser clients may not directly insert generated Flashcard records.
+
+Authenticated browser clients may read only their own Flashcard review events.
+
+Browser clients cannot directly insert Flashcard review events.
+
+Review-event writes pass through the protected FastAPI backend using the trusted server-side Supabase client.
 
 Card reads are authorized through ownership of the parent Flashcard deck.
 
@@ -650,11 +698,11 @@ The function is `SECURITY DEFINER` and is restricted to the backend `service_rol
 The RPC creates the parent deck and all ordered child cards atomically so a partially created deck cannot remain after a failed operation.
 ---
 
-# Saved Quizzes
+**# Saved Quizzes**
 
 Track B adds four Quiz resources.
 
-## `public.quizzes`
+**##** `public.quizzes`
 
 Stores student-safe Quiz metadata.
 
@@ -679,7 +727,7 @@ Important columns:
 
 Authenticated browser clients may read/delete only owned Quiz metadata according to the configured policies. Quiz creation is performed through the trusted backend RPC.
 
-## `public.quiz_questions`
+**##** `public.quiz_questions`
 
 Stores generated Quiz questions and the private answer key.
 
@@ -721,7 +769,7 @@ are not exposed through normal Quiz reads.
 
 Direct browser access to private Quiz-question answer-key data is restricted. Trusted backend operations use the service role for persistence and grading.
 
-## `public.quiz_attempts`
+**##** `public.quiz_attempts`
 
 Stores one student's Quiz-taking state.
 
@@ -751,7 +799,7 @@ completed
 
 Authenticated browser clients may read owned attempt state, while trusted backend operations perform attempt writes.
 
-## `public.quiz_attempt_answers`
+**##** `public.quiz_attempt_answers`
 
 Stores the safe submitted-answer history for an attempt.
 
@@ -772,25 +820,25 @@ created_at
 
 This table stores submitted history and correctness but does not duplicate the private correct answer or explanation.
 
-## Quiz Relationships
+**## Quiz Relationships**
 
 ```mermaid
 erDiagram
-    AUTH_USERS ||--o{ QUIZZES : owns
-    AUTH_USERS ||--o{ QUIZ_ATTEMPTS : owns
+    AUTH_USERS ||--o{ QUIZZES : owns
+    AUTH_USERS ||--o{ QUIZ_ATTEMPTS : owns
 
-    SUBJECTS ||--o{ QUIZZES : organizes
-    STUDY_FILES ||--o{ QUIZZES : optional_source
+    SUBJECTS ||--o{ QUIZZES : organizes
+    STUDY_FILES ||--o{ QUIZZES : optional_source
 
-    QUIZZES ||--o{ QUIZ_QUESTIONS : contains
-    QUIZZES ||--o{ QUIZ_ATTEMPTS : records
-    QUIZ_ATTEMPTS ||--o{ QUIZ_ATTEMPT_ANSWERS : contains
-    QUIZ_QUESTIONS ||--o{ QUIZ_ATTEMPT_ANSWERS : answered_as
+    QUIZZES ||--o{ QUIZ_QUESTIONS : contains
+    QUIZZES ||--o{ QUIZ_ATTEMPTS : records
+    QUIZ_ATTEMPTS ||--o{ QUIZ_ATTEMPT_ANSWERS : contains
+    QUIZ_QUESTIONS ||--o{ QUIZ_ATTEMPT_ANSWERS : answered_as
 ```
 
 Deleting a Quiz cascades to its generated questions and related attempt history through the configured foreign-key relationships.
 
-## Quiz Trusted RPCs
+**## Quiz Trusted RPCs**
 
 ```text
 create_quiz_with_questions
@@ -806,7 +854,7 @@ submit_quiz_attempt_answer
 
 These RPC operations are trusted backend contracts rather than direct browser-write operations.
 
-## Quiz RLS and Security
+**## Quiz RLS and Security**
 
 Quiz security separates student-safe metadata from private grading data.
 
@@ -821,9 +869,9 @@ Key boundaries:
 - Deleting one owned Quiz removes its related Quiz data without affecting another student's resources.
 
 
-# Study Plans and Study Sessions
+**# Study Plans and Study Sessions**
 
-## `public.study_plans`
+**##** `public.study_plans`
 
 `public.study_plans` stores student-owned manual and generated study plans.
 
@@ -851,7 +899,7 @@ completed
 archived
 ```
 
-## `public.study_sessions`
+**##** `public.study_sessions`
 
 `public.study_sessions` stores calendar sessions belonging to owned study plans.
 
@@ -889,7 +937,7 @@ generated
 
 Plan and session ownership is enforced through database relationships and Row Level Security.
 
-## Generated Session Replacement RPC
+**## Generated Session Replacement RPC**
 
 Track D adds:
 
@@ -911,7 +959,7 @@ During regeneration, this trusted RPC:
 Execution is restricted to the trusted `service_role`.
 
 ---
-# File Deletion Behavior
+**# File Deletion Behavior**
 
 Deleting a study file must remove or invalidate:
 
@@ -926,13 +974,13 @@ Foreign-key cascades should be used where configured.
 
 ---
 
-# Conversation Deletion
+**# Conversation Deletion**
 
 Deleting a conversation removes its connected messages through cascade behavior.
 
 ---
 
-# Phase 5G Migrations
+**# Phase 5G Migrations**
 
 | Migration | Purpose |
 |---|---|
@@ -943,7 +991,7 @@ Deleting a conversation removes its connected messages through cascade behavior.
 
 ---
 
-# Phase 6A Migration
+**# Phase 6A Migration**
 
 | Migration | Purpose |
 |---|---|
@@ -951,7 +999,7 @@ Deleting a conversation removes its connected messages through cascade behavior.
 | `20260808053929_create_reviewers_foundation.sql` | Creates reviewer table, ownership/scope validation, indexes, timestamps, triggers, privileges, and RLS |
 
 ---
-# Track D Study Plan Migrations
+**# Track D Study Plan Migrations**
 
 | Migration | Purpose |
 |---|---|
@@ -962,7 +1010,7 @@ These Track D migration files have been applied to the shared linked database du
 
 ---
 
-# Remaining Planned Tables
+**# Remaining Planned Tables**
 
 No additional Track A, Track B, Phase 7, or Track D tables remain planned in this section. Future phases may introduce additional persistence when required.
 
@@ -979,12 +1027,15 @@ Vector storage is already implemented using:
 study_file_ai_chunks
 ```
 
-Flashcard persistence is already implemented using:
+Flashcard persistence and Track E self-assessment evidence use:
 
 ```text
 flashcard_decks
 flashcards
+flashcard_review_events
 ```
+
+The `flashcard_review_events` migration is applied to the shared remote database and is included in the aligned local and remote migration history.
 
 Quiz persistence and attempt history are already implemented using:
 
@@ -997,7 +1048,7 @@ quiz_attempt_answers
 
 ---
 
-# Track A Flashcard Migrations
+**# Track A Flashcard Migrations**
 
 | Migration | Purpose |
 |---|---|
@@ -1006,7 +1057,19 @@ quiz_attempt_answers
 
 ---
 
-# Track B Quiz Migrations
+**# Track E Flashcard Review Migration**
+
+| Migration | Purpose |
+|---|---|
+| `20260811162000_create_flashcard_review_events.sql` | Creates durable owner-scoped Flashcard self-assessment review events, validation, indexes, privileges, and RLS for Analytics |
+
+This migration is owned by Track E because the persisted review evidence provides the canonical Flashcard-performance source used by Analytics.
+
+The migration file is applied to the shared remote database and has passed its migration and post-application Track E validation. Linked migration history is aligned, and the subsequent linked dry run reports that the remote database is up to date.
+
+---
+
+**# Track B Quiz Migrations**
 
 | Migration | Purpose |
 |---|---|
@@ -1019,7 +1082,7 @@ The later saved-history and completed-attempt review feature reuses these tables
 
 
 
-# Migration Workflow
+**# Migration Workflow**
 
 Create:
 
@@ -1032,9 +1095,9 @@ Validate:
 ```bash
 git diff --check
 
-npx supabase db push \
-  --linked \
-  --dry-run
+npx supabase db push \\
+  --linked \\
+  --dry-run
 ```
 
 Apply:
@@ -1048,25 +1111,25 @@ Verify:
 ```bash
 npx supabase migration list --linked
 
-npx supabase db push \
-  --linked \
-  --dry-run
+npx supabase db push \\
+  --linked \\
+  --dry-run
 ```
 
 Generate frontend types:
 
 ```bash
-npx supabase gen types typescript \
-  --linked \
-  --schema public \
-  > frontend/types/database.ts
+npx supabase gen types typescript \\
+  --linked \\
+  --schema public \\
+  > frontend/types/database.ts
 ```
 
 Previously applied migrations must never be edited.
 
 ---
 
-# Database Change Rules
+**# Database Change Rules**
 
 1. Create a new migration.
 2. Never edit an applied migration.

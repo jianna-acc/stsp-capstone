@@ -1,6 +1,6 @@
 // File: /frontend/features/flashcards/components/FlashcardStudyViewer.tsx
-// Purpose: Displays generated Flashcards with question/answer
-// flipping and previous/next study navigation.
+// Purpose: Displays Flashcards with question/answer flipping,
+// navigation, and durable student self-assessment reviews.
 
 "use client";
 
@@ -24,8 +24,13 @@ import {
   useState,
 } from "react";
 
+import {
+  FlashcardApiError,
+  recordFlashcardReview,
+} from "@/features/flashcards/api";
 import type {
   FlashcardDeckResponse,
+  FlashcardReviewOutcome,
 } from "@/features/flashcards/types";
 
 import classes from "./FlashcardStudyViewer.module.css";
@@ -74,6 +79,31 @@ function FlashcardStudyViewerContent({
     false,
   );
 
+  const [
+    reviewSubmitting,
+    setReviewSubmitting,
+  ] = useState(
+    false,
+  );
+
+  const [
+    reviewError,
+    setReviewError,
+  ] = useState<
+    string | null
+  >(
+    null,
+  );
+
+  const [
+    reviewedPositions,
+    setReviewedPositions,
+  ] = useState<
+    Set<number>
+  >(
+    new Set<number>(),
+  );
+
   const totalCards =
     deck.cards.length;
 
@@ -112,10 +142,16 @@ function FlashcardStudyViewerContent({
     currentIndex ===
     totalCards - 1;
 
+  const currentCardReviewed =
+    reviewedPositions.has(
+      currentIndex,
+    );
+
   function showPreviousCard():
     void {
     if (
-      isFirstCard
+      isFirstCard ||
+      reviewSubmitting
     ) {
       return;
     }
@@ -129,12 +165,17 @@ function FlashcardStudyViewerContent({
     setShowingAnswer(
       false,
     );
+
+    setReviewError(
+      null,
+    );
   }
 
   function showNextCard():
     void {
     if (
-      isLastCard
+      isLastCard ||
+      reviewSubmitting
     ) {
       return;
     }
@@ -148,6 +189,10 @@ function FlashcardStudyViewerContent({
     setShowingAnswer(
       false,
     );
+
+    setReviewError(
+      null,
+    );
   }
 
   function toggleCardSide():
@@ -157,6 +202,80 @@ function FlashcardStudyViewerContent({
         current,
       ) => !current,
     );
+  }
+
+  async function submitReview(
+    outcome: FlashcardReviewOutcome,
+  ): Promise<void> {
+    if (
+      reviewSubmitting ||
+      currentCardReviewed ||
+      !showingAnswer
+    ) {
+      return;
+    }
+
+    setReviewSubmitting(
+      true,
+    );
+
+    setReviewError(
+      null,
+    );
+
+    try {
+      await recordFlashcardReview(
+        deck.id,
+        {
+          card_position:
+            currentIndex,
+          outcome,
+        },
+      );
+
+      setReviewedPositions(
+        (
+          current,
+        ) => {
+          const updated =
+            new Set(
+              current,
+            );
+
+          updated.add(
+            currentIndex,
+          );
+
+          return updated;
+        },
+      );
+
+      if (!isLastCard) {
+        setCurrentIndex(
+          (
+            index,
+          ) => index + 1,
+        );
+
+        setShowingAnswer(
+          false,
+        );
+      }
+    } catch (error) {
+      setReviewError(
+        error instanceof
+          FlashcardApiError
+          ? error.message
+          : (
+              "Your Flashcard review "
+              + "could not be saved."
+            ),
+      );
+    } finally {
+      setReviewSubmitting(
+        false,
+      );
+    }
   }
 
   if (
@@ -200,7 +319,8 @@ function FlashcardStudyViewerContent({
             >
               Study each question,
               reveal the answer, then
-              continue to the next card.
+              rate whether you know it
+              or need to review it again.
             </Text>
           </div>
 
@@ -276,6 +396,71 @@ function FlashcardStudyViewerContent({
           </span>
         </button>
 
+        {showingAnswer && (
+          <Stack gap="xs">
+            <Group
+              justify="center"
+              gap="md"
+            >
+              <Button
+                type="button"
+                variant="default"
+                disabled={
+                  currentCardReviewed
+                }
+                loading={
+                  reviewSubmitting
+                }
+                onClick={() => {
+                  void submitReview(
+                    "review_again",
+                  );
+                }}
+              >
+                Review Again
+              </Button>
+
+              <Button
+                type="button"
+                disabled={
+                  currentCardReviewed
+                }
+                loading={
+                  reviewSubmitting
+                }
+                onClick={() => {
+                  void submitReview(
+                    "known",
+                  );
+                }}
+              >
+                I Know This
+              </Button>
+            </Group>
+
+            {currentCardReviewed && (
+              <Text
+                size="sm"
+                c="dimmed"
+                ta="center"
+              >
+                Review saved.
+              </Text>
+            )}
+
+            {reviewError && (
+              <Text
+                size="sm"
+                c="red"
+                ta="center"
+                role="alert"
+              >
+                {reviewError}
+              </Text>
+            )}
+          </Stack>
+        )}
+
         <Group
           justify="space-between"
           gap="md"
@@ -290,7 +475,8 @@ function FlashcardStudyViewerContent({
               />
             }
             disabled={
-              isFirstCard
+              isFirstCard ||
+              reviewSubmitting
             }
             onClick={
               showPreviousCard
@@ -308,7 +494,8 @@ function FlashcardStudyViewerContent({
               />
             }
             disabled={
-              isLastCard
+              isLastCard ||
+              reviewSubmitting
             }
             onClick={
               showNextCard
