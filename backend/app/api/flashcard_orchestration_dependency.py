@@ -9,7 +9,9 @@ from typing import Annotated
 
 from fastapi import Depends
 
-from app.ai.providers import GeminiProvider
+from app.ai.provider_factory import (
+    create_generation_provider,
+)
 from app.api.flashcard_dependency import (
     get_flashcard_service,
 )
@@ -52,7 +54,7 @@ async def get_flashcard_orchestration_service(
 ]:
     """Build the complete Flashcard generation workflow."""
 
-    provider = GeminiProvider(
+    provider = create_generation_provider(
         settings=settings,
     )
 
