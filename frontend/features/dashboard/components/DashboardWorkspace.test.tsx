@@ -746,118 +746,131 @@ describe(
 
 
     it(
-      "links the main Dashboard actions to the existing feature routes",
-      async () => {
+    "links the main Dashboard actions to the existing feature routes",
+    async () => {
         renderDashboard();
 
         await screen.findByText(
-          "STS reflection paper",
+        "STS reflection paper",
         );
 
         expect(
-          screen.getByRole(
+        screen.getByRole(
             "link",
             {
-              name:
+            name:
+                "Edit profile",
+            },
+        ),
+        ).toHaveAttribute(
+        "href",
+        "/profile",
+        );
+
+        expect(
+        screen.getByRole(
+            "link",
+            {
+            name:
                 "View all tasks",
             },
-          ),
+        ),
         ).toHaveAttribute(
-          "href",
-          "/academic-tasks",
+        "href",
+        "/academic-tasks",
         );
 
         expect(
-          screen.getByRole(
+        screen.getByRole(
             "link",
             {
-              name:
+            name:
                 "Open study plan",
             },
-          ),
+        ),
         ).toHaveAttribute(
-          "href",
-          "/study-plan",
+        "href",
+        "/study-plan",
         );
 
         expect(
-          screen.getByRole(
+        screen.getByRole(
             "link",
             {
-              name:
+            name:
                 "View analytics",
             },
-          ),
+        ),
         ).toHaveAttribute(
-          "href",
-          "/analytics",
+        "href",
+        "/analytics",
         );
 
         expect(
-          screen.getByRole(
+        screen.getByRole(
             "link",
             {
-              name:
+            name:
                 "Manage subjects",
             },
-          ),
+        ),
         ).toHaveAttribute(
-          "href",
-          "/subjects",
+        "href",
+        "/subjects",
         );
 
         expect(
-          screen.getByRole(
+        screen.getByRole(
             "link",
             {
-              name:
+            name:
                 "Open Academic Tasks",
             },
-          ),
+        ),
         ).toHaveAttribute(
-          "href",
-          "/academic-tasks",
+        "href",
+        "/academic-tasks",
         );
 
         expect(
-          screen.getByRole(
+        screen.getByRole(
             "link",
             {
-              name:
+            name:
                 "Open Study Assistant",
             },
-          ),
+        ),
         ).toHaveAttribute(
-          "href",
-          "/study-assistant",
+        "href",
+        "/study-assistant",
         );
 
         expect(
-          screen.getByRole(
+        screen.getByRole(
             "link",
             {
-              name:
+            name:
                 "Open Flashcards",
             },
-          ),
+        ),
         ).toHaveAttribute(
-          "href",
-          "/flashcards",
+        "href",
+        "/flashcards",
         );
 
         expect(
-          screen.getByRole(
+        screen.getByRole(
             "link",
             {
-              name:
+            name:
                 "Open Quizzes",
             },
-          ),
+        ),
         ).toHaveAttribute(
-          "href",
-          "/quizzes",
+        "href",
+        "/quizzes",
         );
-      },
+    },
     );
   },
 );

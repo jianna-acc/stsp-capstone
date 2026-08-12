@@ -32,6 +32,7 @@ import {
   IconChecklist,
   IconMessageCircle,
   IconRefresh,
+  IconUserEdit,
 } from "@tabler/icons-react";
 
 import {
@@ -887,46 +888,68 @@ export function DashboardWorkspace({
         gap="lg"
       >
         <Paper
-          className={
+        className={
             styles.hero
-          }
-          p={{
+        }
+        p={{
             base: "md",
             sm: "lg",
-          }}
-          radius="lg"
-          withBorder
+        }}
+        radius="lg"
+        withBorder
         >
-          <Stack
+        <Group
+            align="flex-start"
+            justify="space-between"
+            wrap="wrap"
+        >
+            <Stack
             gap={3}
-          >
-            <Text
-              c="violet.7"
-              fw={700}
-              size="xs"
-              tt="uppercase"
             >
-              Student dashboard
+            <Text
+                c="violet.7"
+                fw={700}
+                size="xs"
+                tt="uppercase"
+            >
+                Student dashboard
             </Text>
 
             <Title
-              order={1}
+                order={1}
             >
-              Welcome back,{" "}
-              {displayName}
+                Welcome back,{" "}
+                {displayName}
             </Title>
 
             <Text
-              c="dimmed"
-              maw={680}
-              size="sm"
+                c="dimmed"
+                maw={680}
+                size="sm"
             >
-              Here&apos;s what
-              needs your attention
-              and what to study
-              next.
+                Here&apos;s what
+                needs your attention
+                and what to study
+                next.
             </Text>
-          </Stack>
+            </Stack>
+
+            <Button
+            component={
+                Link
+            }
+            href="/profile"
+            leftSection={
+                <IconUserEdit
+                size={16}
+                />
+            }
+            size="compact-sm"
+            variant="light"
+            >
+            Edit profile
+            </Button>
+        </Group>
         </Paper>
 
         <div
