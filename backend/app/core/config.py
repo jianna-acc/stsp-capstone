@@ -38,6 +38,8 @@ class Settings(BaseSettings):
     request_timeout_seconds: float = 30.0
     max_processing_file_bytes: int = 20 * 1024 * 1024
 
+    file_processing_worker_enabled: bool = True
+
     ai_provider: Literal["gemini"] = "gemini"
 
     gemini_api_key: str = ""
