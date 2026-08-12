@@ -40,7 +40,7 @@ export default function AuthLayout({
           gap="xl"
         >
           <Text className={classes.brandLabel}>
-            STS Capstone Project
+            Intelleap
           </Text>
 
           <Stack gap="md">

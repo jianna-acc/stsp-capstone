@@ -16,7 +16,7 @@ import { IconMailCheck } from "@tabler/icons-react";
 
 export const metadata: Metadata = {
   title:
-    "Check your email | STS Capstone Project",
+    "Check your email | Intelleap",
 };
 
 export default function CheckEmailPage() {

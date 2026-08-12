@@ -1011,7 +1011,7 @@ export function AcademicTasksWorkspace({
           >
             View your academic deadlines
             across the calendar while
-            STUDY AI keeps their
+            Intelleap keeps their
             deterministic priority scores
             synchronized with your
             workload, confidence,
@@ -1719,7 +1719,7 @@ export function AcademicTasksWorkspace({
 
             <Select
               label="Academic output type"
-              description="Choose the main skill needed to complete this task. This helps STUDY AI calculate task priority."
+              description="Choose the main skill needed to complete this task. This helps Intelleap calculate task priority."
               data={[
                 ...ACADEMIC_TASK_OUTPUT_TYPE_OPTIONS,
               ]}

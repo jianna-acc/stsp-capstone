@@ -31,7 +31,7 @@ import {
 
 export const metadata: Metadata = {
   title:
-    "Study Preferences | STS Capstone Project",
+    "Study Preferences | Intelleap",
   description:
     "Configure preferred study duration, study times, and learning methods.",
 };

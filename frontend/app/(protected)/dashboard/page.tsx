@@ -23,7 +23,7 @@ import {
 export const metadata:
   Metadata = {
     title:
-      "Dashboard | STS Capstone Project",
+      "Dashboard | Intelleap",
 
     description:
       "Authenticated student dashboard.",

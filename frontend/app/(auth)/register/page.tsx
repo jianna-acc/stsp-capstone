@@ -14,9 +14,9 @@ import { RegisterForm } from "@/features/auth/components/RegisterForm";
 
 export const metadata: Metadata = {
   title:
-    "Create account | STS Capstone Project",
+    "Create account | Intelleap",
   description:
-    "Create a student account for the STS Capstone Project.",
+    "Create a student account for the Intelleap platform.",
 };
 
 export default function RegisterPage() {

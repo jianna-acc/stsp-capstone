@@ -13,7 +13,7 @@ import {
 export const metadata:
   Metadata = {
     title:
-      "Analytics | STS Capstone",
+      "Analytics | Intelleap",
 
     description:
       "Track Quiz performance, Flashcard recall, and study topic strengths.",

@@ -204,7 +204,7 @@ export function ProtectedAppShell({
             </ThemeIcon>
 
             <Text fw={750}>
-              STS Capstone
+              Intelleap
             </Text>
           </Group>
 
@@ -258,7 +258,7 @@ export function ProtectedAppShell({
               <Title
                 order={4}
               >
-                STS Capstone
+                Intelleap
               </Title>
 
               <Text

@@ -677,7 +677,7 @@ export function ReviewerGenerationForm({
                     c="dimmed"
                     mt={3}
                   >
-                    STUDY AI is reading the
+                    Intelleap is reading the
                     selected material and
                     organizing the important
                     concepts.

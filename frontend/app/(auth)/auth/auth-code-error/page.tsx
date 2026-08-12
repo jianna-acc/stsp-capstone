@@ -19,7 +19,7 @@ import {
 
 export const metadata: Metadata = {
   title:
-    "Confirmation link error | STS Capstone Project",
+    "Confirmation link error | Intelleap",
   description:
     "Explains that an account-confirmation link could not be verified.",
 };

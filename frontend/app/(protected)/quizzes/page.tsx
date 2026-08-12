@@ -16,7 +16,7 @@ import {
 export const metadata:
 Metadata = {
   title:
-    "Quizzes | STS Capstone",
+    "Quizzes | Intelleap",
 
   description:
     "Generate AI practice quizzes from your uploaded study materials.",

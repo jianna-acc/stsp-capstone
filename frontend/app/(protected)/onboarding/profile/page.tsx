@@ -24,7 +24,7 @@ import {
 
 export const metadata: Metadata = {
   title:
-    "Student Profile | STS Capstone Project",
+    "Student Profile | Intelleap",
   description:
     "Complete the first step of your personalized learning profile.",
 };

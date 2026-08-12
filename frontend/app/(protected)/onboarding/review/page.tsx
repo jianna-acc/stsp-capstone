@@ -61,7 +61,7 @@ import {
 
 export const metadata: Metadata = {
   title:
-    "Review Learning Profile | STS Capstone Project",
+    "Review Learning Profile | Intelleap",
   description:
     "Review and complete the personalized learning-profile questionnaire.",
 };

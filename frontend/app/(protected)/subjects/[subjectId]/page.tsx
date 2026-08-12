@@ -21,7 +21,7 @@ import { getSubjects } from "@/features/subjects/queries";
 
 export const metadata: Metadata = {
   title:
-    "Subject Workspace | STS Capstone Project",
+    "Subject Workspace | Intelleap",
   description:
     "Upload and manage learning materials for an academic subject.",
 };

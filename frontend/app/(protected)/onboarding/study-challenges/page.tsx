@@ -17,7 +17,7 @@ import { getOnboardingSnapshot } from "@/features/learning-profile/server/querie
 
 export const metadata: Metadata = {
   title:
-    "Study Challenges | STS Capstone Project",
+    "Study Challenges | Intelleap",
   description:
     "Identify common study challenges and estimated task-completion time.",
 };

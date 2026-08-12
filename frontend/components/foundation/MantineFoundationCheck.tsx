@@ -168,7 +168,7 @@ export function MantineFoundationCheck() {
             <BackendHealthCheck />
 
             <Text size="sm" c="dimmed">
-              Temporary application name: STS Capstone Project
+              Temporary application name: Intelleap
             </Text>
           </Stack>
         </Card>

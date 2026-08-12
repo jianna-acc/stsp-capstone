@@ -16,7 +16,7 @@ import {
 export const metadata:
 Metadata = {
   title:
-    "Reviewers | STS Capstone",
+    "Reviewers | Intelleap",
 
   description:
     "Generate structured AI reviewers from your uploaded study materials.",

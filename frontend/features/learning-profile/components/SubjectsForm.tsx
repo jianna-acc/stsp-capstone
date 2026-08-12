@@ -495,7 +495,7 @@ export function SubjectsForm({
             completing each kind
             of academic work.
             These ratings will
-            help Study AI
+            help Intelleap
             prioritize tasks
             that may require
             more support.

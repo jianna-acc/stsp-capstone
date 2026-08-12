@@ -13,7 +13,7 @@ import {
 
 export const metadata: Metadata = {
   title:
-    "Academic Tasks | STS Capstone",
+    "Academic Tasks | Intelleap",
   description:
     "Manage academic deadlines, workload, and task priorities.",
 };

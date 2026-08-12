@@ -8,7 +8,7 @@ import { SubjectsManager } from "@/features/subjects/components/SubjectsManager"
 import { getSubjects } from "@/features/subjects/queries";
 
 export const metadata: Metadata = {
-  title: "Subjects | STS Capstone",
+  title: "Subjects | Intelleap",
   description:
     "Create and organize academic subjects and learning materials.",
 };

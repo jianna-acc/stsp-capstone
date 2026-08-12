@@ -25,7 +25,7 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "STS Capstone Project",
+  title: "Intelleap",
   description:
     "An AI-powered study management and learning support platform.",
 };

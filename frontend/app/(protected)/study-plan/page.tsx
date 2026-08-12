@@ -13,7 +13,7 @@ import {
 
 
 export const metadata: Metadata = {
-  title: "Study Plan | STS Capstone",
+  title: "Study Plan | Intelleap",
   description:
     "View study plans and scheduled study sessions in a weekly calendar.",
 };

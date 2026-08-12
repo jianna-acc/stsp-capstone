@@ -15,7 +15,7 @@ import { getOnboardingSnapshot } from "@/features/learning-profile/server/querie
 
 export const metadata: Metadata = {
   title:
-    "Study Availability | STS Capstone Project",
+    "Study Availability | Intelleap",
   description:
     "Set the weekly periods available for study sessions.",
 };

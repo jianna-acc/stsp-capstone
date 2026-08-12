@@ -16,7 +16,7 @@ import {
 export const metadata:
   Metadata = {
     title:
-      "Flashcards | STS Capstone",
+      "Flashcards | Intelleap",
 
     description:
       "Generate and study AI-powered Flashcards from your uploaded study materials.",

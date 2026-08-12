@@ -40,7 +40,7 @@ import {
 
 export const metadata: Metadata = {
   title:
-    "Student Profile | STS Capstone Project",
+    "Student Profile | Intelleap",
   description:
     "View and manage the authenticated student's learning profile.",
 };

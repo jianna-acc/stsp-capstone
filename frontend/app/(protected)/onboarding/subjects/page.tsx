@@ -15,7 +15,7 @@ import { getOnboardingSnapshot } from "@/features/learning-profile/server/querie
 
 export const metadata: Metadata = {
   title:
-    "Subjects and Confidence | STS Capstone Project",
+    "Subjects and Confidence | Intelleap",
   description:
     "Identify strong and weak subjects and assign confidence ratings.",
 };

@@ -15,7 +15,7 @@ import {
 
 export const metadata: Metadata = {
   title:
-    "Study Assistant | STS Capstone",
+    "Study Assistant | Intelleap",
 
   description:
     "Ask questions grounded in your uploaded study materials.",

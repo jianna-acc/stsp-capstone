@@ -23,9 +23,9 @@ import {
 
 export const metadata: Metadata = {
   title:
-    "Sign in | STS Capstone Project",
+    "Sign in | Intelleap",
   description:
-    "Sign in to the STS Capstone Project student platform.",
+    "Sign in to the Intelleap student platform.",
 };
 
 interface LoginPageProps {
