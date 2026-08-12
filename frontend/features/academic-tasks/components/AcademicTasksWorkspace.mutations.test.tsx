@@ -4,6 +4,7 @@
 
 import {
   createTheme,
+  Drawer,
   MantineProvider,
   Modal,
 } from "@mantine/core";
@@ -120,7 +121,17 @@ const testTheme =
       Modal: Modal.extend({
         defaultProps: {
           transitionProps: {
-            duration: 0,
+            duration:
+              0,
+          },
+        },
+      }),
+
+      Drawer: Drawer.extend({
+        defaultProps: {
+          transitionProps: {
+            duration:
+              0,
           },
         },
       }),
@@ -222,7 +233,9 @@ const PRIORITIZED_TASK:
 function renderWorkspace() {
   return render(
     <MantineProvider
-      theme={testTheme}
+      theme={
+        testTheme
+      }
       env="test"
     >
       <ModalsProvider>
@@ -244,6 +257,42 @@ async function waitForTask() {
   ).toBeInTheDocument();
 }
 
+async function openTaskDrawer():
+  Promise<HTMLElement> {
+  const taskButton =
+    await screen.findByRole(
+      "button",
+      {
+        name:
+          "View to-do task: STS reflection paper",
+      },
+    );
+
+  fireEvent.click(
+    taskButton,
+  );
+
+  const drawerTitle =
+    await screen.findByText(
+      "Academic task details",
+    );
+
+  const drawer =
+    drawerTitle.closest(
+      '[role="dialog"]',
+    );
+
+  if (
+    !drawer
+  ) {
+    throw new Error(
+      "Academic task details drawer was not found.",
+    );
+  }
+
+  return drawer as HTMLElement;
+}
+
 function getEditForm():
   HTMLFormElement {
   const titleInput =
@@ -256,7 +305,9 @@ function getEditForm():
       "form",
     );
 
-  if (!form) {
+  if (
+    !form
+  ) {
     throw new Error(
       "Edit academic task form was not found.",
     );
@@ -267,9 +318,15 @@ function getEditForm():
 
 async function chooseStatus(
   status: string,
-) {
+):
+  Promise<HTMLElement> {
+  const drawer =
+    await openTaskDrawer();
+
   const statusInput =
-    screen.getByLabelText(
+    within(
+      drawer,
+    ).getByLabelText(
       "Status for STS reflection paper",
     );
 
@@ -282,11 +339,18 @@ async function chooseStatus(
       },
     },
   );
+
+  return drawer;
 }
 
 async function confirmDelete() {
+  const drawer =
+    await openTaskDrawer();
+
   fireEvent.click(
-    screen.getByRole(
+    within(
+      drawer,
+    ).getByRole(
       "button",
       {
         name:
@@ -295,14 +359,27 @@ async function confirmDelete() {
     ),
   );
 
-  const dialog =
-    await screen.findByRole(
-      "dialog",
+  const confirmationTitle =
+    await screen.findByText(
+      "Delete academic task?",
     );
+
+  const confirmationDialog =
+    confirmationTitle.closest(
+      '[role="dialog"]',
+    ) as HTMLElement | null;
+
+  if (
+    !confirmationDialog
+  ) {
+    throw new Error(
+      "Delete confirmation dialog was not found.",
+    );
+  }
 
   expect(
     within(
-      dialog,
+      confirmationDialog,
     ).getByText(
       "Delete academic task?",
     ),
@@ -310,7 +387,7 @@ async function confirmDelete() {
 
   fireEvent.click(
     within(
-      dialog,
+      confirmationDialog,
     ).getByRole(
       "button",
       {
@@ -324,14 +401,16 @@ async function confirmDelete() {
 describe(
   "AcademicTasksWorkspace mutations",
   () => {
-    beforeEach(() => {
-      vi.clearAllMocks();
+    beforeEach(
+      () => {
+        vi.clearAllMocks();
 
-      mockedListPrioritizedAcademicTasks
-        .mockResolvedValue([
-          PRIORITIZED_TASK,
-        ]);
-    });
+        mockedListPrioritizedAcademicTasks
+          .mockResolvedValue([
+            PRIORITIZED_TASK,
+          ]);
+      },
+    );
 
     it(
       "opens an existing task for editing with its saved values",
@@ -340,8 +419,13 @@ describe(
 
         await waitForTask();
 
+        const drawer =
+          await openTaskDrawer();
+
         fireEvent.click(
-          screen.getByRole(
+          within(
+            drawer,
+          ).getByRole(
             "button",
             {
               name:
@@ -441,8 +525,13 @@ describe(
 
         await waitForTask();
 
+        const drawer =
+          await openTaskDrawer();
+
         fireEvent.click(
-          screen.getByRole(
+          within(
+            drawer,
+          ).getByRole(
             "button",
             {
               name:
@@ -520,13 +609,19 @@ describe(
         );
 
         expect(
-          await screen.findByText(
-            "Updated STS reflection paper",
-          ),
-        ).toBeInTheDocument();
+          (
+            await screen.findAllByText(
+              "Updated STS reflection paper",
+            )
+          ).length,
+        ).toBeGreaterThan(
+          0,
+        );
 
         expect(
-          screen.getByText(
+          within(
+            drawer,
+          ).getByText(
             "Priority 84.5/100",
           ),
         ).toBeInTheDocument();
@@ -594,9 +689,10 @@ describe(
 
         await waitForTask();
 
-        await chooseStatus(
-          "in_progress",
-        );
+        const drawer =
+          await chooseStatus(
+            "in_progress",
+          );
 
         await waitFor(
           () => {
@@ -623,7 +719,9 @@ describe(
         );
 
         expect(
-          screen.getByLabelText(
+          within(
+            drawer,
+          ).getByLabelText(
             "Status for STS reflection paper",
           ),
         ).toHaveValue(
@@ -631,7 +729,9 @@ describe(
         );
 
         expect(
-          screen.getByText(
+          within(
+            drawer,
+          ).getByText(
             "Priority 81.0/100",
           ),
         ).toBeInTheDocument();
@@ -667,9 +767,10 @@ describe(
 
         await waitForTask();
 
-        await chooseStatus(
-          "completed",
-        );
+        const drawer =
+          await chooseStatus(
+            "completed",
+          );
 
         await waitFor(
           () => {
@@ -688,7 +789,9 @@ describe(
         );
 
         expect(
-          screen.getByLabelText(
+          within(
+            drawer,
+          ).getByLabelText(
             "Status for STS reflection paper",
           ),
         ).toHaveValue(
@@ -814,10 +917,12 @@ describe(
         );
 
         expect(
-          screen.getByText(
+          screen.getAllByText(
             "STS reflection paper",
-          ),
-        ).toBeInTheDocument();
+          ).length,
+        ).toBeGreaterThan(
+          0,
+        );
 
         expect(
           mocks.notificationsShow,
