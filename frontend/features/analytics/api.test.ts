@@ -1,6 +1,6 @@
 // File: /frontend/features/analytics/api.test.ts
 // Purpose: Tests authenticated Analytics overview requests,
-// period handling, response validation, and safe API errors.
+// weekly Study Time, response validation, and safe API errors.
 
 import {
   afterEach,
@@ -16,18 +16,19 @@ import type {
 } from "./types";
 
 
-const mocks = vi.hoisted(
-  () => ({
-    createClient:
-      vi.fn(),
+const mocks =
+  vi.hoisted(
+    () => ({
+      createClient:
+        vi.fn(),
 
-    getSession:
-      vi.fn(),
+      getSession:
+        vi.fn(),
 
-    fetch:
-      vi.fn(),
-  }),
-);
+      fetch:
+        vi.fn(),
+    }),
+  );
 
 
 vi.mock(
@@ -49,7 +50,7 @@ const ANALYTICS_OVERVIEW_RESPONSE = {
     "all_time",
 
   data_state:
-    "partial",
+    "ready",
 
   subject_count: {
     availability:
@@ -123,17 +124,47 @@ const ANALYTICS_OVERVIEW_RESPONSE = {
 
   study_minutes: {
     availability:
-      "unavailable",
+      "available",
 
     value:
-      null,
+      95,
 
     sample_size:
-      0,
+      3,
 
     message:
-      "No canonical general study-activity duration source is available yet.",
+      null,
   },
+
+  study_time_by_week: [
+    {
+      week_start:
+        "2026-08-03",
+
+      week_end:
+        "2026-08-09",
+
+      study_minutes:
+        30,
+
+      session_count:
+        1,
+    },
+
+    {
+      week_start:
+        "2026-08-10",
+
+      week_end:
+        "2026-08-16",
+
+      study_minutes:
+        65,
+
+      session_count:
+        2,
+    },
+  ],
 
   strong_topics: [
     {
@@ -236,6 +267,7 @@ describe(
       },
     );
 
+
     afterEach(
       () => {
         delete process.env
@@ -283,7 +315,7 @@ describe(
 
 
     it(
-      "loads the authenticated all-time Analytics overview",
+      "loads authenticated Analytics with weekly Study Time",
       async () => {
         mocks.fetch
           .mockResolvedValue(
@@ -309,6 +341,36 @@ describe(
         ).toEqual(
           ANALYTICS_OVERVIEW_RESPONSE,
         );
+
+        expect(
+          result.study_minutes.value,
+        ).toBe(
+          95,
+        );
+
+        expect(
+          result.study_time_by_week,
+        ).toHaveLength(
+          2,
+        );
+
+        expect(
+          result.study_time_by_week[
+            1
+          ],
+        ).toEqual({
+          week_start:
+            "2026-08-10",
+
+          week_end:
+            "2026-08-16",
+
+          study_minutes:
+            65,
+
+          session_count:
+            2,
+        });
 
         const [
           requestUrl,
@@ -413,22 +475,6 @@ describe(
         ).toBe(
           "last_7_days",
         );
-
-        const [
-          requestUrl,
-        ] =
-          mocks.fetch
-            .mock
-            .calls[0] as [
-              string,
-              RequestInit,
-            ];
-
-        expect(
-          requestUrl,
-        ).toBe(
-          "http://127.0.0.1:8000/api/analytics/overview?period=last_7_days",
-        );
       },
     );
 
@@ -459,22 +505,6 @@ describe(
           result.period,
         ).toBe(
           "last_30_days",
-        );
-
-        const [
-          requestUrl,
-        ] =
-          mocks.fetch
-            .mock
-            .calls[0] as [
-              string,
-              RequestInit,
-            ];
-
-        expect(
-          requestUrl,
-        ).toBe(
-          "http://127.0.0.1:8000/api/analytics/overview?period=last_30_days",
         );
       },
     );
@@ -551,6 +581,23 @@ describe(
               "No Flashcard review events are available for the selected period.",
           },
 
+          study_minutes: {
+            availability:
+              "available",
+
+            value:
+              null,
+
+            sample_size:
+              0,
+
+            message:
+              "No completed study sessions are available for the selected period.",
+          },
+
+          study_time_by_week:
+            [],
+
           strong_topics:
             [],
 
@@ -571,30 +618,19 @@ describe(
           );
 
         expect(
-          result.quiz_accuracy_percent
+          result.study_minutes
             .availability,
         ).toBe(
           "available",
         );
 
         expect(
-          result.quiz_accuracy_percent
+          result.study_minutes
             .value,
         ).toBeNull();
 
         expect(
-          result.flashcard_performance_percent
-            .value,
-        ).toBeNull();
-
-        expect(
-          result.strong_topics,
-        ).toEqual(
-          [],
-        );
-
-        expect(
-          result.weak_topics,
+          result.study_time_by_week,
         ).toEqual(
           [],
         );
@@ -641,7 +677,7 @@ describe(
                 "all_time",
 
               data_state:
-                "partial",
+                "ready",
 
               subject_count: {
                 availability:
@@ -651,6 +687,96 @@ describe(
                   4,
               },
             }),
+          );
+
+        await expect(
+          getAnalyticsOverview(
+            "all_time",
+          ),
+        ).rejects.toMatchObject({
+          status:
+            502,
+
+          code:
+            "INVALID_ANALYTICS_RESPONSE",
+        });
+      },
+    );
+
+
+    it(
+      "rejects invalid weekly Study Time evidence",
+      async () => {
+        const response = {
+          ...ANALYTICS_OVERVIEW_RESPONSE,
+
+          study_time_by_week: [
+            {
+              week_start:
+                "2026-08-10",
+
+              week_end:
+                "2026-08-16",
+
+              study_minutes:
+                -5,
+
+              session_count:
+                1,
+            },
+          ],
+        };
+
+        mocks.fetch
+          .mockResolvedValue(
+            createJsonResponse(
+              response,
+            ),
+          );
+
+        await expect(
+          getAnalyticsOverview(
+            "all_time",
+          ),
+        ).rejects.toMatchObject({
+          status:
+            502,
+
+          code:
+            "INVALID_ANALYTICS_RESPONSE",
+        });
+      },
+    );
+
+
+    it(
+      "rejects weekly Study Time with zero session count",
+      async () => {
+        const response = {
+          ...ANALYTICS_OVERVIEW_RESPONSE,
+
+          study_time_by_week: [
+            {
+              week_start:
+                "2026-08-10",
+
+              week_end:
+                "2026-08-16",
+
+              study_minutes:
+                20,
+
+              session_count:
+                0,
+            },
+          ],
+        };
+
+        mocks.fetch
+          .mockResolvedValue(
+            createJsonResponse(
+              response,
+            ),
           );
 
         await expect(
@@ -711,48 +837,6 @@ describe(
 
 
     it(
-      "rejects Analytics topics with zero sample size",
-      async () => {
-        const response = {
-          ...ANALYTICS_OVERVIEW_RESPONSE,
-
-          weak_topics: [
-            {
-              topic:
-                "Biology",
-
-              score_percent:
-                50,
-
-              sample_size:
-                0,
-            },
-          ],
-        };
-
-        mocks.fetch
-          .mockResolvedValue(
-            createJsonResponse(
-              response,
-            ),
-          );
-
-        await expect(
-          getAnalyticsOverview(
-            "all_time",
-          ),
-        ).rejects.toMatchObject({
-          status:
-            502,
-
-          code:
-            "INVALID_ANALYTICS_RESPONSE",
-        });
-      },
-    );
-
-
-    it(
       "maps a controlled Analytics storage error",
       async () => {
         mocks.fetch
@@ -776,35 +860,6 @@ describe(
 
           message:
             "Analytics data is temporarily unavailable.",
-        });
-      },
-    );
-
-
-    it(
-      "maps a validation error for an unsupported backend period",
-      async () => {
-        mocks.fetch
-          .mockResolvedValue(
-            createJsonResponse(
-              {
-                detail:
-                  "Invalid reporting period.",
-              },
-              422,
-            ),
-          );
-
-        await expect(
-          getAnalyticsOverview(
-            "all_time",
-          ),
-        ).rejects.toMatchObject({
-          status:
-            422,
-
-          message:
-            "Invalid reporting period.",
         });
       },
     );

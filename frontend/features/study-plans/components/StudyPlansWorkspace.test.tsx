@@ -1,6 +1,6 @@
 // File: /frontend/features/study-plans/components/StudyPlansWorkspace.test.tsx
-// Purpose: Tests Track D study-plan loading, session calendar
-// rendering, and saved-plan switching.
+// Purpose: Tests Study Plan loading, generation, schedule switching,
+// and the scheduled-session Study Timer integration.
 
 import {
   MantineProvider,
@@ -37,11 +37,11 @@ const apiMocks =
       deleteStudySession:
         vi.fn(),
       generateStudyPlan:
-      vi.fn(),
+        vi.fn(),
       regenerateStudyPlan:
-      vi.fn(),
+        vi.fn(),
       listStudyPlans:
-      vi.fn(),
+        vi.fn(),
       listStudySessions:
         vi.fn(),
     }),
@@ -53,6 +53,7 @@ vi.mock(
   () =>
     apiMocks,
 );
+
 
 const academicTaskApiMocks =
   vi.hoisted(
@@ -69,6 +70,52 @@ vi.mock(
     academicTaskApiMocks,
 );
 
+
+const studyTimerMocks =
+  vi.hoisted(
+    () => ({
+      activity:
+        null as
+          | {
+              study_plan_id:
+                string;
+
+              study_session_id:
+                string;
+            }
+          | null,
+
+      pendingAction:
+        null as
+          | string
+          | null,
+
+      startFromStudySession:
+        vi.fn(),
+    }),
+  );
+
+
+vi.mock(
+  "@/features/study-timer/components/StudyTimerProvider",
+  () => ({
+    useStudyTimer: () => ({
+      activity:
+        studyTimerMocks
+          .activity,
+
+      pendingAction:
+        studyTimerMocks
+          .pendingAction,
+
+      startFromStudySession:
+        studyTimerMocks
+          .startFromStudySession,
+    }),
+  }),
+);
+
+
 import {
   StudyPlansWorkspace,
 } from "./StudyPlansWorkspace";
@@ -76,18 +123,24 @@ import {
 
 const SUBJECTS = [
   {
-    id: "biology-subject",
-    name: "Biology",
-    color: "green",
+    id:
+      "biology-subject",
+    name:
+      "Biology",
+    color:
+      "green",
     created_at:
       "2026-08-01T08:00:00Z",
     updated_at:
       "2026-08-01T08:00:00Z",
   },
   {
-    id: "history-subject",
-    name: "History",
-    color: "orange",
+    id:
+      "history-subject",
+    name:
+      "History",
+    color:
+      "orange",
     created_at:
       "2026-08-01T08:00:00Z",
     updated_at:
@@ -98,25 +151,38 @@ const SUBJECTS = [
 
 const PLANS = [
   {
-    id: "finals-plan",
-    title: "Finals Plan",
-    starts_on: "2026-08-10",
-    ends_on: "2026-08-16",
-    status: "active",
-    generation_mode: "manual",
-    generated_at: null,
+    id:
+      "finals-plan",
+    title:
+      "Finals Plan",
+    starts_on:
+      "2026-08-10",
+    ends_on:
+      "2026-08-16",
+    status:
+      "active",
+    generation_mode:
+      "manual",
+    generated_at:
+      null,
     created_at:
       "2026-08-10T08:00:00Z",
     updated_at:
       "2026-08-10T08:00:00Z",
   },
   {
-    id: "research-plan",
-    title: "Research Plan",
-    starts_on: "2026-08-17",
-    ends_on: "2026-08-23",
-    status: "active",
-    generation_mode: "generated",
+    id:
+      "research-plan",
+    title:
+      "Research Plan",
+    starts_on:
+      "2026-08-17",
+    ends_on:
+      "2026-08-23",
+    status:
+      "active",
+    generation_mode:
+      "generated",
     generated_at:
       "2026-08-10T08:00:00Z",
     created_at:
@@ -129,7 +195,8 @@ const PLANS = [
 
 const FINALS_SESSIONS = [
   {
-    id: "biology-session",
+    id:
+      "biology-session",
     study_plan_id:
       "finals-plan",
     subject_id:
@@ -140,9 +207,12 @@ const FINALS_SESSIONS = [
       "2026-08-10T18:00:00+08:00",
     ends_at:
       "2026-08-10T19:00:00+08:00",
-    status: "planned",
-    origin: "manual",
-    notes: null,
+    status:
+      "planned",
+    origin:
+      "manual",
+    notes:
+      null,
     created_at:
       "2026-08-10T08:00:00Z",
     updated_at:
@@ -153,7 +223,8 @@ const FINALS_SESSIONS = [
 
 const RESEARCH_SESSIONS = [
   {
-    id: "history-session",
+    id:
+      "history-session",
     study_plan_id:
       "research-plan",
     subject_id:
@@ -164,15 +235,19 @@ const RESEARCH_SESSIONS = [
       "2026-08-17T19:00:00+08:00",
     ends_at:
       "2026-08-17T20:00:00+08:00",
-    status: "planned",
-    origin: "generated",
-    notes: null,
+    status:
+      "planned",
+    origin:
+      "generated",
+    notes:
+      null,
     created_at:
       "2026-08-10T08:00:00Z",
     updated_at:
       "2026-08-10T08:00:00Z",
   },
 ] as const;
+
 
 const PRIORITIZED_TASKS = [
   {
@@ -326,6 +401,7 @@ const GENERATED_RESULT = {
     [],
 } as const;
 
+
 const REGENERATED_RESULT = {
   plan: {
     ...PLANS[1],
@@ -366,6 +442,7 @@ const REGENERATED_RESULT = {
     [],
 } as const;
 
+
 function renderWorkspace() {
   return render(
     <MantineProvider>
@@ -384,6 +461,19 @@ describe(
   () => {
     beforeEach(
       () => {
+        studyTimerMocks.activity =
+          null;
+
+        studyTimerMocks.pendingAction =
+          null;
+
+        studyTimerMocks
+          .startFromStudySession
+          .mockReset()
+          .mockResolvedValue(
+            undefined,
+          );
+
         apiMocks
           .listStudyPlans
           .mockReset()
@@ -413,21 +503,38 @@ describe(
               );
             },
           );
-          apiMocks
-            .generateStudyPlan
-            .mockReset();
 
-            academicTaskApiMocks
-            .listPrioritizedAcademicTasks
-            .mockReset()
-            .mockResolvedValue(
-                PRIORITIZED_TASKS,
-            );
-            apiMocks
-                .regenerateStudyPlan
-                .mockReset();
-                    },
+        apiMocks
+          .generateStudyPlan
+          .mockReset();
+
+        apiMocks
+          .regenerateStudyPlan
+          .mockReset();
+
+        apiMocks
+          .deleteStudyPlan
+          .mockReset()
+          .mockResolvedValue(
+            undefined,
+          );
+
+        apiMocks
+          .deleteStudySession
+          .mockReset()
+          .mockResolvedValue(
+            undefined,
+          );
+
+        academicTaskApiMocks
+          .listPrioritizedAcademicTasks
+          .mockReset()
+          .mockResolvedValue(
+            PRIORITIZED_TASKS,
+          );
+      },
     );
+
 
     it(
       "loads saved plans and displays the selected plan sessions",
@@ -441,13 +548,15 @@ describe(
         ).toBeInTheDocument();
 
         expect(
-            await screen.findByRole(
-                "heading",
-                {
-                name: "Finals Plan",
-                level: 2,
-                },
-            ),
+          await screen.findByRole(
+            "heading",
+            {
+              name:
+                "Finals Plan",
+              level:
+                2,
+            },
+          ),
         ).toBeInTheDocument();
 
         expect(
@@ -480,6 +589,155 @@ describe(
               ),
           },
         );
+      },
+    );
+
+
+    it(
+      "starts the study timer from a scheduled session",
+      async () => {
+        const user =
+          userEvent.setup();
+
+        renderWorkspace();
+
+        expect(
+          await screen.findByText(
+            "Review Chapter 4",
+          ),
+        ).toBeInTheDocument();
+
+        const studyButton =
+          screen.getByRole(
+            "button",
+            {
+              name:
+                /^study$/i,
+            },
+          );
+
+        expect(
+          studyButton,
+        ).toBeEnabled();
+
+        await user.click(
+          studyButton,
+        );
+
+        await waitFor(
+          () => {
+            expect(
+              studyTimerMocks
+                .startFromStudySession,
+            ).toHaveBeenCalledTimes(
+              1,
+            );
+
+            expect(
+              studyTimerMocks
+                .startFromStudySession,
+            ).toHaveBeenCalledWith(
+              "biology-session",
+            );
+          },
+        );
+      },
+    );
+
+
+    it(
+      "marks the active session and prevents another session from starting",
+      async () => {
+        const user =
+          userEvent.setup();
+
+        studyTimerMocks.activity = {
+          study_plan_id:
+            "finals-plan",
+
+          study_session_id:
+            "biology-session",
+        };
+
+        renderWorkspace();
+
+        expect(
+          await screen.findByText(
+            "Review Chapter 4",
+          ),
+        ).toBeInTheDocument();
+
+        expect(
+          screen.getByText(
+            "Active",
+          ),
+        ).toBeInTheDocument();
+
+        expect(
+          screen.getByText(
+            "Timer running",
+          ),
+        ).toBeInTheDocument();
+
+        const activeDeleteButton =
+          screen.getByRole(
+            "button",
+            {
+              name:
+                "Delete Review Chapter 4",
+            },
+          );
+
+        expect(
+          activeDeleteButton,
+        ).toBeDisabled();
+
+        expect(
+          screen.queryByRole(
+            "button",
+            {
+              name:
+                /^study$/i,
+            },
+          ),
+        ).not.toBeInTheDocument();
+
+        const researchPlan =
+          screen.getByRole(
+            "button",
+            {
+              name:
+                /Research Plan/i,
+            },
+          );
+
+        await user.click(
+          researchPlan,
+        );
+
+        expect(
+          await screen.findByText(
+            "Draft research outline",
+          ),
+        ).toBeInTheDocument();
+
+        const otherStudyButton =
+          screen.getByRole(
+            "button",
+            {
+              name:
+                /^study$/i,
+            },
+          );
+
+        expect(
+          otherStudyButton,
+        ).toBeDisabled();
+
+        expect(
+          studyTimerMocks
+            .startFromStudySession,
+        ).not.toHaveBeenCalled();
       },
     );
 
@@ -561,392 +819,397 @@ describe(
         ).not.toHaveBeenCalled();
       },
     );
+
+
     it(
-        "generates a study plan from prioritized academic tasks",
-        async () => {
-            const user =
-            userEvent.setup();
+      "generates a study plan from prioritized academic tasks",
+      async () => {
+        const user =
+          userEvent.setup();
 
-            apiMocks
-            .generateStudyPlan
-            .mockResolvedValue(
-                GENERATED_RESULT,
-            );
+        apiMocks
+          .generateStudyPlan
+          .mockResolvedValue(
+            GENERATED_RESULT,
+          );
 
-            apiMocks
-            .listStudySessions
-            .mockImplementation(
-                (
-                planId:
-                    string,
-                ) => {
-                if (
-                    planId ===
-                    GENERATED_RESULT
-                    .plan.id
-                ) {
-                    return Promise.resolve(
-                    GENERATED_RESULT
-                        .sessions,
-                    );
-                }
-
-                if (
-                    planId ===
-                    "research-plan"
-                ) {
-                    return Promise.resolve(
-                    RESEARCH_SESSIONS,
-                    );
-                }
-
+        apiMocks
+          .listStudySessions
+          .mockImplementation(
+            (
+              planId:
+                string,
+            ) => {
+              if (
+                planId ===
+                GENERATED_RESULT
+                  .plan
+                  .id
+              ) {
                 return Promise.resolve(
-                    FINALS_SESSIONS,
+                  GENERATED_RESULT
+                    .sessions,
                 );
-                },
-            );
+              }
 
-            renderWorkspace();
-
-            await screen.findByRole(
-            "heading",
-            {
-                name:
-                "Finals Plan",
-                level:
-                2,
-            },
-            );
-
-            await user.click(
-            screen.getByRole(
-                "button",
-                {
-                name:
-                    /generate plan/i,
-                },
-            ),
-            );
-
-            await waitFor(
-            () => {
-                expect(
-                academicTaskApiMocks
-                    .listPrioritizedAcademicTasks,
-                ).toHaveBeenCalledWith({
-                limit:
-                    100,
-                });
-            },
-            );
-
-            const dialog =
-                await screen.findByRole(
-                    "dialog",
+              if (
+                planId ===
+                "research-plan"
+              ) {
+                return Promise.resolve(
+                  RESEARCH_SESSIONS,
                 );
+              }
 
-                expect(
-                within(
-                    dialog,
-                ).getByText(
-                    "Generate study plan",
-                ),
-                ).toBeInTheDocument();
-
-            await user.type(
-            within(
-                dialog,
-            ).getByLabelText(
-                /plan title/i,
-            ),
-            "Generated Finals Plan",
-            );
-
-            await user.type(
-            within(
-                dialog,
-            ).getByLabelText(
-                /start date/i,
-            ),
-            "2026-08-10",
-            );
-
-            await user.type(
-            within(
-                dialog,
-            ).getByLabelText(
-                /end date/i,
-            ),
-            "2026-08-20",
-            );
-
-            await user.click(
-            within(
-                dialog,
-            ).getByRole(
-                "button",
-                {
-                name:
-                    /generate plan/i,
-                },
-            ),
-            );
-
-            await waitFor(
-            () => {
-                expect(
-                apiMocks
-                    .generateStudyPlan,
-                ).toHaveBeenCalledWith({
-                title:
-                    "Generated Finals Plan",
-                starts_on:
-                    "2026-08-10",
-                ends_on:
-                    "2026-08-20",
-                tasks: [
-                    {
-                    task_id:
-                        "55555555-5555-4555-8555-555555555555",
-                    subject_id:
-                        "biology-subject",
-                    title:
-                        "Study for Biology exam",
-                    deadline:
-                        "2026-08-20T18:00:00+08:00",
-                    estimated_minutes:
-                        180,
-                    priority_weight:
-                        5,
-                    },
-                ],
-                });
+              return Promise.resolve(
+                FINALS_SESSIONS,
+              );
             },
-            );
+          );
 
-            expect(
-            await within(
-                dialog,
-            ).findByText(
-                /1 study session was generated/i,
-            ),
-            ).toBeInTheDocument();
+        renderWorkspace();
 
-            await user.click(
-            within(
-                dialog,
-            ).getByRole(
-                "button",
-                {
-                name:
-                    /done/i,
-                },
-            ),
-            );
-
-            expect(
-            await screen.findByRole(
-                "heading",
-                {
-                name:
-                    "Generated Finals Plan",
-                level:
-                    2,
-                },
-            ),
-            ).toBeInTheDocument();
-
-            expect(
-            await screen.findByText(
-                "Study for Biology exam",
-            ),
-            ).toBeInTheDocument();
-        },
-        );
-it(
-  "regenerates an existing generated plan from latest academic tasks",
-  async () => {
-    const user =
-      userEvent.setup();
-
-    apiMocks
-      .regenerateStudyPlan
-      .mockResolvedValue(
-        REGENERATED_RESULT,
-      );
-
-    renderWorkspace();
-
-    await screen.findByRole(
-      "heading",
-      {
-        name:
-          "Finals Plan",
-        level:
-          2,
-      },
-    );
-
-    expect(
-      screen.queryByRole(
-        "button",
-        {
-          name:
-            /^regenerate$/i,
-        },
-      ),
-    ).not.toBeInTheDocument();
-
-    const researchPlan =
-      screen.getByRole(
-        "button",
-        {
-          name:
-            /Research Plan/i,
-        },
-      );
-
-    await user.click(
-      researchPlan,
-    );
-
-    expect(
-      await screen.findByText(
-        "Draft research outline",
-      ),
-    ).toBeInTheDocument();
-
-    const regenerateButton =
-      screen.getByRole(
-        "button",
-        {
-          name:
-            /^regenerate$/i,
-        },
-      );
-
-    await user.click(
-      regenerateButton,
-    );
-
-    await waitFor(
-      () => {
-        expect(
-          academicTaskApiMocks
-            .listPrioritizedAcademicTasks,
-        ).toHaveBeenCalledWith({
-          limit:
-            100,
-        });
-      },
-    );
-
-    const dialog =
-      await screen.findByRole(
-        "dialog",
-      );
-
-    expect(
-      within(
-        dialog,
-      ).getByText(
-        "Regenerate study plan",
-      ),
-    ).toBeInTheDocument();
-
-    expect(
-      within(
-        dialog,
-      ).getByText(
-        /1 eligible task is currently available/i,
-      ),
-    ).toBeInTheDocument();
-
-    await user.click(
-      within(
-        dialog,
-      ).getByRole(
-        "button",
-        {
-          name:
-            /regenerate plan/i,
-        },
-      ),
-    );
-
-    await waitFor(
-      () => {
-        expect(
-          apiMocks
-            .regenerateStudyPlan,
-        ).toHaveBeenCalledWith(
-          "research-plan",
+        await screen.findByRole(
+          "heading",
           {
-            tasks: [
-              {
-                task_id:
-                  "55555555-5555-4555-8555-555555555555",
-                subject_id:
-                  "biology-subject",
-                title:
-                  "Study for Biology exam",
-                deadline:
-                  "2026-08-20T18:00:00+08:00",
-                estimated_minutes:
-                  180,
-                priority_weight:
-                  5,
-              },
-            ],
+            name:
+              "Finals Plan",
+            level:
+              2,
           },
         );
+
+        await user.click(
+          screen.getByRole(
+            "button",
+            {
+              name:
+                /generate plan/i,
+            },
+          ),
+        );
+
+        await waitFor(
+          () => {
+            expect(
+              academicTaskApiMocks
+                .listPrioritizedAcademicTasks,
+            ).toHaveBeenCalledWith({
+              limit:
+                100,
+            });
+          },
+        );
+
+        const dialog =
+          await screen.findByRole(
+            "dialog",
+          );
+
+        expect(
+          within(
+            dialog,
+          ).getByText(
+            "Generate study plan",
+          ),
+        ).toBeInTheDocument();
+
+        await user.type(
+          within(
+            dialog,
+          ).getByLabelText(
+            /plan title/i,
+          ),
+          "Generated Finals Plan",
+        );
+
+        await user.type(
+          within(
+            dialog,
+          ).getByLabelText(
+            /start date/i,
+          ),
+          "2026-08-10",
+        );
+
+        await user.type(
+          within(
+            dialog,
+          ).getByLabelText(
+            /end date/i,
+          ),
+          "2026-08-20",
+        );
+
+        await user.click(
+          within(
+            dialog,
+          ).getByRole(
+            "button",
+            {
+              name:
+                /generate plan/i,
+            },
+          ),
+        );
+
+        await waitFor(
+          () => {
+            expect(
+              apiMocks
+                .generateStudyPlan,
+            ).toHaveBeenCalledWith({
+              title:
+                "Generated Finals Plan",
+              starts_on:
+                "2026-08-10",
+              ends_on:
+                "2026-08-20",
+              tasks: [
+                {
+                  task_id:
+                    "55555555-5555-4555-8555-555555555555",
+                  subject_id:
+                    "biology-subject",
+                  title:
+                    "Study for Biology exam",
+                  deadline:
+                    "2026-08-20T18:00:00+08:00",
+                  estimated_minutes:
+                    180,
+                  priority_weight:
+                    5,
+                },
+              ],
+            });
+          },
+        );
+
+        expect(
+          await within(
+            dialog,
+          ).findByText(
+            /1 study session was generated/i,
+          ),
+        ).toBeInTheDocument();
+
+        await user.click(
+          within(
+            dialog,
+          ).getByRole(
+            "button",
+            {
+              name:
+                /done/i,
+            },
+          ),
+        );
+
+        expect(
+          await screen.findByRole(
+            "heading",
+            {
+              name:
+                "Generated Finals Plan",
+              level:
+                2,
+            },
+          ),
+        ).toBeInTheDocument();
+
+        expect(
+          await screen.findByText(
+            "Study for Biology exam",
+          ),
+        ).toBeInTheDocument();
       },
     );
 
-    expect(
-      await within(
-        dialog,
-      ).findByText(
-        /study plan regenerated/i,
-      ),
-    ).toBeInTheDocument();
 
-    await user.click(
-      within(
-        dialog,
-      ).getByRole(
-        "button",
-        {
-          name:
-            /done/i,
-        },
-      ),
+    it(
+      "regenerates an existing generated plan from latest academic tasks",
+      async () => {
+        const user =
+          userEvent.setup();
+
+        apiMocks
+          .regenerateStudyPlan
+          .mockResolvedValue(
+            REGENERATED_RESULT,
+          );
+
+        renderWorkspace();
+
+        await screen.findByRole(
+          "heading",
+          {
+            name:
+              "Finals Plan",
+            level:
+              2,
+          },
+        );
+
+        expect(
+          screen.queryByRole(
+            "button",
+            {
+              name:
+                /^regenerate$/i,
+            },
+          ),
+        ).not.toBeInTheDocument();
+
+        const researchPlan =
+          screen.getByRole(
+            "button",
+            {
+              name:
+                /Research Plan/i,
+            },
+          );
+
+        await user.click(
+          researchPlan,
+        );
+
+        expect(
+          await screen.findByText(
+            "Draft research outline",
+          ),
+        ).toBeInTheDocument();
+
+        const regenerateButton =
+          screen.getByRole(
+            "button",
+            {
+              name:
+                /^regenerate$/i,
+            },
+          );
+
+        await user.click(
+          regenerateButton,
+        );
+
+        await waitFor(
+          () => {
+            expect(
+              academicTaskApiMocks
+                .listPrioritizedAcademicTasks,
+            ).toHaveBeenCalledWith({
+              limit:
+                100,
+            });
+          },
+        );
+
+        const dialog =
+          await screen.findByRole(
+            "dialog",
+          );
+
+        expect(
+          within(
+            dialog,
+          ).getByText(
+            "Regenerate study plan",
+          ),
+        ).toBeInTheDocument();
+
+        expect(
+          within(
+            dialog,
+          ).getByText(
+            /1 eligible task is currently available/i,
+          ),
+        ).toBeInTheDocument();
+
+        await user.click(
+          within(
+            dialog,
+          ).getByRole(
+            "button",
+            {
+              name:
+                /regenerate plan/i,
+            },
+          ),
+        );
+
+        await waitFor(
+          () => {
+            expect(
+              apiMocks
+                .regenerateStudyPlan,
+            ).toHaveBeenCalledWith(
+              "research-plan",
+              {
+                tasks: [
+                  {
+                    task_id:
+                      "55555555-5555-4555-8555-555555555555",
+                    subject_id:
+                      "biology-subject",
+                    title:
+                      "Study for Biology exam",
+                    deadline:
+                      "2026-08-20T18:00:00+08:00",
+                    estimated_minutes:
+                      180,
+                    priority_weight:
+                      5,
+                  },
+                ],
+              },
+            );
+          },
+        );
+
+        expect(
+          await within(
+            dialog,
+          ).findByText(
+            /study plan regenerated/i,
+          ),
+        ).toBeInTheDocument();
+
+        await user.click(
+          within(
+            dialog,
+          ).getByRole(
+            "button",
+            {
+              name:
+                /done/i,
+            },
+          ),
+        );
+
+        expect(
+          await screen.findByRole(
+            "heading",
+            {
+              name:
+                "Research Plan",
+              level:
+                2,
+            },
+          ),
+        ).toBeInTheDocument();
+
+        expect(
+          await screen.findByText(
+            "Study for Biology exam",
+          ),
+        ).toBeInTheDocument();
+
+        expect(
+          screen.queryByText(
+            "Draft research outline",
+          ),
+        ).not.toBeInTheDocument();
+      },
     );
-
-    expect(
-      await screen.findByRole(
-        "heading",
-        {
-          name:
-            "Research Plan",
-          level:
-            2,
-        },
-      ),
-    ).toBeInTheDocument();
-
-    expect(
-      await screen.findByText(
-        "Study for Biology exam",
-      ),
-    ).toBeInTheDocument();
-
-    expect(
-      screen.queryByText(
-        "Draft research outline",
-      ),
-    ).not.toBeInTheDocument();
-  },
-);
   },
 );

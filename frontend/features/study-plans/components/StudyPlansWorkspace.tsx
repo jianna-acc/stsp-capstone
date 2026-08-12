@@ -19,6 +19,7 @@ import {
   Text,
   ThemeIcon,
   Title,
+  Tooltip,
   UnstyledButton,
 } from "@mantine/core";
 import {
@@ -28,6 +29,7 @@ import {
   IconChevronLeft,
   IconChevronRight,
   IconClock,
+  IconPlayerPlay,
   IconPlus,
   IconRefresh,
   IconSparkles,
@@ -43,7 +45,9 @@ import {
 import {
   listPrioritizedAcademicTasks,
 } from "@/features/academic-tasks/api";
-
+import {
+  useStudyTimer,
+} from "@/features/study-timer/components/StudyTimerProvider";
 import type {
   SubjectSummary,
 } from "@/features/subjects/types";
@@ -51,7 +55,6 @@ import type {
 import {
   academicTasksToSchedulableTasks,
 } from "../academic-task-adapter";
-
 import {
   deleteStudyPlan,
   deleteStudySession,
@@ -66,22 +69,24 @@ import type {
 } from "../types";
 
 import {
-  GenerateStudyPlanModal,
-} from "./GenerateStudyPlanModal";
-
-import classes from "./StudyPlansWorkspace.module.css";
-import {
   CreateStudyPlanModal,
 } from "./CreateStudyPlanModal";
 import {
   CreateStudySessionModal,
 } from "./CreateStudySessionModal";
 import {
+  GenerateStudyPlanModal,
+} from "./GenerateStudyPlanModal";
+import {
   RegenerateStudyPlanModal,
 } from "./RegenerateStudyPlanModal";
 
+import classes from "./StudyPlansWorkspace.module.css";
+
+
 interface StudyPlansWorkspaceProps {
-  initialSubjects: SubjectSummary[];
+  initialSubjects:
+    SubjectSummary[];
 }
 
 
@@ -95,7 +100,9 @@ function startOfMonday(
   value: Date,
 ): Date {
   const result =
-    new Date(value);
+    new Date(
+      value,
+    );
 
   result.setHours(
     0,
@@ -104,12 +111,10 @@ function startOfMonday(
     0,
   );
 
-  const weekday =
-    result.getDay();
-
   const daysSinceMonday =
     (
-      weekday + 6
+      result.getDay() +
+      6
     ) % 7;
 
   result.setDate(
@@ -126,10 +131,13 @@ function addDays(
   amount: number,
 ): Date {
   const result =
-    new Date(value);
+    new Date(
+      value,
+    );
 
   result.setDate(
-    result.getDate() + amount,
+    result.getDate() +
+      amount,
   );
 
   return result;
@@ -148,29 +156,21 @@ function parseDateOnly(
 function localDateKey(
   value: Date,
 ): string {
-  const year =
-    value.getFullYear();
-
-  const month =
+  return [
+    value.getFullYear(),
     String(
-      value.getMonth() + 1,
+      value.getMonth() +
+        1,
     ).padStart(
       2,
       "0",
-    );
-
-  const day =
+    ),
     String(
       value.getDate(),
     ).padStart(
       2,
       "0",
-    );
-
-  return [
-    year,
-    month,
-    day,
+    ),
   ].join("-");
 }
 
@@ -180,7 +180,8 @@ function getErrorMessage(
   fallback: string,
 ): string {
   if (
-    error instanceof Error &&
+    error instanceof
+      Error &&
     error.message.trim()
   ) {
     return error.message;
@@ -194,8 +195,10 @@ function isAbortError(
   error: unknown,
 ): boolean {
   return (
-    error instanceof DOMException &&
-    error.name === "AbortError"
+    error instanceof
+      DOMException &&
+    error.name ===
+      "AbortError"
   );
 }
 
@@ -207,9 +210,12 @@ function formatPlanRange(
     new Intl.DateTimeFormat(
       undefined,
       {
-        month: "short",
-        day: "numeric",
-        year: "numeric",
+        month:
+          "short",
+        day:
+          "numeric",
+        year:
+          "numeric",
       },
     );
 
@@ -235,8 +241,10 @@ function formatTime(
   return new Intl.DateTimeFormat(
     undefined,
     {
-      hour: "numeric",
-      minute: "2-digit",
+      hour:
+        "numeric",
+      minute:
+        "2-digit",
     },
   ).format(
     new Date(
@@ -248,7 +256,16 @@ function formatTime(
 
 export function StudyPlansWorkspace({
   initialSubjects,
-}: StudyPlansWorkspaceProps) {
+}: Readonly<StudyPlansWorkspaceProps>) {
+  const {
+    activity:
+      activeStudyActivity,
+    pendingAction:
+      studyTimerPendingAction,
+    startFromStudySession,
+  } =
+    useStudyTimer();
+
   const [
     plans,
     setPlans,
@@ -308,92 +325,113 @@ export function StudyPlansWorkspace({
       ),
   );
 
-const [
-  createPlanOpened,
-  setCreatePlanOpened,
-] = useState(false);
+  const [
+    createPlanOpened,
+    setCreatePlanOpened,
+  ] = useState(
+    false,
+  );
 
-const [
-  createSessionOpened,
-  setCreateSessionOpened,
-] = useState(false);
+  const [
+    createSessionOpened,
+    setCreateSessionOpened,
+  ] = useState(
+    false,
+  );
 
-const [
-  deletePlanOpened,
-  setDeletePlanOpened,
-] = useState(false);
+  const [
+    deletePlanOpened,
+    setDeletePlanOpened,
+  ] = useState(
+    false,
+  );
 
-const [
-  sessionToDelete,
-  setSessionToDelete,
-] = useState<
-  StudySession | null
->(null);
+  const [
+    sessionToDelete,
+    setSessionToDelete,
+  ] = useState<
+    StudySession | null
+  >(null);
 
-const [
-  actionError,
-  setActionError,
-] = useState<
-  string | null
->(null);
+  const [
+    actionError,
+    setActionError,
+  ] = useState<
+    string | null
+  >(null);
 
-const [
-  deletingPlan,
-  setDeletingPlan,
-] = useState(false);
+  const [
+    deletingPlan,
+    setDeletingPlan,
+  ] = useState(
+    false,
+  );
 
-const [
-  deletingSession,
-  setDeletingSession,
-] = useState(false);
+  const [
+    deletingSession,
+    setDeletingSession,
+  ] = useState(
+    false,
+  );
 
-const [
-  generatePlanOpened,
-  setGeneratePlanOpened,
-] = useState(false);
+  const [
+    generatePlanOpened,
+    setGeneratePlanOpened,
+  ] = useState(
+    false,
+  );
 
-const [
-  regeneratePlanOpened,
-  setRegeneratePlanOpened,
-] = useState(false);
+  const [
+    regeneratePlanOpened,
+    setRegeneratePlanOpened,
+  ] = useState(
+    false,
+  );
 
-const [
-  regenerationTasks,
-  setRegenerationTasks,
-] = useState<
-  SchedulableTask[]
->([]);
+  const [
+    regenerationTasks,
+    setRegenerationTasks,
+  ] = useState<
+    SchedulableTask[]
+  >([]);
 
-const [
-  regenerationTasksLoading,
-  setRegenerationTasksLoading,
-] = useState(false);
+  const [
+    regenerationTasksLoading,
+    setRegenerationTasksLoading,
+  ] = useState(
+    false,
+  );
 
-const [
-  generationTasks,
-  setGenerationTasks,
-] = useState<
-  SchedulableTask[]
->([]);
+  const [
+    generationTasks,
+    setGenerationTasks,
+  ] = useState<
+    SchedulableTask[]
+  >([]);
 
-const [
-  generationTasksLoading,
-  setGenerationTasksLoading,
-] = useState(false);
+  const [
+    generationTasksLoading,
+    setGenerationTasksLoading,
+  ] = useState(
+    false,
+  );
 
-const [
-  generationTasksError,
-  setGenerationTasksError,
-] = useState<
-  string | null
->(null);
+  const [
+    generationTasksError,
+    setGenerationTasksError,
+  ] = useState<
+    string | null
+  >(null);
+
 
   const subjectNames =
     useMemo(
       () =>
         new Map(
           initialSubjects.map(
-            (subject) => [
+            (
+              subject,
+            ) => [
               subject.id,
               subject.name,
             ],
@@ -409,10 +447,13 @@ const [
     useMemo(
       () =>
         plans.find(
-          (plan) =>
+          (
+            plan,
+          ) =>
             plan.id ===
             selectedPlanId,
-        ) ?? null,
+        ) ??
+        null,
       [
         plans,
         selectedPlanId,
@@ -420,12 +461,23 @@ const [
     );
 
 
+  const selectedPlanHasActiveTimer =
+    activeStudyActivity !==
+      null &&
+    selectedPlan !==
+      null &&
+    activeStudyActivity
+      .study_plan_id ===
+      selectedPlan.id;
+
+
   const weekDays =
     useMemo(
       () =>
         Array.from(
           {
-            length: 7,
+            length:
+              7,
           },
           (
             _,
@@ -451,47 +503,50 @@ const [
             StudySession[]
           >();
 
-        sessions.forEach(
-          (session) => {
-            const key =
-              localDateKey(
-                new Date(
-                  session.starts_at,
-                ),
-              );
-
-            const current =
-              result.get(
-                key,
-              ) ?? [];
-
-            current.push(
-              session,
+        for (
+          const session
+          of sessions
+        ) {
+          const key =
+            localDateKey(
+              new Date(
+                session.starts_at,
+              ),
             );
 
-            result.set(
+          const current =
+            result.get(
               key,
-              current,
-            );
-          },
-        );
+            ) ??
+            [];
 
-        result.forEach(
-          (items) => {
-            items.sort(
-              (
-                first,
-                second,
-              ) =>
-                new Date(
-                  first.starts_at,
-                ).getTime() -
-                new Date(
-                  second.starts_at,
-                ).getTime(),
-            );
-          },
-        );
+          current.push(
+            session,
+          );
+
+          result.set(
+            key,
+            current,
+          );
+        }
+
+        for (
+          const items
+          of result.values()
+        ) {
+          items.sort(
+            (
+              first,
+              second,
+            ) =>
+              new Date(
+                first.starts_at,
+              ).getTime() -
+              new Date(
+                second.starts_at,
+              ).getTime(),
+          );
+        }
 
         return result;
       },
@@ -504,7 +559,8 @@ const [
   const loadPlans =
     useCallback(
       async (
-        signal?: AbortSignal,
+        signal?:
+          AbortSignal,
       ) => {
         setPlansStatus(
           "loading",
@@ -534,7 +590,9 @@ const [
               if (
                 currentPlanId &&
                 loadedPlans.some(
-                  (plan) =>
+                  (
+                    plan,
+                  ) =>
                     plan.id ===
                     currentPlanId,
                 )
@@ -560,6 +618,10 @@ const [
                     .starts_on,
                 ),
               ),
+            );
+          } else {
+            setSessions(
+              [],
             );
           }
 
@@ -596,8 +658,10 @@ const [
   const loadSessions =
     useCallback(
       async (
-        studyPlanId: string,
-        signal?: AbortSignal,
+        studyPlanId:
+          string,
+        signal?:
+          AbortSignal,
       ) => {
         setSessionsStatus(
           "loading",
@@ -656,193 +720,253 @@ const [
 
 
   useEffect(
-  () => {
-    const controller =
-      new AbortController();
+    () => {
+      const controller =
+        new AbortController();
 
-    async function loadInitialPlans() {
-      try {
-        const loadedPlans =
-          await listStudyPlans(
-            50,
-            {
-              signal:
-                controller.signal,
+      async function loadInitialPlans():
+        Promise<void> {
+        try {
+          const loadedPlans =
+            await listStudyPlans(
+              50,
+              {
+                signal:
+                  controller.signal,
+              },
+            );
+
+          if (
+            controller
+              .signal
+              .aborted
+          ) {
+            return;
+          }
+
+          setPlans(
+            loadedPlans,
+          );
+
+          setPlansError(
+            null,
+          );
+
+          setSelectedPlanId(
+            (
+              currentPlanId,
+            ) => {
+              if (
+                currentPlanId &&
+                loadedPlans.some(
+                  (
+                    plan,
+                  ) =>
+                    plan.id ===
+                    currentPlanId,
+                )
+              ) {
+                return currentPlanId;
+              }
+
+              return (
+                loadedPlans[0]
+                  ?.id ??
+                null
+              );
             },
           );
 
-        setPlans(
-          loadedPlans,
-        );
-
-        setSelectedPlanId(
-          (
-            currentPlanId,
-          ) => {
-            if (
-              currentPlanId &&
-              loadedPlans.some(
-                (plan) =>
-                  plan.id ===
-                  currentPlanId,
-              )
-            ) {
-              return currentPlanId;
-            }
-
-            return (
-              loadedPlans[0]
-                ?.id ??
-              null
-            );
-          },
-        );
-
-        if (
-          loadedPlans[0]
-        ) {
-          setWeekAnchor(
-            startOfMonday(
-              parseDateOnly(
-                loadedPlans[0]
-                  .starts_on,
+          if (
+            loadedPlans[0]
+          ) {
+            setWeekAnchor(
+              startOfMonday(
+                parseDateOnly(
+                  loadedPlans[0]
+                    .starts_on,
+                ),
               ),
+            );
+
+            setSessionsStatus(
+              "loading",
+            );
+          } else {
+            setSessions(
+              [],
+            );
+
+            setSessionsStatus(
+              "ready",
+            );
+          }
+
+          setPlansStatus(
+            "ready",
+          );
+        } catch (
+          error
+        ) {
+          if (
+            controller
+              .signal
+              .aborted ||
+            isAbortError(
+              error,
+            )
+          ) {
+            return;
+          }
+
+          setPlansStatus(
+            "error",
+          );
+
+          setPlansError(
+            getErrorMessage(
+              error,
+              "Your study plans could not be loaded.",
             ),
           );
-
-          setSessionsStatus(
-            "loading",
-          );
         }
-
-        setPlansStatus(
-          "ready",
-        );
-      } catch (
-        error
-      ) {
-        if (
-          isAbortError(
-            error,
-          )
-        ) {
-          return;
-        }
-
-        setPlansStatus(
-          "error",
-        );
-
-        setPlansError(
-          getErrorMessage(
-            error,
-            "Your study plans could not be loaded.",
-          ),
-        );
       }
-    }
 
-    void loadInitialPlans();
+      void loadInitialPlans();
 
-    return () => {
-      controller.abort();
-    };
-  },
-  [],
-);
-
+      return () => {
+        controller.abort();
+      };
+    },
+    [],
+  );
 
 
   useEffect(
     () => {
-        if (
+      if (
         !selectedPlanId
-        ) {
+      ) {
         return;
-        }
+      }
 
-        const studyPlanId =
-            selectedPlanId;
+      const studyPlanId =
+        selectedPlanId;
 
-        const controller =
+      const controller =
         new AbortController();
 
-        async function loadSelectedPlanSessions() {
-        try {
-            const loadedSessions =
-                await listStudySessions(
-                    studyPlanId,
-                    200,
-                    {
-                    signal:
-                        controller.signal,
-                    },
-                );
+      async function loadSelectedPlanSessions():
+        Promise<void> {
+        await Promise.resolve();
 
-            setSessions(
-            loadedSessions,
-            );
-
-            setSessionsStatus(
-            "ready",
-            );
-        } catch (
-            error
+        if (
+          controller
+            .signal
+            .aborted
         ) {
-            if (
-            isAbortError(
-                error,
-            )
-            ) {
+          return;
+        }
+
+        setSessionsStatus(
+          "loading",
+        );
+
+        setSessionsError(
+          null,
+        );
+
+        try {
+          const loadedSessions =
+            await listStudySessions(
+              studyPlanId,
+              200,
+              {
+                signal:
+                  controller.signal,
+              },
+            );
+
+          if (
+            controller
+              .signal
+              .aborted
+          ) {
             return;
-            }
+          }
 
-            setSessions(
+          setSessions(
+            loadedSessions,
+          );
+
+          setSessionsStatus(
+            "ready",
+          );
+        } catch (
+          error
+        ) {
+          if (
+            controller
+              .signal
+              .aborted ||
+            isAbortError(
+              error,
+            )
+          ) {
+            return;
+          }
+
+          setSessions(
             [],
-            );
+          );
 
-            setSessionsStatus(
+          setSessionsStatus(
             "error",
-            );
+          );
 
-            setSessionsError(
+          setSessionsError(
             getErrorMessage(
-                error,
-                "Scheduled study sessions could not be loaded.",
+              error,
+              "Scheduled study sessions could not be loaded.",
             ),
-            );
+          );
         }
-        }
+      }
 
-        void loadSelectedPlanSessions();
+      void loadSelectedPlanSessions();
 
-        return () => {
+      return () => {
         controller.abort();
-        };
+      };
     },
     [
-        selectedPlanId,
+      selectedPlanId,
     ],
-    );
+  );
 
 
   function selectPlan(
-    plan: StudyPlan,
-    ) {
+    plan:
+      StudyPlan,
+  ): void {
+    setActionError(
+      null,
+    );
+
     setSessionsStatus(
-        "loading",
+      "loading",
     );
 
     setSessionsError(
-        null,
+      null,
     );
 
     setSessions(
-        [],
+      [],
     );
 
     setSelectedPlanId(
-        plan.id,
+      plan.id,
     );
 
     setWeekAnchor(
@@ -854,378 +978,473 @@ const [
     );
   }
 
+
   function handlePlanCreated(
-  plan: StudyPlan,
-) {
-  setPlans(
-    (
-      currentPlans,
-    ) => [
-      plan,
-      ...currentPlans,
-    ],
-  );
-
-  setSelectedPlanId(
-    plan.id,
-  );
-
-  setSessions(
-    [],
-  );
-
-  setSessionsStatus(
-    "ready",
-  );
-
-  setActionError(
-    null,
-  );
-
-  setWeekAnchor(
-    startOfMonday(
-      parseDateOnly(
-        plan.starts_on,
-      ),
-    ),
-  );
-}
-
-
-function handleSessionCreated(
-  session: StudySession,
-) {
-  setSessions(
-    (
-      currentSessions,
-    ) => [
-      ...currentSessions,
-      session,
-    ],
-  );
-
-  setActionError(
-    null,
-  );
-
-  setWeekAnchor(
-    startOfMonday(
-      new Date(
-        session.starts_at,
-      ),
-    ),
-  );
-}
-
-
-async function handleDeletePlan() {
-  if (
-    !selectedPlan
-  ) {
-    return;
-  }
-
-  setDeletingPlan(
-    true,
-  );
-
-  setActionError(
-    null,
-  );
-
-  try {
-    await deleteStudyPlan(
-      selectedPlan.id,
-    );
-
-    setDeletePlanOpened(
-      false,
+    plan:
+      StudyPlan,
+  ): void {
+    setPlans(
+      (
+        currentPlans,
+      ) => [
+        plan,
+        ...currentPlans,
+      ],
     );
 
     setSelectedPlanId(
-      null,
+      plan.id,
     );
 
     setSessions(
       [],
     );
 
-    await loadPlans();
-  } catch (
-    error
-  ) {
+    setSessionsStatus(
+      "ready",
+    );
+
     setActionError(
-      getErrorMessage(
-        error,
-        "The study plan could not be deleted.",
+      null,
+    );
+
+    setWeekAnchor(
+      startOfMonday(
+        parseDateOnly(
+          plan.starts_on,
+        ),
       ),
     );
-  } finally {
-    setDeletingPlan(
-      false,
-    );
-  }
-}
-
-
-async function handleDeleteSession() {
-  if (
-    !selectedPlan ||
-    !sessionToDelete
-  ) {
-    return;
   }
 
-  const sessionId =
-    sessionToDelete.id;
 
-  setDeletingSession(
-    true,
-  );
-
-  setActionError(
-    null,
-  );
-
-  try {
-    await deleteStudySession(
-      selectedPlan.id,
-      sessionId,
-    );
-
+  function handleSessionCreated(
+    session:
+      StudySession,
+  ): void {
     setSessions(
       (
         currentSessions,
+      ) => [
+        ...currentSessions,
+        session,
+      ],
+    );
+
+    setActionError(
+      null,
+    );
+
+    setWeekAnchor(
+      startOfMonday(
+        new Date(
+          session.starts_at,
+        ),
+      ),
+    );
+  }
+
+
+  async function handleDeletePlan():
+    Promise<void> {
+    if (
+      !selectedPlan
+    ) {
+      return;
+    }
+
+    if (
+      selectedPlanHasActiveTimer
+    ) {
+      setActionError(
+        "Finish the active study timer before deleting this plan.",
+      );
+
+      setDeletePlanOpened(
+        false,
+      );
+
+      return;
+    }
+
+    setDeletingPlan(
+      true,
+    );
+
+    setActionError(
+      null,
+    );
+
+    try {
+      await deleteStudyPlan(
+        selectedPlan.id,
+      );
+
+      setDeletePlanOpened(
+        false,
+      );
+
+      setSelectedPlanId(
+        null,
+      );
+
+      setSessions(
+        [],
+      );
+
+      await loadPlans();
+    } catch (
+      error
+    ) {
+      setActionError(
+        getErrorMessage(
+          error,
+          "The study plan could not be deleted.",
+        ),
+      );
+    } finally {
+      setDeletingPlan(
+        false,
+      );
+    }
+  }
+
+
+  async function handleDeleteSession():
+    Promise<void> {
+    if (
+      !selectedPlan ||
+      !sessionToDelete
+    ) {
+      return;
+    }
+
+    if (
+      activeStudyActivity
+        ?.study_session_id ===
+      sessionToDelete.id
+    ) {
+      setActionError(
+        "Finish this study timer before deleting its scheduled session.",
+      );
+
+      setSessionToDelete(
+        null,
+      );
+
+      return;
+    }
+
+    const sessionId =
+      sessionToDelete.id;
+
+    setDeletingSession(
+      true,
+    );
+
+    setActionError(
+      null,
+    );
+
+    try {
+      await deleteStudySession(
+        selectedPlan.id,
+        sessionId,
+      );
+
+      setSessions(
+        (
+          currentSessions,
+        ) =>
+          currentSessions.filter(
+            (
+              session,
+            ) =>
+              session.id !==
+              sessionId,
+          ),
+      );
+
+      setSessionToDelete(
+        null,
+      );
+    } catch (
+      error
+    ) {
+      setActionError(
+        getErrorMessage(
+          error,
+          "The study session could not be deleted.",
+        ),
+      );
+    } finally {
+      setDeletingSession(
+        false,
+      );
+    }
+  }
+
+
+  async function handleStartStudying(
+    session:
+      StudySession,
+  ): Promise<void> {
+    setActionError(
+      null,
+    );
+
+    if (
+      activeStudyActivity !==
+      null
+    ) {
+      setActionError(
+        "Finish the current study timer before starting another session.",
+      );
+
+      return;
+    }
+
+    try {
+      await startFromStudySession(
+        session.id,
+      );
+    } catch (
+      error
+    ) {
+      setActionError(
+        getErrorMessage(
+          error,
+          "The study timer could not be started.",
+        ),
+      );
+    }
+  }
+
+
+  async function handleOpenGeneratePlan():
+    Promise<void> {
+    setGenerationTasksLoading(
+      true,
+    );
+
+    setGenerationTasksError(
+      null,
+    );
+
+    try {
+      const prioritizedTasks =
+        await listPrioritizedAcademicTasks({
+          limit:
+            100,
+        });
+
+      setGenerationTasks(
+        academicTasksToSchedulableTasks(
+          prioritizedTasks,
+        ),
+      );
+
+      setGeneratePlanOpened(
+        true,
+      );
+    } catch (
+      error
+    ) {
+      setGenerationTasksError(
+        getErrorMessage(
+          error,
+          "Your academic tasks could not be loaded for study-plan generation.",
+        ),
+      );
+    } finally {
+      setGenerationTasksLoading(
+        false,
+      );
+    }
+  }
+
+
+  async function handleOpenRegeneratePlan():
+    Promise<void> {
+    if (
+      !selectedPlan ||
+      selectedPlan.generation_mode !==
+        "generated"
+    ) {
+      setActionError(
+        "Only generated study plans can be regenerated.",
+      );
+
+      return;
+    }
+
+    if (
+      selectedPlanHasActiveTimer
+    ) {
+      setActionError(
+        "Finish the active study timer before regenerating this plan.",
+      );
+
+      return;
+    }
+
+    setRegenerationTasksLoading(
+      true,
+    );
+
+    setActionError(
+      null,
+    );
+
+    try {
+      const prioritizedTasks =
+        await listPrioritizedAcademicTasks({
+          limit:
+            100,
+        });
+
+      setRegenerationTasks(
+        academicTasksToSchedulableTasks(
+          prioritizedTasks,
+        ),
+      );
+
+      setRegeneratePlanOpened(
+        true,
+      );
+    } catch (
+      error
+    ) {
+      setActionError(
+        getErrorMessage(
+          error,
+          "Academic tasks could not be loaded for regeneration.",
+        ),
+      );
+    } finally {
+      setRegenerationTasksLoading(
+        false,
+      );
+    }
+  }
+
+
+  function handleGeneratedPlan(
+    result:
+      StudyPlanGenerationResponse,
+  ): void {
+    setPlans(
+      (
+        currentPlans,
+      ) => [
+        result.plan,
+        ...currentPlans.filter(
+          (
+            plan,
+          ) =>
+            plan.id !==
+            result.plan.id,
+        ),
+      ],
+    );
+
+    setSelectedPlanId(
+      result.plan.id,
+    );
+
+    setSessions(
+      result.sessions,
+    );
+
+    setSessionsStatus(
+      "ready",
+    );
+
+    setSessionsError(
+      null,
+    );
+
+    setActionError(
+      null,
+    );
+
+    setWeekAnchor(
+      startOfMonday(
+        parseDateOnly(
+          result.plan.starts_on,
+        ),
+      ),
+    );
+  }
+
+
+  function handleRegeneratedPlan(
+    result:
+      StudyPlanGenerationResponse,
+  ): void {
+    setPlans(
+      (
+        currentPlans,
       ) =>
-        currentSessions.filter(
-          (session) =>
-            session.id !==
-            sessionId,
+        currentPlans.map(
+          (
+            plan,
+          ) =>
+            plan.id ===
+            result.plan.id
+              ? result.plan
+              : plan,
         ),
     );
 
-    setSessionToDelete(
+    setSelectedPlanId(
+      result.plan.id,
+    );
+
+    setSessions(
+      result.sessions,
+    );
+
+    setSessionsStatus(
+      "ready",
+    );
+
+    setSessionsError(
       null,
     );
-  } catch (
-    error
-  ) {
+
     setActionError(
-      getErrorMessage(
-        error,
-        "The study session could not be deleted.",
-      ),
-    );
-  } finally {
-    setDeletingSession(
-      false,
+      null,
     );
   }
-}
 
-async function handleOpenGeneratePlan() {
-  setGenerationTasksLoading(
-    true,
-  );
 
-  setGenerationTasksError(
-    null,
-  );
-
-  try {
-    const prioritizedTasks =
-      await listPrioritizedAcademicTasks({
-        limit:
-          100,
-      });
-
-    const schedulableTasks =
-      academicTasksToSchedulableTasks(
-        prioritizedTasks,
-      );
+  function handleCloseGeneratePlan():
+    void {
+    setGeneratePlanOpened(
+      false,
+    );
 
     setGenerationTasks(
-      schedulableTasks,
+      [],
     );
+  }
 
-    setGeneratePlanOpened(
-      true,
-    );
-  } catch (
-    error
-  ) {
-    setGenerationTasksError(
-      getErrorMessage(
-        error,
-        "Your academic tasks could not be loaded for study-plan generation.",
-      ),
-    );
-  } finally {
-    setGenerationTasksLoading(
+
+  function handleCloseRegeneratePlan():
+    void {
+    setRegeneratePlanOpened(
       false,
     );
-  }
-}
-
-async function handleOpenRegeneratePlan():
-  Promise<void> {
-  if (
-    !selectedPlan ||
-    selectedPlan.generation_mode !==
-      "generated"
-  ) {
-    setActionError(
-      "Only generated study plans can be regenerated.",
-    );
-    return;
-  }
-
-  setRegenerationTasksLoading(
-    true,
-  );
-
-  setActionError(
-    null,
-  );
-
-  try {
-    const prioritizedTasks =
-      await listPrioritizedAcademicTasks({
-        limit: 100,
-      });
-
-    const schedulableTasks =
-      academicTasksToSchedulableTasks(
-        prioritizedTasks,
-      );
 
     setRegenerationTasks(
-      schedulableTasks,
-    );
-
-    setRegeneratePlanOpened(
-      true,
-    );
-  } catch (error) {
-    setActionError(
-      getErrorMessage(
-        error,
-        "Academic tasks could not be loaded for regeneration.",
-      ),
-    );
-  } finally {
-    setRegenerationTasksLoading(
-      false,
+      [],
     );
   }
-}
 
-function handleGeneratedPlan(
-  result:
-    StudyPlanGenerationResponse,
-) {
-  setPlans(
-    (
-      currentPlans,
-    ) => [
-      result.plan,
-      ...currentPlans.filter(
-        (plan) =>
-          plan.id !==
-          result.plan.id,
-      ),
-    ],
-  );
 
-  setSelectedPlanId(
-    result.plan.id,
-  );
-
-  setSessions(
-    result.sessions,
-  );
-
-  setSessionsStatus(
-    "ready",
-  );
-
-  setSessionsError(
-    null,
-  );
-
-  setActionError(
-    null,
-  );
-
-  setWeekAnchor(
-    startOfMonday(
-      parseDateOnly(
-        result.plan.starts_on,
-      ),
-    ),
-  );
-}
-
-function handleRegeneratedPlan(
-  result:
-    StudyPlanGenerationResponse,
-): void {
-  setPlans(
-    (
-      currentPlans,
-    ) =>
-      currentPlans.map(
-        (plan) =>
-          plan.id ===
-          result.plan.id
-            ? result.plan
-            : plan,
-      ),
-  );
-
-  setSelectedPlanId(
-    result.plan.id,
-  );
-
-  setSessions(
-    result.sessions,
-  );
-
-  setSessionsStatus(
-    "ready",
-  );
-
-  setSessionsError(
-    null,
-  );
-
-  setActionError(
-    null,
-  );
-}
-
-function handleCloseGeneratePlan() {
-  setGeneratePlanOpened(
-    false,
-  );
-
-  setGenerationTasks(
-    [],
-  );
-}
-
-function handleCloseRegeneratePlan():
-  void {
-  setRegeneratePlanOpened(
-    false,
-  );
-
-  setRegenerationTasks(
-    [],
-  );
-}
-
-  function goToPreviousWeek() {
+  function goToPreviousWeek():
+    void {
     setWeekAnchor(
       (
         current,
@@ -1238,7 +1457,8 @@ function handleCloseRegeneratePlan():
   }
 
 
-  function goToNextWeek() {
+  function goToNextWeek():
+    void {
     setWeekAnchor(
       (
         current,
@@ -1251,7 +1471,8 @@ function handleCloseRegeneratePlan():
   }
 
 
-  function goToCurrentWeek() {
+  function goToCurrentWeek():
+    void {
     setWeekAnchor(
       startOfMonday(
         new Date(),
@@ -1259,6 +1480,246 @@ function handleCloseRegeneratePlan():
     );
   }
 
+
+  function renderSessionCard(
+    session:
+      StudySession,
+  ) {
+    const isActiveStudySession =
+      activeStudyActivity
+        ?.study_session_id ===
+      session.id;
+
+    const anotherTimerIsActive =
+      activeStudyActivity !==
+        null &&
+      !isActiveStudySession;
+
+    const timerIsUpdating =
+      studyTimerPendingAction !==
+      null;
+
+    const studyTooltip =
+      anotherTimerIsActive
+        ? (
+            "Finish the current study timer before "
+            + "starting another session."
+          )
+        : timerIsUpdating
+          ? (
+              "Wait for the current timer action "
+              + "to finish."
+            )
+          : (
+              "Start a focus timer for this "
+              + "scheduled session."
+            );
+
+    const deleteTooltip =
+      isActiveStudySession
+        ? (
+            "Finish this study timer before "
+            + "deleting its scheduled session."
+          )
+        : (
+            "Remove this scheduled session "
+            + "from the study plan."
+          );
+
+    return (
+      <Card
+        key={
+          session.id
+        }
+        withBorder
+        radius="md"
+        padding="sm"
+        className={[
+          classes.sessionCard,
+          isActiveStudySession
+            ? classes.sessionCardActive
+            : "",
+        ].join(
+          " ",
+        )}
+      >
+        <Text
+          fw={700}
+          size="sm"
+          className={
+            classes.sessionTitle
+          }
+        >
+          {
+            session.title
+          }
+        </Text>
+
+        <Text
+          size="xs"
+          c="dimmed"
+          mt={3}
+        >
+          {subjectNames.get(
+            session.subject_id,
+          ) ??
+            "Subject"}
+        </Text>
+
+        <Group
+          gap={5}
+          mt="sm"
+          wrap="nowrap"
+          className={
+            classes.sessionTime
+          }
+        >
+          <IconClock
+            size={13}
+          />
+
+          <Text size="xs">
+            {formatTime(
+              session.starts_at,
+            )}
+            {" – "}
+            {formatTime(
+              session.ends_at,
+            )}
+          </Text>
+        </Group>
+
+        <Group
+          justify="space-between"
+          align="center"
+          gap="xs"
+          mt="sm"
+          wrap="nowrap"
+        >
+          <Badge
+            size="xs"
+            variant="light"
+            color={
+              session.origin ===
+              "generated"
+                ? "violet"
+                : "blue"
+            }
+          >
+            {
+              session.origin
+            }
+          </Badge>
+
+          <Group
+            gap={4}
+            wrap="nowrap"
+          >
+            {isActiveStudySession ? (
+              <Tooltip
+                label="This scheduled session is currently being timed."
+                withArrow
+                openDelay={400}
+              >
+                <Badge
+                  size="xs"
+                  variant="light"
+                  color="violet"
+                >
+                  Active
+                </Badge>
+              </Tooltip>
+            ) : (
+              <Tooltip
+                label={
+                  studyTooltip
+                }
+                withArrow
+                openDelay={400}
+              >
+                <span
+                  className={
+                    classes.studyActionTarget
+                  }
+                >
+                  <Button
+                    size="xs"
+                    variant="light"
+                    leftSection={
+                      <IconPlayerPlay
+                        size={13}
+                      />
+                    }
+                    disabled={
+                      activeStudyActivity !==
+                        null ||
+                      timerIsUpdating
+                    }
+                    onClick={() => {
+                      void handleStartStudying(
+                        session,
+                      );
+                    }}
+                  >
+                    Study
+                  </Button>
+                </span>
+              </Tooltip>
+            )}
+
+            <Tooltip
+              label={
+                deleteTooltip
+              }
+              withArrow
+              openDelay={400}
+            >
+              <span
+                className={
+                  classes.tooltipTarget
+                }
+              >
+                <ActionIcon
+                  size="sm"
+                  variant="subtle"
+                  color="red"
+                  aria-label={
+                    `Delete ${session.title}`
+                  }
+                  disabled={
+                    isActiveStudySession
+                  }
+                  onClick={() =>
+                    setSessionToDelete(
+                      session,
+                    )
+                  }
+                >
+                  <IconTrash
+                    size={14}
+                  />
+                </ActionIcon>
+              </span>
+            </Tooltip>
+          </Group>
+        </Group>
+
+        {isActiveStudySession ? (
+          <Text
+            size="xs"
+            fw={600}
+            c="violet"
+            mt={5}
+            className={
+              classes.activeSessionText
+            }
+          >
+            Timer running
+          </Text>
+        ) : null}
+      </Card>
+    );
+  }
 
   return (
     <main
@@ -1322,89 +1783,113 @@ function handleCloseRegeneratePlan():
           }
         >
           <Group
-  justify="space-between"
-  align="center"
->
-  <div>
-    <Text fw={700}>
-      Saved plans
-    </Text>
+            justify="space-between"
+            align="center"
+            gap="sm"
+            wrap="wrap"
+          >
+            <div>
+              <Text fw={700}>
+                Saved plans
+              </Text>
 
-    <Text
-      size="sm"
-      c="dimmed"
-    >
-      Choose a plan to
-      view its schedule.
-    </Text>
-  </div>
+              <Text
+                size="sm"
+                c="dimmed"
+              >
+                Choose a plan to
+                view its schedule.
+              </Text>
+            </div>
 
-  <Group gap="xs">
-    {plansStatus ===
-    "ready" ? (
-      <Badge
-        variant="light"
-      >
-        {plans.length}
-      </Badge>
-    ) : null}
+            <Group gap="xs">
+              {plansStatus ===
+              "ready" ? (
+                <Badge
+                  variant="light"
+                >
+                  {plans.length}
+                </Badge>
+              ) : null}
 
-    <Button
-        size="xs"
-        variant="light"
-        leftSection={
-            <IconSparkles
-            size={15}
-            />
-        }
-        loading={
-            generationTasksLoading
-        }
-        onClick={() => {
-            void handleOpenGeneratePlan();
-        }}
-        >
-        Generate plan
-        </Button>
+              <Tooltip
+                label="Generate a study plan from your prioritized academic tasks."
+                withArrow
+                openDelay={400}
+              >
+                <span
+                  className={
+                    classes.tooltipTarget
+                  }
+                >
+                  <Button
+                    size="xs"
+                    variant="light"
+                    leftSection={
+                      <IconSparkles
+                        size={15}
+                      />
+                    }
+                    loading={
+                      generationTasksLoading
+                    }
+                    onClick={() => {
+                      void handleOpenGeneratePlan();
+                    }}
+                  >
+                    Generate plan
+                  </Button>
+                </span>
+              </Tooltip>
 
-    <Button
-      size="xs"
-      leftSection={
-        <IconPlus
-          size={15}
-        />
-      }
-      onClick={() =>
-        setCreatePlanOpened(
-          true,
-        )
-      }
-    >
-      New plan
-    </Button>
-  </Group>
-</Group>
+              <Tooltip
+                label="Create a study plan manually."
+                withArrow
+                openDelay={400}
+              >
+                <Button
+                  size="xs"
+                  leftSection={
+                    <IconPlus
+                      size={15}
+                    />
+                  }
+                  onClick={() =>
+                    setCreatePlanOpened(
+                      true,
+                    )
+                  }
+                >
+                  New plan
+                </Button>
+              </Tooltip>
+            </Group>
+          </Group>
 
-{generationTasksError ? (
-  <Alert
-    mt="lg"
-    color="red"
-    title="Automatic generation unavailable"
-    icon={
-      <IconAlertCircle
-        size={18}
-      />
-    }
-    withCloseButton
-    onClose={() =>
-      setGenerationTasksError(
-        null,
-      )
-    }
-  >
-    {generationTasksError}
-  </Alert>
-) : null}
+
+          {generationTasksError ? (
+            <Alert
+              mt="lg"
+              color="red"
+              title="Automatic generation unavailable"
+              icon={
+                <IconAlertCircle
+                  size={18}
+                />
+              }
+              withCloseButton
+              onClose={() =>
+                setGenerationTasksError(
+                  null,
+                )
+              }
+            >
+              {
+                generationTasksError
+              }
+            </Alert>
+          ) : null}
+
 
           {plansStatus ===
           "loading" ? (
@@ -1465,7 +1950,8 @@ function handleCloseRegeneratePlan():
 
           {plansStatus ===
             "ready" &&
-          plans.length === 0 ? (
+          plans.length ===
+            0 ? (
             <Paper
               withBorder
               radius="md"
@@ -1496,24 +1982,27 @@ function handleCloseRegeneratePlan():
                 size="sm"
                 c="dimmed"
                 ta="center"
-                >
+              >
                 Create a manual plan or
                 generate one from your
                 academic tasks.
-                </Text>
+              </Text>
             </Paper>
           ) : null}
 
 
           {plansStatus ===
             "ready" &&
-          plans.length > 0 ? (
+          plans.length >
+            0 ? (
             <Stack
               gap="sm"
               mt="lg"
             >
               {plans.map(
-                (plan) => {
+                (
+                  plan,
+                ) => {
                   const selected =
                     plan.id ===
                     selectedPlanId;
@@ -1546,9 +2035,7 @@ function handleCloseRegeneratePlan():
                         wrap="nowrap"
                       >
                         <div>
-                          <Text
-                            fw={700}
-                          >
+                          <Text fw={700}>
                             {
                               plan.title
                             }
@@ -1635,12 +2122,11 @@ function handleCloseRegeneratePlan():
               <Group
                 justify="space-between"
                 align="flex-start"
+                gap="md"
               >
                 <div>
                   <Group gap="sm">
-                    <Title
-                      order={2}
-                    >
+                    <Title order={2}>
                       {
                         selectedPlan.title
                       }
@@ -1680,117 +2166,212 @@ function handleCloseRegeneratePlan():
                   </Text>
                 </div>
 
-                <Group gap="xs">
-                {selectedPlan.generation_mode ===
-                "generated" ? (
+
+                <Group
+                  gap="xs"
+                  className={
+                    classes.planActions
+                  }
+                >
+                  {selectedPlan.generation_mode ===
+                  "generated" ? (
+                    <Tooltip
+                      label={
+                        selectedPlanHasActiveTimer
+                          ? (
+                              "Finish the active study timer before "
+                              + "regenerating this plan."
+                            )
+                          : (
+                              "Rebuild generated sessions using your "
+                              + "latest prioritized academic tasks."
+                            )
+                      }
+                      withArrow
+                      openDelay={400}
+                    >
+                      <span
+                        className={
+                          classes.tooltipTarget
+                        }
+                      >
+                        <Button
+                          size="xs"
+                          variant="light"
+                          leftSection={
+                            <IconRefresh
+                              size={15}
+                            />
+                          }
+                          loading={
+                            regenerationTasksLoading
+                          }
+                          disabled={
+                            selectedPlanHasActiveTimer
+                          }
+                          onClick={() => {
+                            void handleOpenRegeneratePlan();
+                          }}
+                        >
+                          Regenerate
+                        </Button>
+                      </span>
+                    </Tooltip>
+                  ) : null}
+
+                  <Tooltip
+                    label="Add a manually scheduled study session to this plan."
+                    withArrow
+                    openDelay={400}
+                  >
+                    <span
+                      className={
+                        classes.tooltipTarget
+                      }
+                    >
+                      <Button
+                        size="xs"
+                        leftSection={
+                          <IconPlus
+                            size={15}
+                          />
+                        }
+                        disabled={
+                          initialSubjects.length ===
+                          0
+                        }
+                        onClick={() =>
+                          setCreateSessionOpened(
+                            true,
+                          )
+                        }
+                      >
+                        Add session
+                      </Button>
+                    </span>
+                  </Tooltip>
+
+                  <Tooltip
+                    label={
+                      selectedPlanHasActiveTimer
+                        ? (
+                            "Finish the active study timer before "
+                            + "deleting this plan."
+                          )
+                        : (
+                            "Delete this plan and all of its "
+                            + "scheduled sessions."
+                          )
+                    }
+                    withArrow
+                    openDelay={400}
+                  >
+                    <span
+                      className={
+                        classes.tooltipTarget
+                      }
+                    >
+                      <Button
+                        size="xs"
+                        color="red"
+                        variant="light"
+                        leftSection={
+                          <IconTrash
+                            size={15}
+                          />
+                        }
+                        disabled={
+                          selectedPlanHasActiveTimer
+                        }
+                        onClick={() =>
+                          setDeletePlanOpened(
+                            true,
+                          )
+                        }
+                      >
+                        Delete plan
+                      </Button>
+                    </span>
+                  </Tooltip>
+
+                  <Tooltip
+                    label="Show the previous week."
+                    withArrow
+                    openDelay={400}
+                  >
                     <Button
-                    size="xs"
-                    variant="light"
-                    leftSection={
-                        <IconRefresh
-                        size={15}
-                        />
-                    }
-                    loading={
-                        regenerationTasksLoading
-                    }
-                    onClick={() => {
-                        void handleOpenRegeneratePlan();
-                    }}
+                      variant="default"
+                      size="xs"
+                      aria-label="Previous week"
+                      onClick={
+                        goToPreviousWeek
+                      }
                     >
-                    Regenerate
+                      <IconChevronLeft
+                        size={17}
+                      />
                     </Button>
-                ) : null}
+                  </Tooltip>
 
-                <Button
-                    size="xs"
-                    leftSection={
-                    <IconPlus
-                        size={15}
-                    />
-                    }
-                    disabled={
-                    initialSubjects.length ===
-                    0
-                    }
-                    onClick={() =>
-                    setCreateSessionOpened(
-                        true,
-                    )
-                    }
-                >
-                    Add session
-                </Button>
-
-                <Button
-                    size="xs"
-                    color="red"
-                    variant="light"
-                    leftSection={<IconTrash size={15} />}
-                    onClick={() => {
-                        setDeletePlanOpened(true);
-                    }}
+                  <Tooltip
+                    label="Return the calendar to the current week."
+                    withArrow
+                    openDelay={400}
+                  >
+                    <Button
+                      variant="default"
+                      size="xs"
+                      onClick={
+                        goToCurrentWeek
+                      }
                     >
-                    Delete plan
-                </Button>
+                      Today
+                    </Button>
+                  </Tooltip>
 
-                <Button
-                    variant="default"
-                    size="xs"
-                    aria-label="Previous week"
-                    onClick={
-                    goToPreviousWeek
-                    }
-                >
-                    <IconChevronLeft
-                    size={17}
-                    />
-                </Button>
-
-                <Button
-                    variant="default"
-                    size="xs"
-                    onClick={
-                    goToCurrentWeek
-                    }
-                >
-                    Today
-                </Button>
-
-                <Button
-                    variant="default"
-                    size="xs"
-                    aria-label="Next week"
-                    onClick={
-                    goToNextWeek
-                    }
-                >
-                    <IconChevronRight
-                    size={17}
-                    />
-                </Button>
+                  <Tooltip
+                    label="Show the next week."
+                    withArrow
+                    openDelay={400}
+                  >
+                    <Button
+                      variant="default"
+                      size="xs"
+                      aria-label="Next week"
+                      onClick={
+                        goToNextWeek
+                      }
+                    >
+                      <IconChevronRight
+                        size={17}
+                      />
+                    </Button>
+                  </Tooltip>
                 </Group>
               </Group>
 
-                {actionError ? (
-                    <Alert
-                        color="red"
-                        title="Study plan action failed"
-                        icon={
-                        <IconAlertCircle
-                            size={18}
-                        />
-                        }
-                        withCloseButton
-                        onClose={() =>
-                        setActionError(
-                            null,
-                        )
-                        }
-                    >
-                        {actionError}
-                    </Alert>
-                    ) : null}
+
+              {actionError ? (
+                <Alert
+                  color="red"
+                  title="Study plan action failed"
+                  icon={
+                    <IconAlertCircle
+                      size={18}
+                    />
+                  }
+                  withCloseButton
+                  onClose={() =>
+                    setActionError(
+                      null,
+                    )
+                  }
+                >
+                  {actionError}
+                </Alert>
+              ) : null}
+
+
               {sessionsStatus ===
               "loading" ? (
                 <Group
@@ -1839,13 +2420,9 @@ function handleCloseRegeneratePlan():
                         />
                       }
                       onClick={() => {
-                        if (
-                          selectedPlanId
-                        ) {
-                          void loadSessions(
-                            selectedPlanId,
-                          );
-                        }
+                        void loadSessions(
+                          selectedPlan.id,
+                        );
                       }}
                     >
                       Retry
@@ -1876,7 +2453,8 @@ function handleCloseRegeneratePlan():
                       const daySessions =
                         sessionsByDay.get(
                           key,
-                        ) ?? [];
+                        ) ??
+                        [];
 
                       return (
                         <Paper
@@ -1914,7 +2492,9 @@ function handleCloseRegeneratePlan():
                               fw={800}
                               size="lg"
                             >
-                              {day.getDate()}
+                              {
+                                day.getDate()
+                              }
                             </Text>
                           </div>
 
@@ -1935,102 +2515,7 @@ function handleCloseRegeneratePlan():
                               </Text>
                             ) : (
                               daySessions.map(
-                                (
-                                  session,
-                                ) => (
-                                  <Card
-                                    key={
-                                      session.id
-                                    }
-                                    withBorder
-                                    radius="md"
-                                    padding="sm"
-                                    className={
-                                      classes.sessionCard
-                                    }
-                                  >
-                                    <Text
-                                      fw={700}
-                                      size="sm"
-                                    >
-                                      {
-                                        session.title
-                                      }
-                                    </Text>
-
-                                    <Text
-                                      size="xs"
-                                      c="dimmed"
-                                      mt={3}
-                                    >
-                                      {subjectNames.get(
-                                        session.subject_id,
-                                      ) ??
-                                        "Subject"}
-                                    </Text>
-
-                                    <Group
-                                      gap={5}
-                                      mt="sm"
-                                      wrap="nowrap"
-                                    >
-                                      <IconClock
-                                        size={13}
-                                      />
-
-                                      <Text
-                                        size="xs"
-                                      >
-                                        {formatTime(
-                                          session.starts_at,
-                                        )}
-                                        {" – "}
-                                        {formatTime(
-                                          session.ends_at,
-                                        )}
-                                      </Text>
-                                    </Group>
-
-                                    <Group
-                                        justify="space-between"
-                                        align="center"
-                                        mt="sm"
-                                        >
-                                        <Badge
-                                            size="xs"
-                                            variant="light"
-                                            color={
-                                            session.origin ===
-                                            "generated"
-                                                ? "violet"
-                                                : "blue"
-                                            }
-                                        >
-                                            {
-                                            session.origin
-                                            }
-                                        </Badge>
-
-                                        <ActionIcon
-                                            size="sm"
-                                            variant="subtle"
-                                            color="red"
-                                            aria-label={
-                                            `Delete ${session.title}`
-                                            }
-                                            onClick={() =>
-                                            setSessionToDelete(
-                                                session,
-                                            )
-                                            }
-                                        >
-                                            <IconTrash
-                                            size={14}
-                                            />
-                                        </ActionIcon>
-                                        </Group>
-                                  </Card>
-                                ),
+                                renderSessionCard,
                               )
                             )}
                           </Stack>
@@ -2043,39 +2528,44 @@ function handleCloseRegeneratePlan():
             </Stack>
           )}
         </Card>
-            </div>
+      </div>
 
-        <GenerateStudyPlanModal
+
+      <GenerateStudyPlanModal
         opened={
-            generatePlanOpened
+          generatePlanOpened
         }
         onClose={
-            handleCloseGeneratePlan
+          handleCloseGeneratePlan
         }
         tasks={
-            generationTasks
+          generationTasks
         }
         onGenerated={
-            handleGeneratedPlan
+          handleGeneratedPlan
         }
-        />
-        <RegenerateStudyPlanModal
+      />
+
+
+      <RegenerateStudyPlanModal
         opened={
-            regeneratePlanOpened
+          regeneratePlanOpened
         }
         onClose={
-            handleCloseRegeneratePlan
+          handleCloseRegeneratePlan
         }
         studyPlan={
-            selectedPlan
+          selectedPlan
         }
         tasks={
-            regenerationTasks
+          regenerationTasks
         }
         onRegenerated={
-            handleRegeneratedPlan
+          handleRegeneratedPlan
         }
-        />
+      />
+
+
       <CreateStudyPlanModal
         opened={
           createPlanOpened

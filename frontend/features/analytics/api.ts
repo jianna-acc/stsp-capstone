@@ -21,6 +21,7 @@ import type {
   AnalyticsMetric,
   AnalyticsOverviewResponse,
   AnalyticsPeriod,
+  AnalyticsStudyWeek,
   AnalyticsTopicPerformance,
 } from "./types";
 
@@ -160,6 +161,53 @@ function isFiniteNumber(
 }
 
 
+function parseIsoDate(
+  value:
+    unknown,
+): number | null {
+  if (
+    typeof value !==
+      "string" ||
+    !/^\d{4}-\d{2}-\d{2}$/.test(
+      value,
+    )
+  ) {
+    return null;
+  }
+
+  const milliseconds =
+    Date.parse(
+      `${value}T00:00:00Z`,
+    );
+
+  if (
+    !Number.isFinite(
+      milliseconds,
+    )
+  ) {
+    return null;
+  }
+
+  const normalized =
+    new Date(
+      milliseconds,
+    )
+      .toISOString()
+      .slice(
+        0,
+        10,
+      );
+
+  if (
+    normalized !== value
+  ) {
+    return null;
+  }
+
+  return milliseconds;
+}
+
+
 function isAnalyticsPeriod(
   value:
     unknown,
@@ -170,7 +218,8 @@ function isAnalyticsPeriod(
     ANALYTICS_PERIODS.some(
       (
         period,
-      ) => period ===
+      ) =>
+        period ===
         value,
     )
   );
@@ -227,7 +276,8 @@ function isAnalyticsMetric(
   }
 
   const metricValueIsValid =
-    value.value === null ||
+    value.value ===
+      null ||
     isFiniteNumber(
       value.value,
     );
@@ -260,7 +310,8 @@ function isAnalyticsCountMetric(
   }
 
   const countValueIsValid =
-    value.value === null ||
+    value.value ===
+      null ||
     isNonNegativeInteger(
       value.value,
     );
@@ -310,6 +361,47 @@ function isAnalyticsTopicPerformance(
 }
 
 
+function isAnalyticsStudyWeek(
+  value:
+    unknown,
+): value is AnalyticsStudyWeek {
+  if (
+    !isRecord(
+      value,
+    )
+  ) {
+    return false;
+  }
+
+  const weekStart =
+    parseIsoDate(
+      value.week_start,
+    );
+
+  const weekEnd =
+    parseIsoDate(
+      value.week_end,
+    );
+
+  return (
+    weekStart !==
+      null &&
+    weekEnd !==
+      null &&
+    weekEnd >=
+      weekStart &&
+    isFiniteNumber(
+      value.study_minutes,
+    ) &&
+    value.study_minutes >=
+      0 &&
+    isPositiveInteger(
+      value.session_count,
+    )
+  );
+}
+
+
 function isAnalyticsOverviewResponse(
   value:
     unknown,
@@ -346,6 +438,12 @@ function isAnalyticsOverviewResponse(
     ) &&
     isAnalyticsMetric(
       value.study_minutes,
+    ) &&
+    Array.isArray(
+      value.study_time_by_week,
+    ) &&
+    value.study_time_by_week.every(
+      isAnalyticsStudyWeek,
     ) &&
     Array.isArray(
       value.strong_topics,
@@ -511,11 +609,13 @@ function getErrorCode(
 
     if (
       typeof errorPayload
-        .detail.code ===
+        .detail
+        .code ===
         "string"
     ) {
       return errorPayload
-        .detail.code;
+        .detail
+        .code;
     }
   }
 
@@ -567,14 +667,17 @@ function getErrorMessage(
         errorPayload.detail,
       ) &&
       typeof errorPayload
-        .detail.message ===
+        .detail
+        .message ===
         "string" &&
       errorPayload
-        .detail.message
+        .detail
+        .message
         .trim()
     ) {
       return errorPayload
-        .detail.message;
+        .detail
+        .message;
     }
   }
 

@@ -38,6 +38,12 @@ import type { ReactNode } from "react";
 import {
   logoutAction,
 } from "@/features/auth/actions/logout";
+import {
+  FloatingStudyTimer,
+} from "@/features/study-timer/components/FloatingStudyTimer";
+import {
+  StudyTimerProvider,
+} from "@/features/study-timer/components/StudyTimerProvider";
 
 import classes from "./ProtectedAppShell.module.css";
 
@@ -150,7 +156,8 @@ export function ProtectedAppShell({
     false,
   );
 
-  return (
+ return (
+  <StudyTimerProvider>
     <AppShell
       header={{
         height: {
@@ -380,5 +387,8 @@ export function ProtectedAppShell({
         {children}
       </AppShell.Main>
     </AppShell>
+
+    <FloatingStudyTimer />
+  </StudyTimerProvider>
   );
 }

@@ -52,6 +52,17 @@ class FlashcardReviewAnalyticsRecord:
     reviewed_at: datetime
 
 
+@dataclass(
+    frozen=True,
+    slots=True,
+)
+class StudyActivityAnalyticsRecord:
+    """Minimal completed Study Activity evidence used by Analytics."""
+
+    focus_seconds: int
+    ended_at: datetime
+
+
 class _SupabaseResponse(
     Protocol,
 ):
@@ -304,6 +315,49 @@ class AnalyticsRepository:
             for row in rows
         )
 
+    def list_completed_study_activities(
+        self,
+        *,
+        user_id: UUID,
+    ) -> tuple[
+        StudyActivityAnalyticsRecord,
+        ...,
+    ]:
+        """Return completed actual-study sessions owned by one student."""
+
+        query = (
+            self._client.table(
+                "study_activity_sessions",
+            )
+            .select(
+                "focus_seconds,ended_at",
+            )
+            .eq(
+                "user_id",
+                str(user_id),
+            )
+            .eq(
+                "status",
+                "completed",
+            )
+            .order(
+                "ended_at",
+                desc=True,
+            )
+        )
+
+        rows = self._execute_rows(
+            query,
+            resource="Study Activity sessions",
+        )
+
+        return tuple(
+            self._parse_study_activity(
+                row,
+            )
+            for row in rows
+        )
+
     def _execute_count(
         self,
         query: _SupabaseQuery,
@@ -493,6 +547,34 @@ class AnalyticsRepository:
             reviewed_at=reviewed_at,
         )
 
+    def _parse_study_activity(
+        self,
+        row: Mapping[
+            str,
+            object,
+        ],
+    ) -> StudyActivityAnalyticsRecord:
+        """Validate completed actual-study Analytics evidence."""
+
+        focus_seconds = (
+            self._parse_study_seconds(
+                row.get(
+                    "focus_seconds",
+                ),
+            )
+        )
+
+        ended_at = self._parse_datetime(
+            row.get(
+                "ended_at",
+            ),
+        )
+
+        return StudyActivityAnalyticsRecord(
+            focus_seconds=focus_seconds,
+            ended_at=ended_at,
+        )
+
     @staticmethod
     def _parse_uuid(
         value: object,
@@ -534,6 +616,29 @@ class AnalyticsRepository:
         ):
             raise AnalyticsRepositoryError(
                 "Stored Analytics count is invalid.",
+            )
+
+        return value
+
+    @staticmethod
+    def _parse_study_seconds(
+        value: object,
+    ) -> int:
+        """Parse one persisted non-negative focus-duration value."""
+
+        if (
+            isinstance(
+                value,
+                bool,
+            )
+            or not isinstance(
+                value,
+                int,
+            )
+            or value < 0
+        ):
+            raise AnalyticsRepositoryError(
+                "Stored Study Activity duration is invalid.",
             )
 
         return value

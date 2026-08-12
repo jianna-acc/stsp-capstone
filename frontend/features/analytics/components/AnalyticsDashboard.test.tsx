@@ -1,6 +1,6 @@
 // File: /frontend/features/analytics/components/AnalyticsDashboard.test.tsx
-// Purpose: Tests Analytics dashboard loading, rendering,
-// reporting periods, no-evidence states, and retry behavior.
+// Purpose: Tests compact Analytics rendering, weekly Study Time,
+// expandable topics, reporting periods, empty states, and retry behavior.
 
 import {
   MantineProvider,
@@ -25,12 +25,13 @@ import type {
 } from "@/features/analytics/types";
 
 
-const mocks = vi.hoisted(
-  () => ({
-    getAnalyticsOverview:
-      vi.fn(),
-  }),
-);
+const mocks =
+  vi.hoisted(
+    () => ({
+      getAnalyticsOverview:
+        vi.fn(),
+    }),
+  );
 
 
 vi.mock(
@@ -38,39 +39,77 @@ vi.mock(
   () => ({
     BarChart: ({
       data,
+      dataKey,
+      series,
     }: {
-      data: Array<{
-        metric:
-          string;
+      data:
+        Array<
+          Record<
+            string,
+            unknown
+          >
+        >;
 
-        score:
-          number;
-      }>;
-    }) => (
-      <div
-        data-testid="performance-chart"
-      >
-        {data.map(
-          (
-            row,
-          ) => (
-            <span
-              key={
-                row.metric
-              }
-            >
-              {
-                row.metric
-              }
-              :
-              {
-                row.score
-              }
-            </span>
-          ),
-        )}
-      </div>
-    ),
+      dataKey:
+        string;
+
+      series:
+        Array<{
+          name:
+            string;
+        }>;
+    }) => {
+      const testId =
+        dataKey ===
+          "week"
+          ? "weekly-study-chart"
+          : "performance-chart";
+
+      const seriesName =
+        series[0]
+          ?.name ??
+        "";
+
+      return (
+        <div
+          data-testid={
+            testId
+          }
+        >
+          {data.map(
+            (
+              row,
+            ) => (
+              <span
+                key={
+                  String(
+                    row[
+                      dataKey
+                    ],
+                  )
+                }
+              >
+                {
+                  String(
+                    row[
+                      dataKey
+                    ],
+                  )
+                }
+                :
+                {
+                  String(
+                    row[
+                      seriesName
+                    ],
+                  )
+                }
+              </span>
+            ),
+          )}
+        </div>
+      );
+    },
   }),
 );
 
@@ -112,7 +151,7 @@ const OVERVIEW:
       "all_time",
 
     data_state:
-      "partial",
+      "ready",
 
     subject_count: {
       availability:
@@ -186,17 +225,47 @@ const OVERVIEW:
 
     study_minutes: {
       availability:
-        "unavailable",
+        "available",
 
       value:
-        null,
+        95,
 
       sample_size:
-        0,
+        3,
 
       message:
-        "Study-duration tracking is not available yet.",
+        null,
     },
+
+    study_time_by_week: [
+      {
+        week_start:
+          "2026-08-03",
+
+        week_end:
+          "2026-08-09",
+
+        study_minutes:
+          30,
+
+        session_count:
+          1,
+      },
+
+      {
+        week_start:
+          "2026-08-10",
+
+        week_end:
+          "2026-08-16",
+
+        study_minutes:
+          65,
+
+        session_count:
+          2,
+      },
+    ],
 
     strong_topics: [
       {
@@ -208,6 +277,50 @@ const OVERVIEW:
 
         sample_size:
           10,
+      },
+
+      {
+        topic:
+          "Networking",
+
+        score_percent:
+          85,
+
+        sample_size:
+          5,
+      },
+
+      {
+        topic:
+          "Databases",
+
+        score_percent:
+          80,
+
+        sample_size:
+          4,
+      },
+
+      {
+        topic:
+          "Operating Systems",
+
+        score_percent:
+          78,
+
+        sample_size:
+          3,
+      },
+
+      {
+        topic:
+          "Security",
+
+        score_percent:
+          75,
+
+        sample_size:
+          2,
       },
     ],
 
@@ -221,6 +334,39 @@ const OVERVIEW:
 
         sample_size:
           8,
+      },
+
+      {
+        topic:
+          "Statistics",
+
+        score_percent:
+          50,
+
+        sample_size:
+          5,
+      },
+
+      {
+        topic:
+          "Calculus",
+
+        score_percent:
+          45,
+
+        sample_size:
+          4,
+      },
+
+      {
+        topic:
+          "Physics",
+
+        score_percent:
+          40,
+
+        sample_size:
+          3,
       },
     ],
   };
@@ -252,7 +398,7 @@ describe(
 
 
     it(
-      "loads and displays overall Analytics evidence",
+      "loads compact Analytics and weekly Study Time evidence",
       async () => {
         renderDashboard();
 
@@ -276,21 +422,37 @@ describe(
 
         expect(
           screen.getByText(
-            "Algebra",
+            "95 min",
           ),
         ).toBeInTheDocument();
 
         expect(
           screen.getByText(
-            "Cell Biology",
+            "3 completed sessions",
           ),
         ).toBeInTheDocument();
 
         expect(
           screen.getByText(
-            "Study-duration tracking is not available yet.",
+            "All metrics ready",
           ),
         ).toBeInTheDocument();
+
+        expect(
+          screen.getByTestId(
+            "weekly-study-chart",
+          ),
+        ).toHaveTextContent(
+          "Aug 3 – Aug 9:30",
+        );
+
+        expect(
+          screen.getByTestId(
+            "weekly-study-chart",
+          ),
+        ).toHaveTextContent(
+          "Aug 10 – Aug 16:65",
+        );
 
         expect(
           screen.getByTestId(
@@ -324,6 +486,84 @@ describe(
             );
           },
         );
+      },
+    );
+
+
+    it(
+      "shows only a topic preview until the user expands it",
+      async () => {
+        const user =
+          userEvent.setup();
+
+        renderDashboard();
+
+        await screen.findByText(
+          "Algebra",
+        );
+
+        expect(
+          screen.getByText(
+            "Databases",
+          ),
+        ).toBeInTheDocument();
+
+        expect(
+          screen.queryByText(
+            "Security",
+          ),
+        ).not.toBeInTheDocument();
+
+        expect(
+          screen.queryByText(
+            "Physics",
+          ),
+        ).not.toBeInTheDocument();
+
+        await user.click(
+          screen.getByRole(
+            "button",
+            {
+              name:
+                "Show all (5)",
+            },
+          ),
+        );
+
+        expect(
+          screen.getByText(
+            "Security",
+          ),
+        ).toBeInTheDocument();
+
+        expect(
+          screen.getByRole(
+            "button",
+            {
+              name:
+                "Show less",
+            },
+          ),
+        ).toHaveAttribute(
+          "aria-expanded",
+          "true",
+        );
+
+        await user.click(
+          screen.getByRole(
+            "button",
+            {
+              name:
+                "Show less",
+            },
+          ),
+        );
+
+        expect(
+          screen.queryByText(
+            "Security",
+          ),
+        ).not.toBeInTheDocument();
       },
     );
 
@@ -381,7 +621,7 @@ describe(
 
 
     it(
-      "shows no-evidence states without fabricating performance",
+      "shows no-evidence states without fabricating Analytics",
       async () => {
         mocks
           .getAnalyticsOverview
@@ -416,6 +656,23 @@ describe(
                 "No Flashcard review events are available for the selected period.",
             },
 
+            study_minutes: {
+              availability:
+                "available",
+
+              value:
+                null,
+
+              sample_size:
+                0,
+
+              message:
+                "No completed study sessions are available for the selected period.",
+            },
+
+            study_time_by_week:
+              [],
+
             strong_topics:
               [],
 
@@ -438,16 +695,28 @@ describe(
         ).toBeInTheDocument();
 
         expect(
+          screen.getByText(
+            "No completed study sessions are available for the selected period.",
+          ),
+        ).toBeInTheDocument();
+
+        expect(
           screen.queryByTestId(
-            "performance-chart",
+            "weekly-study-chart",
           ),
         ).not.toBeInTheDocument();
 
         expect(
           screen.getByText(
-            "Complete a Quiz or rate Flashcards to begin building your performance chart.",
+            "Complete a study session to build your weekly chart.",
           ),
         ).toBeInTheDocument();
+
+        expect(
+          screen.queryByTestId(
+            "performance-chart",
+          ),
+        ).not.toBeInTheDocument();
       },
     );
 

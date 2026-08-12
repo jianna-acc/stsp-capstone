@@ -1,0 +1,114 @@
+/* File: /frontend/features/study-timer/components/FloatingStudyTimer.module.css */
+
+.timer {
+  position: fixed;
+  right: 24px;
+  bottom: 24px;
+  z-index: 180;
+  width: min(390px, calc(100vw - 48px));
+  border: 1px solid var(--mantine-color-gray-3);
+  background:
+    light-dark(
+      rgba(255, 255, 255, 0.98),
+      rgba(37, 38, 43, 0.98)
+    );
+  box-shadow:
+    0 18px 50px
+    rgba(20, 20, 40, 0.14);
+  backdrop-filter: blur(14px);
+}
+
+.errorCard {
+  position: fixed;
+  right: 24px;
+  bottom: 24px;
+  z-index: 180;
+  width: min(360px, calc(100vw - 48px));
+  border: 1px solid var(--mantine-color-red-2);
+  background:
+    light-dark(
+      rgba(255, 255, 255, 0.98),
+      rgba(37, 38, 43, 0.98)
+    );
+  box-shadow:
+    0 18px 50px
+    rgba(20, 20, 40, 0.12);
+}
+
+.title {
+  min-width: 0;
+  flex: 1;
+}
+
+.titleText {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.timeBlock {
+  padding: 0.7rem 0.8rem;
+  border-radius: var(--mantine-radius-md);
+  background:
+    light-dark(
+      var(--mantine-color-gray-0),
+      var(--mantine-color-dark-6)
+    );
+}
+
+.clock {
+  font-size: 1.65rem;
+  line-height: 1.1;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.025em;
+}
+
+.secondaryClock {
+  font-variant-numeric: tabular-nums;
+}
+
+.actions {
+  display: grid;
+  grid-template-columns:
+    repeat(
+      auto-fit,
+      minmax(90px, 1fr)
+    );
+  gap: 8px;
+}
+
+.actionTarget {
+  display: block;
+  width: 100%;
+}
+
+.actionTarget > * {
+  width: 100%;
+}
+
+@media (max-width: 48em) {
+  .timer,
+  .errorCard {
+    right: 12px;
+    bottom: 12px;
+    width: calc(100vw - 24px);
+  }
+
+  .clock {
+    font-size: 1.5rem;
+  }
+
+  .actions {
+    grid-template-columns:
+      repeat(
+        2,
+        minmax(0, 1fr)
+      );
+  }
+}
+
+@media (max-width: 30em) {
+  .actions {
+    grid-template-columns: 1fr;
+  }
+}

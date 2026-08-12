@@ -1,5 +1,5 @@
 # File: /backend/tests/test_analytics_service.py
-# Purpose: Verifies canonical Track E Analytics aggregation behavior.
+# Purpose: Verifies canonical Analytics aggregation behavior.
 
 from datetime import datetime, timedelta, timezone
 from uuid import UUID
@@ -8,6 +8,7 @@ from app.repositories.analytics_repository import (
     FlashcardReviewAnalyticsRecord,
     QuizAnswerAnalyticsRecord,
     QuizAttemptAnalyticsRecord,
+    StudyActivityAnalyticsRecord,
 )
 from app.schemas.analytics import (
     AnalyticsAvailability,
@@ -54,18 +55,22 @@ class FakeAnalyticsRepository:
                 id=ATTEMPT_ONE_ID,
                 correct_count=8,
                 question_count=10,
-                completed_at=NOW
-                - timedelta(
-                    days=2,
+                completed_at=(
+                    NOW
+                    - timedelta(
+                        days=2,
+                    )
                 ),
             ),
             QuizAttemptAnalyticsRecord(
                 id=ATTEMPT_TWO_ID,
                 correct_count=3,
                 question_count=5,
-                completed_at=NOW
-                - timedelta(
-                    days=20,
+                completed_at=(
+                    NOW
+                    - timedelta(
+                        days=20,
+                    )
                 ),
             ),
         )
@@ -111,24 +116,66 @@ class FakeAnalyticsRepository:
 
         self.flashcard_reviews = (
             FlashcardReviewAnalyticsRecord(
-                outcome=FlashcardReviewOutcome.KNOWN,
-                reviewed_at=NOW
-                - timedelta(
-                    days=1,
+                outcome=(
+                    FlashcardReviewOutcome.KNOWN
+                ),
+                reviewed_at=(
+                    NOW
+                    - timedelta(
+                        days=1,
+                    )
                 ),
             ),
             FlashcardReviewAnalyticsRecord(
-                outcome=FlashcardReviewOutcome.REVIEW_AGAIN,
-                reviewed_at=NOW
-                - timedelta(
-                    days=2,
+                outcome=(
+                    FlashcardReviewOutcome.REVIEW_AGAIN
+                ),
+                reviewed_at=(
+                    NOW
+                    - timedelta(
+                        days=2,
+                    )
                 ),
             ),
             FlashcardReviewAnalyticsRecord(
-                outcome=FlashcardReviewOutcome.KNOWN,
-                reviewed_at=NOW
-                - timedelta(
-                    days=10,
+                outcome=(
+                    FlashcardReviewOutcome.KNOWN
+                ),
+                reviewed_at=(
+                    NOW
+                    - timedelta(
+                        days=10,
+                    )
+                ),
+            ),
+        )
+
+        self.study_activities = (
+            StudyActivityAnalyticsRecord(
+                focus_seconds=3600,
+                ended_at=(
+                    NOW
+                    - timedelta(
+                        days=1,
+                    )
+                ),
+            ),
+            StudyActivityAnalyticsRecord(
+                focus_seconds=1800,
+                ended_at=(
+                    NOW
+                    - timedelta(
+                        days=10,
+                    )
+                ),
+            ),
+            StudyActivityAnalyticsRecord(
+                focus_seconds=600,
+                ended_at=(
+                    NOW
+                    - timedelta(
+                        days=40,
+                    )
                 ),
             ),
         )
@@ -141,6 +188,7 @@ class FakeAnalyticsRepository:
         self.user_ids.append(
             user_id,
         )
+
         return 3
 
     def count_study_files(
@@ -151,6 +199,7 @@ class FakeAnalyticsRepository:
         self.user_ids.append(
             user_id,
         )
+
         return 8
 
     def count_ready_study_files(
@@ -161,6 +210,7 @@ class FakeAnalyticsRepository:
         self.user_ids.append(
             user_id,
         )
+
         return 6
 
     def list_completed_quiz_attempts(
@@ -174,6 +224,7 @@ class FakeAnalyticsRepository:
         self.user_ids.append(
             user_id,
         )
+
         return self.attempts
 
     def list_quiz_attempt_answers(
@@ -203,6 +254,20 @@ class FakeAnalyticsRepository:
 
         return self.flashcard_reviews
 
+    def list_completed_study_activities(
+        self,
+        *,
+        user_id: UUID,
+    ) -> tuple[
+        StudyActivityAnalyticsRecord,
+        ...,
+    ]:
+        self.user_ids.append(
+            user_id,
+        )
+
+        return self.study_activities
+
 
 def _service(
     repository: FakeAnalyticsRepository,
@@ -215,10 +280,11 @@ def _service(
     )
 
 
-def test_all_time_overview_uses_real_quiz_evidence() -> None:
+def test_all_time_overview_uses_real_canonical_evidence() -> None:
     """All-time Analytics aggregates completed canonical evidence."""
 
     repository = FakeAnalyticsRepository()
+
     service = _service(
         repository,
     )
@@ -228,17 +294,33 @@ def test_all_time_overview_uses_real_quiz_evidence() -> None:
         period=AnalyticsPeriod.ALL_TIME,
     )
 
-    assert response.data_state is AnalyticsDataState.PARTIAL
+    assert (
+        response.data_state
+        is AnalyticsDataState.READY
+    )
 
     assert response.subject_count.value == 3
     assert response.study_material_count.value == 8
-    assert response.ready_study_material_count.value == 6
 
-    assert response.quiz_accuracy_percent.availability is (
-        AnalyticsAvailability.AVAILABLE
+    assert (
+        response.ready_study_material_count.value
+        == 6
     )
-    assert response.quiz_accuracy_percent.value == 73.33
-    assert response.quiz_accuracy_percent.sample_size == 15
+
+    assert (
+        response.quiz_accuracy_percent.availability
+        is AnalyticsAvailability.AVAILABLE
+    )
+
+    assert (
+        response.quiz_accuracy_percent.value
+        == 73.33
+    )
+
+    assert (
+        response.quiz_accuracy_percent.sample_size
+        == 15
+    )
 
     assert [
         (
@@ -270,17 +352,71 @@ def test_all_time_overview_uses_real_quiz_evidence() -> None:
         ),
     ]
 
-    assert response.flashcard_performance_percent.availability is (
-        AnalyticsAvailability.AVAILABLE
+    assert (
+        response
+        .flashcard_performance_percent
+        .availability
+        is AnalyticsAvailability.AVAILABLE
     )
-    assert response.flashcard_performance_percent.value == 66.67
-    assert response.flashcard_performance_percent.sample_size == 3
+
+    assert (
+        response
+        .flashcard_performance_percent
+        .value
+        == 66.67
+    )
+
+    assert (
+        response
+        .flashcard_performance_percent
+        .sample_size
+        == 3
+    )
+
+    assert (
+        response.study_minutes.availability
+        is AnalyticsAvailability.AVAILABLE
+    )
+
+    assert response.study_minutes.value == 100.0
+    assert response.study_minutes.sample_size == 3
+    assert response.study_minutes.message is None
+
+    assert [
+        (
+            item.week_start.isoformat(),
+            item.week_end.isoformat(),
+            item.study_minutes,
+            item.session_count,
+        )
+        for item in response.study_time_by_week
+    ] == [
+        (
+            "2026-06-29",
+            "2026-07-05",
+            10.0,
+            1,
+        ),
+        (
+            "2026-07-27",
+            "2026-08-02",
+            30.0,
+            1,
+        ),
+        (
+            "2026-08-10",
+            "2026-08-16",
+            60.0,
+            1,
+        ),
+    ]
 
 
 def test_last_7_days_excludes_old_evidence() -> None:
-    """Seven-day Analytics excludes old Quiz and Flashcard evidence."""
+    """Seven-day Analytics excludes old canonical evidence."""
 
     repository = FakeAnalyticsRepository()
+
     service = _service(
         repository,
     )
@@ -290,11 +426,53 @@ def test_last_7_days_excludes_old_evidence() -> None:
         period=AnalyticsPeriod.LAST_7_DAYS,
     )
 
-    assert response.quiz_accuracy_percent.value == 80.0
-    assert response.quiz_accuracy_percent.sample_size == 10
+    assert (
+        response.quiz_accuracy_percent.value
+        == 80.0
+    )
 
-    assert response.flashcard_performance_percent.value == 50.0
-    assert response.flashcard_performance_percent.sample_size == 2
+    assert (
+        response.quiz_accuracy_percent.sample_size
+        == 10
+    )
+
+    assert (
+        response
+        .flashcard_performance_percent
+        .value
+        == 50.0
+    )
+
+    assert (
+        response
+        .flashcard_performance_percent
+        .sample_size
+        == 2
+    )
+
+    assert response.study_minutes.value == 60.0
+    assert response.study_minutes.sample_size == 1
+
+    assert len(
+        response.study_time_by_week,
+    ) == 1
+
+    week = response.study_time_by_week[
+        0
+    ]
+
+    assert (
+        week.week_start.isoformat()
+        == "2026-08-10"
+    )
+
+    assert (
+        week.week_end.isoformat()
+        == "2026-08-16"
+    )
+
+    assert week.study_minutes == 60.0
+    assert week.session_count == 1
 
     assert len(
         response.strong_topics,
@@ -305,10 +483,11 @@ def test_last_7_days_excludes_old_evidence() -> None:
     ) == 1
 
 
-def test_last_30_days_includes_both_quiz_attempts() -> None:
-    """Thirty-day Analytics includes both deterministic attempts."""
+def test_last_30_days_includes_recent_study_activity() -> None:
+    """Thirty-day Analytics includes recent completed timer evidence."""
 
     repository = FakeAnalyticsRepository()
+
     service = _service(
         repository,
     )
@@ -318,17 +497,108 @@ def test_last_30_days_includes_both_quiz_attempts() -> None:
         period=AnalyticsPeriod.LAST_30_DAYS,
     )
 
-    assert response.quiz_accuracy_percent.value == 73.33
-    assert response.quiz_accuracy_percent.sample_size == 15
+    assert (
+        response.quiz_accuracy_percent.value
+        == 73.33
+    )
 
-    assert response.flashcard_performance_percent.value == 66.67
-    assert response.flashcard_performance_percent.sample_size == 3
+    assert (
+        response.quiz_accuracy_percent.sample_size
+        == 15
+    )
+
+    assert (
+        response
+        .flashcard_performance_percent
+        .value
+        == 66.67
+    )
+
+    assert (
+        response
+        .flashcard_performance_percent
+        .sample_size
+        == 3
+    )
+
+    assert response.study_minutes.value == 90.0
+    assert response.study_minutes.sample_size == 2
+
+    assert [
+        item.study_minutes
+        for item in response.study_time_by_week
+    ] == [
+        30.0,
+        60.0,
+    ]
+
+
+def test_weekly_study_time_aggregates_multiple_sessions_in_same_week() -> None:
+    """Sessions completed in one UTC week share one weekly bucket."""
+
+    repository = FakeAnalyticsRepository()
+
+    repository.study_activities = (
+        StudyActivityAnalyticsRecord(
+            focus_seconds=1200,
+            ended_at=datetime(
+                2026,
+                8,
+                10,
+                9,
+                0,
+                tzinfo=timezone.utc,
+            ),
+        ),
+        StudyActivityAnalyticsRecord(
+            focus_seconds=600,
+            ended_at=datetime(
+                2026,
+                8,
+                11,
+                9,
+                0,
+                tzinfo=timezone.utc,
+            ),
+        ),
+    )
+
+    service = _service(
+        repository,
+    )
+
+    response = service.get_overview(
+        user_id=USER_ID,
+        period=AnalyticsPeriod.ALL_TIME,
+    )
+
+    assert len(
+        response.study_time_by_week,
+    ) == 1
+
+    week = response.study_time_by_week[
+        0
+    ]
+
+    assert (
+        week.week_start.isoformat()
+        == "2026-08-10"
+    )
+
+    assert (
+        week.week_end.isoformat()
+        == "2026-08-16"
+    )
+
+    assert week.study_minutes == 30.0
+    assert week.session_count == 2
 
 
 def test_no_completed_quizzes_returns_available_empty_metric() -> None:
     """No Quiz evidence differs from an unavailable data source."""
 
     repository = FakeAnalyticsRepository()
+
     repository.attempts = ()
 
     service = _service(
@@ -340,21 +610,104 @@ def test_no_completed_quizzes_returns_available_empty_metric() -> None:
         period=AnalyticsPeriod.ALL_TIME,
     )
 
-    assert response.quiz_accuracy_percent.availability is (
-        AnalyticsAvailability.AVAILABLE
+    assert (
+        response.quiz_accuracy_percent.availability
+        is AnalyticsAvailability.AVAILABLE
     )
-    assert response.quiz_accuracy_percent.value is None
-    assert response.quiz_accuracy_percent.sample_size == 0
-    assert response.quiz_accuracy_percent.message is not None
+
+    assert (
+        response.quiz_accuracy_percent.value
+        is None
+    )
+
+    assert (
+        response.quiz_accuracy_percent.sample_size
+        == 0
+    )
+
+    assert (
+        response.quiz_accuracy_percent.message
+        is not None
+    )
 
     assert response.strong_topics == ()
     assert response.weak_topics == ()
+
+
+def test_no_flashcard_reviews_returns_available_empty_metric() -> None:
+    """No reviews differs from an unavailable Flashcard data source."""
+
+    repository = FakeAnalyticsRepository()
+
+    repository.flashcard_reviews = ()
+
+    service = _service(
+        repository,
+    )
+
+    response = service.get_overview(
+        user_id=USER_ID,
+        period=AnalyticsPeriod.ALL_TIME,
+    )
+
+    metric = (
+        response.flashcard_performance_percent
+    )
+
+    assert (
+        metric.availability
+        is AnalyticsAvailability.AVAILABLE
+    )
+
+    assert metric.value is None
+    assert metric.sample_size == 0
+    assert metric.message is not None
+
+
+def test_no_completed_study_activity_returns_available_empty_metric() -> None:
+    """No timer evidence differs from an unavailable duration source."""
+
+    repository = FakeAnalyticsRepository()
+
+    repository.study_activities = ()
+
+    service = _service(
+        repository,
+    )
+
+    response = service.get_overview(
+        user_id=USER_ID,
+        period=AnalyticsPeriod.ALL_TIME,
+    )
+
+    metric = response.study_minutes
+
+    assert (
+        metric.availability
+        is AnalyticsAvailability.AVAILABLE
+    )
+
+    assert metric.value is None
+    assert metric.sample_size == 0
+
+    assert metric.message == (
+        "No completed study sessions are available for "
+        "the selected period."
+    )
+
+    assert response.study_time_by_week == ()
+
+    assert (
+        response.data_state
+        is AnalyticsDataState.READY
+    )
 
 
 def test_overview_scopes_canonical_queries_to_authenticated_user() -> None:
     """Owner-scoped Analytics reads must receive the authenticated UUID."""
 
     repository = FakeAnalyticsRepository()
+
     service = _service(
         repository,
     )
@@ -370,27 +723,5 @@ def test_overview_scopes_canonical_queries_to_authenticated_user() -> None:
         USER_ID,
         USER_ID,
         USER_ID,
+        USER_ID,
     ]
-
-
-def test_no_flashcard_reviews_returns_available_empty_metric() -> None:
-    """No reviews differs from an unavailable Flashcard data source."""
-
-    repository = FakeAnalyticsRepository()
-    repository.flashcard_reviews = ()
-
-    service = _service(
-        repository,
-    )
-
-    response = service.get_overview(
-        user_id=USER_ID,
-        period=AnalyticsPeriod.ALL_TIME,
-    )
-
-    metric = response.flashcard_performance_percent
-
-    assert metric.availability is AnalyticsAvailability.AVAILABLE
-    assert metric.value is None
-    assert metric.sample_size == 0
-    assert metric.message is not None

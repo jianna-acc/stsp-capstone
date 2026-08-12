@@ -707,6 +707,85 @@ export type Database = {
           },
         ]
       }
+      study_activity_sessions: {
+        Row: {
+          break_ends_at: string | null
+          break_seconds: number
+          created_at: string
+          ended_at: string | null
+          focus_seconds: number
+          id: string
+          mode: string
+          segment_started_at: string | null
+          started_at: string
+          status: string
+          study_plan_id: string | null
+          study_session_id: string | null
+          subject_id: string | null
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          break_ends_at?: string | null
+          break_seconds?: number
+          created_at?: string
+          ended_at?: string | null
+          focus_seconds?: number
+          id?: string
+          mode?: string
+          segment_started_at?: string | null
+          started_at?: string
+          status?: string
+          study_plan_id?: string | null
+          study_session_id?: string | null
+          subject_id?: string | null
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          break_ends_at?: string | null
+          break_seconds?: number
+          created_at?: string
+          ended_at?: string | null
+          focus_seconds?: number
+          id?: string
+          mode?: string
+          segment_started_at?: string | null
+          started_at?: string
+          status?: string
+          study_plan_id?: string | null
+          study_session_id?: string | null
+          subject_id?: string | null
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "study_activity_sessions_study_plan_id_fkey"
+            columns: ["study_plan_id"]
+            isOneToOne: false
+            referencedRelation: "study_plans"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "study_activity_sessions_study_session_id_fkey"
+            columns: ["study_session_id"]
+            isOneToOne: false
+            referencedRelation: "study_sessions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "study_activity_sessions_subject_id_fkey"
+            columns: ["subject_id"]
+            isOneToOne: false
+            referencedRelation: "subjects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       study_availability: {
         Row: {
           created_at: string
@@ -1363,6 +1442,37 @@ export type Database = {
         Args: { p_study_file_id: string }
         Returns: undefined
       }
+      start_timed_study_activity_break: {
+        Args: {
+          p_activity_id: string
+          p_break_minutes: number
+          p_user_id: string
+        }
+        Returns: {
+          break_ends_at: string | null
+          break_seconds: number
+          created_at: string
+          ended_at: string | null
+          focus_seconds: number
+          id: string
+          mode: string
+          segment_started_at: string | null
+          started_at: string
+          status: string
+          study_plan_id: string | null
+          study_session_id: string | null
+          subject_id: string | null
+          title: string
+          updated_at: string
+          user_id: string
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "study_activity_sessions"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
       submit_quiz_attempt_answer: {
         Args: {
           p_attempt_id: string
@@ -1390,6 +1500,33 @@ export type Database = {
           status: string
           updated_at: string
         }[]
+      }
+      transition_study_activity_session: {
+        Args: { p_action: string; p_activity_id: string; p_user_id: string }
+        Returns: {
+          break_ends_at: string | null
+          break_seconds: number
+          created_at: string
+          ended_at: string | null
+          focus_seconds: number
+          id: string
+          mode: string
+          segment_started_at: string | null
+          started_at: string
+          status: string
+          study_plan_id: string | null
+          study_session_id: string | null
+          subject_id: string | null
+          title: string
+          updated_at: string
+          user_id: string
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "study_activity_sessions"
+          isOneToOne: false
+          isSetofReturn: true
+        }
       }
     }
     Enums: {

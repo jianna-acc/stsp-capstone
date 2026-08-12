@@ -43,13 +43,16 @@ class FakeQuery:
         rows: object,
     ) -> None:
         self.rows = rows
+
         self.selected_columns: str | None = None
+
         self.filters: list[
             tuple[
                 str,
                 object,
             ]
         ] = []
+
         self.orderings: list[
             tuple[
                 str,
@@ -104,7 +107,10 @@ class FakeClient:
 
     def __init__(self) -> None:
         self.tables: list[str] = []
-        self.queries: list[FakeQuery] = []
+
+        self.queries: list[
+            FakeQuery
+        ] = []
 
         self.rows_by_table: dict[
             str,
@@ -118,6 +124,7 @@ class FakeClient:
                     "id": "subject-2",
                 },
             ],
+
             "study_files": [
                 {
                     "id": "file-1",
@@ -129,6 +136,7 @@ class FakeClient:
                     "id": "file-3",
                 },
             ],
+
             "quiz_attempts": [
                 {
                     "id": str(
@@ -141,6 +149,7 @@ class FakeClient:
                     ),
                 },
             ],
+
             "quiz_attempt_answers": [
                 {
                     "topic": "Algebra",
@@ -151,6 +160,7 @@ class FakeClient:
                     "is_correct": False,
                 },
             ],
+
             "flashcard_review_events": [
                 {
                     "outcome": "known",
@@ -162,6 +172,21 @@ class FakeClient:
                     "outcome": "review_again",
                     "reviewed_at": (
                         "2026-08-09T05:00:00+00:00"
+                    ),
+                },
+            ],
+
+            "study_activity_sessions": [
+                {
+                    "focus_seconds": 3600,
+                    "ended_at": (
+                        "2026-08-10T06:00:00+00:00"
+                    ),
+                },
+                {
+                    "focus_seconds": 900,
+                    "ended_at": (
+                        "2026-08-09T06:00:00+00:00"
                     ),
                 },
             ],
@@ -192,6 +217,7 @@ def test_subject_count_is_scoped_to_authenticated_user() -> None:
     """Subject Analytics must include the authenticated owner filter."""
 
     client = FakeClient()
+
     repository = AnalyticsRepository(
         client,
     )
@@ -205,6 +231,7 @@ def test_subject_count_is_scoped_to_authenticated_user() -> None:
     query = client.queries[0]
 
     assert query.selected_columns == "id"
+
     assert query.filters == [
         (
             "user_id",
@@ -217,6 +244,7 @@ def test_study_file_count_is_scoped_to_authenticated_user() -> None:
     """Study-material Analytics must include the owner filter."""
 
     client = FakeClient()
+
     repository = AnalyticsRepository(
         client,
     )
@@ -241,6 +269,7 @@ def test_ready_study_file_count_adds_ready_filter() -> None:
     """Ready-material Analytics filters by owner and readiness."""
 
     client = FakeClient()
+
     repository = AnalyticsRepository(
         client,
     )
@@ -269,6 +298,7 @@ def test_completed_quiz_attempts_are_owner_scoped() -> None:
     """Quiz performance reads only completed attempts for the user."""
 
     client = FakeClient()
+
     repository = AnalyticsRepository(
         client,
     )
@@ -286,6 +316,7 @@ def test_completed_quiz_attempts_are_owner_scoped() -> None:
     assert attempt.id == ATTEMPT_ID
     assert attempt.correct_count == 8
     assert attempt.question_count == 10
+
     assert attempt.completed_at == datetime(
         2026,
         8,
@@ -327,6 +358,7 @@ def test_quiz_answers_are_scoped_to_selected_attempt() -> None:
     """Topic evidence must come only from the selected Quiz attempt."""
 
     client = FakeClient()
+
     repository = AnalyticsRepository(
         client,
     )
@@ -367,6 +399,102 @@ def test_quiz_answers_are_scoped_to_selected_attempt() -> None:
         (
             "answered_at",
             False,
+        ),
+    ]
+
+
+def test_flashcard_reviews_are_owner_scoped() -> None:
+    """Flashcard performance must read only the student's reviews."""
+
+    client = FakeClient()
+
+    repository = AnalyticsRepository(
+        client,
+    )
+
+    reviews = repository.list_flashcard_review_events(
+        user_id=USER_ID,
+    )
+
+    assert len(
+        reviews,
+    ) == 2
+
+    assert reviews[0].outcome.value == "known"
+    assert reviews[1].outcome.value == "review_again"
+
+    query = client.queries[0]
+
+    assert query.selected_columns == "outcome,reviewed_at"
+
+    assert query.filters == [
+        (
+            "user_id",
+            str(USER_ID),
+        ),
+    ]
+
+    assert query.orderings == [
+        (
+            "reviewed_at",
+            True,
+        ),
+    ]
+
+
+def test_completed_study_activities_are_owner_scoped() -> None:
+    """Actual Study Time reads only completed timer evidence."""
+
+    client = FakeClient()
+
+    repository = AnalyticsRepository(
+        client,
+    )
+
+    activities = (
+        repository.list_completed_study_activities(
+            user_id=USER_ID,
+        )
+    )
+
+    assert len(
+        activities,
+    ) == 2
+
+    assert activities[0].focus_seconds == 3600
+    assert activities[1].focus_seconds == 900
+
+    assert activities[0].ended_at == datetime(
+        2026,
+        8,
+        10,
+        6,
+        0,
+        tzinfo=timezone.utc,
+    )
+
+    query = client.queries[0]
+
+    assert (
+        query.selected_columns
+        == "focus_seconds,ended_at"
+    )
+
+    assert query.filters == [
+        (
+            "user_id",
+            str(USER_ID),
+        ),
+        (
+            "status",
+            "completed",
+        ),
+    ]
+
+    assert query.orderings == [
+        (
+            "ended_at",
+            True,
         ),
     ]
 
@@ -428,40 +556,30 @@ def test_invalid_completed_quiz_attempt_is_rejected() -> None:
         )
 
 
-def test_flashcard_reviews_are_owner_scoped() -> None:
-    """Flashcard performance must read only the student's reviews."""
+def test_invalid_study_activity_duration_is_rejected() -> None:
+    """Invalid persisted focus duration must not reach Analytics."""
 
     client = FakeClient()
+
+    client.rows_by_table[
+        "study_activity_sessions"
+    ] = [
+        {
+            "focus_seconds": -1,
+            "ended_at": (
+                "2026-08-10T06:00:00+00:00"
+            ),
+        },
+    ]
 
     repository = AnalyticsRepository(
         client,
     )
 
-    reviews = repository.list_flashcard_review_events(
-        user_id=USER_ID,
-    )
-
-    assert len(
-        reviews,
-    ) == 2
-
-    assert reviews[0].outcome.value == "known"
-    assert reviews[1].outcome.value == "review_again"
-
-    query = client.queries[0]
-
-    assert query.selected_columns == "outcome,reviewed_at"
-
-    assert query.filters == [
-        (
-            "user_id",
-            str(USER_ID),
-        ),
-    ]
-
-    assert query.orderings == [
-        (
-            "reviewed_at",
-            True,
-        ),
-    ]
+    with pytest.raises(
+        AnalyticsRepositoryError,
+        match="Study Activity duration is invalid",
+    ):
+        repository.list_completed_study_activities(
+            user_id=USER_ID,
+        )

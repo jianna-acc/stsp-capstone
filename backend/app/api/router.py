@@ -13,6 +13,7 @@ from app.api.routes import (
     quizzes,
     rag,
     reviewers,
+    study_activity,
     study_conversations,
     study_plan_generation,
     study_plans,
@@ -75,6 +76,10 @@ api_router.include_router(
 
 api_router.include_router(
     study_plan_generation.router,
+)
+
+api_router.include_router(
+    study_activity.router,
 )
 
 api_router.include_router(
