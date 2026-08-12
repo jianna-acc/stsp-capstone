@@ -1,9 +1,10 @@
 /* File: /frontend/features/reviewers/components/ReviewerWorkspace.module.css */
-/* Purpose: Styles the protected Reviewer generation workspace. */
+/* Purpose: Styles the responsive Reviewer history and generation workspace. */
 
 .page {
   min-height: 100%;
-  padding: 2rem;
+  width: 100%;
+  padding-block: 2rem;
   background:
     radial-gradient(
       circle at top right,
@@ -15,6 +16,34 @@
 
 .container {
   width: 100%;
+  max-width: none;
+  padding-inline: 2rem;
+}
+
+.workspace {
+  display: grid;
+  grid-template-columns:
+    minmax(18rem, 20rem)
+    minmax(0, 1fr);
+
+  align-items: start;
+
+  column-gap: clamp(
+    2rem,
+    3vw,
+    3.5rem
+  );
+}
+
+.historyColumn {
+  min-width: 0;
+  position: sticky;
+  top: 1.5rem;
+  align-self: start;
+}
+
+.reviewerColumn {
+  min-width: 0;
 }
 
 .header {
@@ -25,8 +54,35 @@
   min-width: 0;
 }
 
-@media (max-width: 48em) {
+@media (max-width: 75em) {
+  .container {
+    padding-inline: 1.5rem;
+  }
+
+  .workspace {
+    grid-template-columns:
+      minmax(16rem, 18rem)
+      minmax(0, 1fr);
+
+    column-gap: 2rem;
+  }
+}
+
+@media (max-width: 62em) {
   .page {
-    padding: 1rem;
+    padding-block: 1rem;
+  }
+
+  .container {
+    padding-inline: 1rem;
+  }
+
+  .workspace {
+    grid-template-columns: 1fr;
+    row-gap: 1.5rem;
+  }
+
+  .historyColumn {
+    position: static;
   }
 }

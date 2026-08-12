@@ -156,53 +156,55 @@ export function SavedReviewerHistory({
                       padding="md"
                     >
                       <Stack gap="sm">
+                        <Stack gap="xs">
                         <Group
-                          justify="space-between"
-                          align="flex-start"
+                            gap="xs"
+                            align="flex-start"
+                            wrap="nowrap"
                         >
-                          <div>
-                            <Group gap="xs">
-                              <IconBook2
-                                size={18}
-                              />
+                            <IconBook2
+                            size={18}
+                            style={{
+                                flexShrink: 0,
+                                marginTop: 3,
+                            }}
+                            />
 
-                              <Text fw={600}>
-                                {
-                                  reviewer.title
-                                }
-                              </Text>
-                            </Group>
-
-                            <Text
-                              size="xs"
-                              c="dimmed"
-                              mt={4}
-                            >
-                              {formatReviewerDate(
-                                reviewer.updated_at,
-                              )}
-                            </Text>
-                          </div>
-
-                          <Group gap="xs">
-                            <Badge
-                              variant="light"
-                            >
-                              {
-                                reviewer.reviewer_length
-                              }
-                            </Badge>
-
-                            <Badge
-                              variant="outline"
-                            >
-                              Generation{" "}
-                              {
-                                reviewer.generation_count
-                              }
-                            </Badge>
-                          </Group>
+                        <Text
+                        fw={600}
+                        lineClamp={2}
+                        style={{
+                            minWidth: 0,
+                            overflowWrap: "anywhere",
+                        }}
+                        >
+                        {reviewer.title}
+                        </Text>
                         </Group>
+
+                        <Text
+                            size="xs"
+                            c="dimmed"
+                        >
+                            {formatReviewerDate(
+                            reviewer.updated_at,
+                            )}
+                        </Text>
+
+                        <Group
+                            gap="xs"
+                            wrap="wrap"
+                        >
+                            <Badge variant="light">
+                            {reviewer.reviewer_length}
+                            </Badge>
+
+                            <Badge variant="outline">
+                            Generation{" "}
+                            {reviewer.generation_count}
+                            </Badge>
+                        </Group>
+                        </Stack>
 
                         <Group
                           justify="flex-end"

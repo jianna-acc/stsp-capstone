@@ -290,18 +290,59 @@ async function handleDeleteReviewer(
     }
   }
   return (
-    <main
+  <main
+    className={
+      classes.page
+    }
+  >
+    <Container
+      size="xl"
       className={
-        classes.page
+        classes.container
       }
     >
-      <Container
-        size="xl"
+      <div
         className={
-          classes.container
+          classes.workspace
         }
       >
-        <Stack gap="xl">
+        <div
+          className={
+            classes.historyColumn
+          }
+        >
+          <SavedReviewerHistory
+            reviewers={
+              savedReviewers
+            }
+            isLoading={
+              isLoadingHistory
+            }
+            error={
+              historyError
+            }
+            selectedReviewerId={
+              generatedReviewer?.id ??
+              null
+            }
+            deletingReviewerId={
+              deletingReviewerId
+            }
+            onOpen={
+              handleOpenReviewer
+            }
+            onDelete={
+              handleDeleteReviewer
+            }
+          />
+        </div>
+
+        <Stack
+          gap="xl"
+          className={
+            classes.reviewerColumn
+          }
+        >
           <header
             className={
               classes.header
@@ -310,7 +351,6 @@ async function handleDeleteReviewer(
             <Group
               align="flex-start"
               wrap="nowrap"
-              gap="md"
             >
               <ThemeIcon
                 size={52}
@@ -323,7 +363,6 @@ async function handleDeleteReviewer(
               >
                 <IconBook2
                   size={28}
-                  stroke={1.8}
                 />
               </ThemeIcon>
 
@@ -362,31 +401,6 @@ async function handleDeleteReviewer(
             </Group>
           </header>
 
-        <SavedReviewerHistory
-            reviewers={
-                savedReviewers
-            }
-            isLoading={
-                isLoadingHistory
-            }
-            error={
-                historyError
-            }
-            selectedReviewerId={
-                generatedReviewer?.id ??
-                null
-            }
-            deletingReviewerId={
-                deletingReviewerId
-            }
-            onOpen={
-                handleOpenReviewer
-            }
-            onDelete={
-                handleDeleteReviewer
-            }
-            />
-
           <ReviewerGenerationForm
             filterOptions={
               filterOptions
@@ -406,22 +420,23 @@ async function handleDeleteReviewer(
             >
               <ReviewerResult
                 reviewer={
-                    generatedReviewer
+                  generatedReviewer
                 }
                 onRegenerate={
-                    handleRegenerate
+                  handleRegenerate
                 }
                 isRegenerating={
-                    isRegenerating
+                  isRegenerating
                 }
                 regenerationError={
-                    regenerationError
+                  regenerationError
                 }
-                />
+              />
             </section>
           )}
         </Stack>
-      </Container>
-    </main>
-  );
+      </div>
+    </Container>
+  </main>
+);
 }
