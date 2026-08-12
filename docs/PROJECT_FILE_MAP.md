@@ -1,7 +1,7 @@
 <!-- File: /docs/PROJECT_FILE_MAP.md -->
 <!-- Purpose: Master map of important project files, purposes, owners, statuses, and system connections. -->
 
-# STS Capstone — STUDY AI Project File Map
+**# STS Capstone — STUDY AI Project File Map**
 
 This document is the central reference for important project files.
 
@@ -9,7 +9,7 @@ Update it whenever files, APIs, migrations, owners, or major system connections 
 
 ---
 
-# Status Definitions
+**# Status Definitions**
 
 | Status | Meaning |
 |---|---|
@@ -23,7 +23,7 @@ Update it whenever files, APIs, migrations, owners, or major system connections 
 
 ---
 
-# Phase Status
+**# Phase Status**
 
 | Phase | Scope | Status |
 |---|---|---|
@@ -39,12 +39,13 @@ Update it whenever files, APIs, migrations, owners, or major system connections 
 | Phase 6D | Large-material multi-pass reviewer generation | Integrated |
 | Track A | Flashcard backend, large-material generation, frontend study UI, and saved-deck management | Integrated |
 | Track B | Quiz generation, attempts, history, review, and deletion | Integrated |
+| Track E | Analytics and Flashcard self-assessment evidence | Integrated |
 | Phase 7A–7E | Academic Tasks, output confidence, deterministic priority, frontend, live integration | Integrated |
 | Track D | Study plans, scheduling, calendar workspace, Academic Task integration, and regeneration | Integrated |
-| Later | Analytics and deployment | Planned |
+| Later | Additional Analytics, deployment, and monitoring | Planned |
 ---
 
-# Team Ownership
+**# Team Ownership**
 
 | Member | Main Responsibility |
 |---|---|
@@ -56,7 +57,7 @@ Update it whenever files, APIs, migrations, owners, or major system connections 
 
 ---
 
-# Root
+**# Root**
 
 | Path | Status | Owner | Purpose | Connections |
 |---|---|---|---|---|
@@ -71,7 +72,7 @@ Update it whenever files, APIs, migrations, owners, or major system connections 
 
 ---
 
-# Documentation
+**# Documentation**
 
 | Path | Status | Owner | Purpose | Connections |
 |---|---|---|---|---|
@@ -90,11 +91,12 @@ Update it whenever files, APIs, migrations, owners, or major system connections 
 | `/docs/AI_RAG_API_ENDPOINT.md` | Integrated | Member 3 | RAG endpoint | FastAPI, frontend |
 | `/docs/AI_REVIEWER_GENERATION.md` | Integrated | Member 3 | Reviewer generation and large-material batching design | Gemini, reviewer services |
 | `/docs/AI_QUIZ_GENERATION.md` | Integrated | Member 3 | Quiz generation, answer-key security, attempts, scoring, history, and review | Gemini, Quiz services |
+| `/docs/ANALYTICS_DESIGN.md` | Ready | Track E — Analytics | Analytics metrics, canonical sources, Flashcard review evidence, and security | Track E backend, Track A, Track B |
 | `/docs/ACADEMIC_TASK_PRIORITY.md` | Integrated | Backend/Documentation | Academic Task deterministic priority design, weights, fallbacks, and API behavior | Academic Task backend and frontend |
 
 ---
 
-# Frontend Foundation
+**# Frontend Foundation**
 
 | Path | Status | Owner | Purpose | Connections |
 |---|---|---|---|---|
@@ -111,7 +113,7 @@ Update it whenever files, APIs, migrations, owners, or major system connections 
 
 ---
 
-# Supabase Frontend Clients
+**# Supabase Frontend Clients**
 
 | Path | Status | Owner | Purpose | Connections |
 |---|---|---|---|---|
@@ -124,7 +126,7 @@ Update it whenever files, APIs, migrations, owners, or major system connections 
 
 ---
 
-# Authentication
+**# Authentication**
 
 | Path | Status | Owner | Purpose | Connections |
 |---|---|---|---|---|
@@ -139,7 +141,7 @@ Update it whenever files, APIs, migrations, owners, or major system connections 
 
 ---
 
-# Learning Profile
+**# Learning Profile**
 
 | Path | Status | Owner | Purpose | Connections |
 |---|---|---|---|---|
@@ -158,7 +160,7 @@ Update it whenever files, APIs, migrations, owners, or major system connections 
 
 ---
 
-# Subjects and Files
+**# Subjects and Files**
 
 | Path | Status | Owner | Purpose | Connections |
 |---|---|---|---|---|
@@ -177,7 +179,7 @@ Update it whenever files, APIs, migrations, owners, or major system connections 
 
 ---
 
-# Study Assistant Frontend
+**# Study Assistant Frontend**
 
 | Path | Status | Owner | Purpose | Connections |
 |---|---|---|---|---|
@@ -193,7 +195,7 @@ Update it whenever files, APIs, migrations, owners, or major system connections 
 
 ---
 
-# Backend Foundation
+**# Backend Foundation**
 
 | Path | Status | Owner | Purpose | Connections |
 |---|---|---|---|---|
@@ -206,7 +208,7 @@ Update it whenever files, APIs, migrations, owners, or major system connections 
 
 ---
 
-# File Processing Backend
+**# File Processing Backend**
 
 | Path | Status | Owner | Purpose | Connections |
 |---|---|---|---|---|
@@ -217,7 +219,7 @@ Update it whenever files, APIs, migrations, owners, or major system connections 
 
 ---
 
-# AI Provider, Retrieval, and RAG
+**# AI Provider, Retrieval, and RAG**
 
 | Path | Status | Owner | Purpose | Connections |
 |---|---|---|---|---|
@@ -235,7 +237,7 @@ Update it whenever files, APIs, migrations, owners, or major system connections 
 
 ---
 
-# Reviewer Backend
+**# Reviewer Backend**
 
 | Path | Status | Owner | Purpose | Connections |
 |---|---|---|---|---|
@@ -251,9 +253,9 @@ Update it whenever files, APIs, migrations, owners, or major system connections 
 
 ---
 
-# Track A — Flashcards
+**# Track A — Flashcards**
 
-## Backend
+**## Backend**
 
 | Path | Status | Owner | Purpose | Connections |
 |---|---|---|---|---|
@@ -268,7 +270,7 @@ Update it whenever files, APIs, migrations, owners, or major system connections 
 | `/backend/app/services/flashcard_orchestration.py` | Integrated | Backend | Source, generation, persistence orchestration | Flashcard services |
 | `/backend/app/api/routes/flashcards.py` | Integrated | Backend | Protected Flashcard API | FastAPI |
 
-## Frontend
+**## Frontend**
 
 | Path | Status | Owner | Purpose | Connections |
 |---|---|---|---|---|
@@ -283,9 +285,9 @@ Update it whenever files, APIs, migrations, owners, or major system connections 
 
 ---
 
-# Track B — Quizzes
+**# Track B — Quizzes**
 
-## Backend
+**## Backend**
 
 | Path | Status | Owner | Purpose | Connections |
 |---|---|---|---|---|
@@ -301,7 +303,7 @@ Update it whenever files, APIs, migrations, owners, or major system connections 
 | `/backend/app/api/routes/quizzes.py` | Integrated | Backend | Generate/list/get/delete Quiz routes | FastAPI |
 | `/backend/app/api/routes/quiz_attempts.py` | Integrated | Backend | Attempt/history/submit/result/review routes | FastAPI |
 
-## Frontend
+**## Frontend**
 
 | Path | Status | Owner | Purpose | Connections |
 |---|---|---|---|---|
@@ -321,9 +323,9 @@ Update it whenever files, APIs, migrations, owners, or major system connections 
 
 ---
 
-# Phase 7 — Academic Tasks
+**# Phase 7 — Academic Tasks**
 
-## Database and Migrations
+**## Database and Migrations**
 
 | Path | Status | Owner | Purpose | Connections |
 |---|---|---|---|---|
@@ -331,7 +333,7 @@ Update it whenever files, APIs, migrations, owners, or major system connections 
 | `/supabase/migrations/20260809153000_add_output_confidence_and_task_output_type.sql` | Integrated | Database | Adds academic output-confidence storage and Academic Task `output_type` | Learning profile, priority engine |
 | `/frontend/types/database.ts` | Generated | Supabase CLI | Generated database contracts including Track C changes | Frontend |
 
-## Backend
+**## Backend**
 
 | Path | Status | Owner | Purpose | Connections |
 |---|---|---|---|---|
@@ -348,7 +350,7 @@ Update it whenever files, APIs, migrations, owners, or major system connections 
 | `/backend/app/api/academic_task_priority_dependency.py` | Integrated | Backend | Priority dependency assembly | FastAPI |
 | `/backend/app/api/routes/academic_tasks.py` | Integrated | Backend | Protected CRUD, status, and prioritized routes | Academic Task services |
 
-## Frontend
+**## Frontend**
 
 | Path | Status | Owner | Purpose | Connections |
 |---|---|---|---|---|
@@ -363,7 +365,7 @@ Update it whenever files, APIs, migrations, owners, or major system connections 
 | `/frontend/features/academic-tasks/components/AcademicTasksWorkspace.module.css` | Integrated | Frontend | Responsive independent-column task-card layout | Workspace |
 | `/frontend/features/navigation/components/ProtectedAppShell.tsx` | Integrated | Frontend | Protected navigation including Flashcards, Quizzes, and Academic Tasks | Protected pages |
 
-## Backend Tests
+**## Backend Tests**
 
 | Path | Status | Purpose |
 |---|---|---|
@@ -377,7 +379,7 @@ Update it whenever files, APIs, migrations, owners, or major system connections 
 | `/backend/tests/test_academic_task_schemas.py` | Ready | Task CRUD schemas |
 | `/backend/tests/test_academic_task_service.py` | Ready | Task CRUD service |
 
-## Frontend Tests
+**## Frontend Tests**
 
 | Path | Status | Purpose |
 |---|---|---|
@@ -390,18 +392,18 @@ Update it whenever files, APIs, migrations, owners, or major system connections 
 | `/frontend/features/academic-tasks/components/AcademicTasksWorkspace.mutations.test.tsx` | Ready | Edit, status, delete, priority refresh |
 
 ---
-# Track D — Study Plans and Scheduling
+**# Track D — Study Plans and Scheduling**
 
-## Database and Migrations
+**## Database and Migrations**
 
 | Path | Status | Owner | Purpose | Connections |
 |---|---|---|---|---|
 | `/supabase/migrations/20260810002500_create_study_plans_foundation.sql` | Ready | Database | Creates owned study plans and study sessions with validation and RLS | Study Plan backend |
 | `/supabase/migrations/20260811002500_add_study_plan_regeneration_rpc.sql` | Ready | Database | Adds transactional generated-session replacement | Regeneration backend |
 
-The Track D migration files are committed but shared database application is coordinated separately.
+The Track D migration files are committed and applied to the shared linked database.
 
-## Study Plan Backend
+**## Study Plan Backend**
 
 | Path | Status | Owner | Purpose | Connections |
 |---|---|---|---|---|
@@ -422,7 +424,7 @@ The Track D migration files are committed but shared database application is coo
 | `/backend/app/api/routes/study_plan_generation.py` | Integrated | Backend | Protected generation and regeneration routes | Generation services |
 | `/backend/app/api/router.py` | Integrated | Backend | Registers Study Plan routes in the shared API | FastAPI application |
 
-## Study Plan Frontend
+**## Study Plan Frontend**
 
 | Path | Status | Owner | Purpose | Connections |
 |---|---|---|---|---|
@@ -435,7 +437,7 @@ The Track D migration files are committed but shared database application is coo
 | `/frontend/features/study-plans/components/RegenerateStudyPlanModal.tsx` | Integrated | Frontend | Generated-plan refresh and unscheduled-work feedback | Regeneration API |
 | `/frontend/features/navigation/components/ProtectedAppShell.tsx` | Integrated | Frontend | Adds Study Plan to protected navigation | `/study-plan` |
 
-## Study Plan Tests
+**## Study Plan Tests**
 
 | Path | Status | Purpose |
 |---|---|---|
@@ -454,9 +456,9 @@ The Track D migration files are committed but shared database application is coo
 
 ---
 
-# Migrations
+**# Migrations**
 
-## Phase 5G
+**## Phase 5G**
 
 | Path | Status | Purpose |
 |---|---|---|
@@ -465,21 +467,21 @@ The Track D migration files are committed but shared database application is coo
 | `/supabase/migrations/20260806223000_add_study_conversation_summary_state.sql` | Integrated | Summary state |
 | `/supabase/migrations/20260806234000_restrict_study_conversation_summary_updates.sql` | Integrated | Summary security |
 
-## Phase 6A
+**## Phase 6A**
 
 | Path | Status | Purpose |
 |---|---|---|
 | `/supabase/migrations/20260807230500_create_reviewers.sql` | Integrated | Retained migration-history entry |
 | `/supabase/migrations/20260808053929_create_reviewers_foundation.sql` | Integrated | Reviewer persistence and RLS foundation |
 
-## Track A
+**## Track A**
 
 | Path | Status | Purpose |
 |---|---|---|
 | `/supabase/migrations/20260809142000_create_flashcard_foundation.sql` | Integrated | Flashcard deck/card foundation |
 | `/supabase/migrations/20260809145600_create_flashcard_persistence_rpc.sql` | Integrated | Atomic Flashcard persistence RPC |
 
-## Track B
+**## Track B**
 
 | Path | Status | Purpose |
 |---|---|---|
@@ -488,7 +490,7 @@ The Track D migration files are committed but shared database application is coo
 | `/supabase/migrations/20260809223500_create_quiz_attempt_foundation.sql` | Integrated | Quiz attempts and answer history |
 | `/supabase/migrations/20260809225500_create_quiz_attempt_rpcs.sql` | Integrated | Attempt start and answer grading |
 
-## Phase 7
+**## Phase 7**
 
 | Path | Status | Purpose |
 |---|---|---|
@@ -497,7 +499,45 @@ The Track D migration files are committed but shared database application is coo
 
 ---
 
-# Important Supabase Resources
+**## Phase 6 Track E — Analytics**
+
+| File | Status | Purpose | Owner | Connections |
+|---|---|---|---|---|
+| `backend/app/api/analytics_dependency.py` | Ready | Constructs the Analytics service and repository dependency graph. | Track E — Analytics | Supabase client, Analytics repository, Analytics service |
+| `backend/app/api/routes/analytics.py` | Ready | Exposes `GET /api/analytics/overview`. | Track E — Analytics | Authentication dependency, Analytics service |
+| `backend/app/repositories/analytics_repository.py` | Ready | Reads owner-scoped subject, study-material, completed Quiz, Quiz-answer, and Flashcard-review evidence. | Track E — Analytics | `subjects`, `study_files`, `quiz_attempts`, `quiz_attempt_answers`, `flashcard_review_events` |
+| `backend/app/schemas/analytics.py` | Ready | Defines Analytics response contracts, periods, metric availability, and topic-performance records. | Track E — Analytics | Analytics route and service |
+| `backend/app/services/analytics_errors.py` | Ready | Defines controlled Analytics feature errors. | Track E — Analytics | Analytics repository and route |
+| `backend/app/services/analytics_service.py` | Ready | Aggregates current inventory, weighted Quiz accuracy, Quiz topic performance, and Flashcard self-assessment performance. | Track E — Analytics | Analytics repository, Track A Flashcards, Track B Quiz evidence |
+| `backend/app/schemas/flashcard_review.py` | Ready | Defines Flashcard self-assessment review request, outcome, and response contracts. | Track E — Analytics | Flashcard review API and persistence |
+| `backend/app/repositories/flashcard_review_repository.py` | Ready | Validates owned Flashcard review targets and persists durable review events. | Track E — Analytics | `flashcard_decks`, `flashcards`, `flashcard_review_events` |
+| `backend/app/services/flashcard_review_errors.py` | Ready | Defines controlled Flashcard-review errors. | Track E — Analytics | Flashcard review repository and API |
+| `backend/app/services/flashcard_review_service.py` | Ready | Coordinates Flashcard self-assessment persistence. | Track E — Analytics | Flashcard review repository |
+| `backend/app/api/flashcard_review_dependency.py` | Ready | Constructs the Flashcard-review repository/service dependency graph. | Track E — Analytics | Supabase client, review repository, review service |
+| `backend/app/api/routes/flashcard_reviews.py` | Ready | Exposes the protected Flashcard self-assessment review endpoint. | Track E — Analytics | Authentication, review service |
+| `frontend/features/flashcards/types.ts` | Ready | Includes Flashcard review request/response and outcome contracts used by the frontend. | Track A + Track E integration | Flashcard frontend API |
+| `frontend/features/flashcards/api.ts` | Ready | Sends authenticated Flashcard review events in addition to existing Flashcard requests. | Track A + Track E integration | Protected Flashcard API |
+| `frontend/features/flashcards/components/FlashcardStudyViewer.tsx` | Ready | Lets the student persist `I Know This` or `Review Again` after revealing an answer. | Track A + Track E integration | Flashcard review API |
+| `backend/tests/test_analytics_api_endpoint.py` | Ready | Tests Analytics authentication, reporting periods, responses, and controlled failures. | Track E — Analytics | Analytics API |
+| `backend/tests/test_analytics_repository.py` | Ready | Tests owner-scoped canonical Analytics reads including Quiz and Flashcard-review evidence. | Track E — Analytics | Analytics repository |
+| `backend/tests/test_analytics_router_registration.py` | Ready | Protects Analytics router registration. | Track E — Analytics | FastAPI application router |
+| `backend/tests/test_analytics_service.py` | Ready | Tests Quiz/Flashcard aggregation, periods, topic classification, empty evidence, and owner scope. | Track E — Analytics | Analytics service |
+| `backend/tests/test_flashcard_review_api_endpoint.py` | Ready | Tests Flashcard-review authentication, valid writes, and request validation. | Track E — Analytics | Flashcard review API |
+| `backend/tests/test_flashcard_review_migration.py` | Ready | Protects the Flashcard review-event migration security foundation. | Track E — Analytics | Supabase migration |
+| `backend/tests/test_flashcard_review_repository.py` | Ready | Tests owner/card validation and review persistence. | Track E — Analytics | Flashcard review repository |
+| `backend/tests/test_flashcard_review_router_registration.py` | Ready | Protects Flashcard-review route registration. | Track E — Analytics | FastAPI application router |
+| `backend/tests/test_flashcard_review_service.py` | Ready | Tests Flashcard-review service delegation. | Track E — Analytics | Flashcard review service |
+| `frontend/features/flashcards/api.test.ts` | Ready | Tests authenticated Flashcard review requests and response validation alongside existing Flashcard API behavior. | Track A + Track E integration | Frontend Flashcard API |
+| `frontend/features/flashcards/components/FlashcardStudyViewer.test.tsx` | Ready | Tests review controls, known/review-again persistence, failures, and navigation behavior. | Track A + Track E integration | Flashcard study viewer |
+| `supabase/migrations/20260811162000_create_flashcard_review_events.sql` | Integrated | Adds durable owner-scoped Flashcard self-assessment evidence for Analytics. | Track E — Analytics | `flashcard_decks`, `flashcards`, RLS |
+| `docs/ANALYTICS_DESIGN.md` | Ready | Documents Track E architecture, canonical metrics, security, validation, and remaining unavailable metrics. | Track E — Analytics | Phase 6 implementation |
+
+Track E's currently implemented metrics remain based on canonical Quiz and Flashcard evidence.
+
+The Track E migration has been applied to the shared remote database. Linked migration history is aligned through `20260811162000`, and a subsequent linked dry run reports that the remote database is up to date.
+
+
+**# Important Supabase Resources**
 
 ```text
 auth.users
@@ -521,6 +561,7 @@ public.reviewers
 
 public.flashcard_decks
 public.flashcards
+public.flashcard_review_events
 
 public.quizzes
 public.quiz_questions
@@ -536,9 +577,9 @@ storage bucket: study-materials
 
 ---
 
-# Environment Variables
+**# Environment Variables**
 
-## Frontend
+**## Frontend**
 
 ```text
 NEXT_PUBLIC_SITE_URL
@@ -547,7 +588,7 @@ NEXT_PUBLIC_SUPABASE_URL
 NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY
 ```
 
-## Backend
+**## Backend**
 
 ```text
 SUPABASE_URL
@@ -560,7 +601,7 @@ Real private values must never be committed.
 
 ---
 
-# Local-Only Files
+**# Local-Only Files**
 
 ```text
 frontend/.env.local
@@ -578,7 +619,7 @@ supabase/.temp
 
 ---
 
-# File Header Rule
+**# File Header Rule**
 
 Manually created source files must include their filepath when the format supports comments.
 
@@ -616,7 +657,7 @@ Strict JSON files are exempt.
 
 ---
 
-# Update Rule
+**# Update Rule**
 
 Update this map whenever:
 

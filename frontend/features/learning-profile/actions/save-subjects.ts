@@ -12,7 +12,6 @@ import {
 } from "next/navigation";
 
 import {
-  LEARNING_OUTPUT_TYPES,
   type LearningOutputType,
 } from "../constants";
 import {

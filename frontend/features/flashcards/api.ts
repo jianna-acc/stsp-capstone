@@ -1,6 +1,6 @@
 // File: /frontend/features/flashcards/api.ts
-// Purpose: Sends authenticated Flashcard generation and saved-deck
-// requests to the protected FastAPI Flashcard endpoints.
+// Purpose: Sends authenticated Flashcard generation, saved-deck,
+// and self-assessment review requests to protected FastAPI endpoints.
 
 "use client";
 
@@ -16,6 +16,8 @@ import type {
   FlashcardItem,
   FlashcardListResponse,
   FlashcardLocatorType,
+  FlashcardReviewCreateRequest,
+  FlashcardReviewResponse,
   FlashcardScopeType,
   FlashcardSource,
 } from "./types";
@@ -127,30 +129,41 @@ function buildFlashcardDeckUrl(
   ].join("");
 }
 
+function buildFlashcardReviewUrl(
+  deckId: string,
+): string {
+  return [
+    buildFlashcardDeckUrl(
+      deckId,
+    ),
+    "/reviews",
+  ].join("");
+}
+
 async function getAccessToken():
-    Promise<string> {
-    const supabase = createClient();
+  Promise<string> {
+  const supabase = createClient();
 
-    const {
-        data: {
-        session,
-        },
-        error: sessionError,
-    } = await supabase.auth.getSession();
+  const {
+    data: {
+      session,
+    },
+    error: sessionError,
+  } = await supabase.auth.getSession();
 
-    if (
-        sessionError ||
-        !session?.access_token
-    ) {
-        throw new FlashcardApiError(
-        SESSION_EXPIRED_MESSAGE,
-        401,
-        "AUTHENTICATION_REQUIRED",
-        );
-    }
+  if (
+    sessionError ||
+    !session?.access_token
+  ) {
+    throw new FlashcardApiError(
+      SESSION_EXPIRED_MESSAGE,
+      401,
+      "AUTHENTICATION_REQUIRED",
+    );
+  }
 
-    return session.access_token;
-    }
+  return session.access_token;
+}
 
 async function readJsonResponse(
   response: Response,
@@ -456,6 +469,36 @@ function isFlashcardListResponse(
   );
 }
 
+function isFlashcardReviewResponse(
+  value: unknown,
+): value is FlashcardReviewResponse {
+  if (!isRecord(value)) {
+    return false;
+  }
+
+  return (
+    isNonEmptyString(
+      value.id,
+    ) &&
+    isNonEmptyString(
+      value.deck_id,
+    ) &&
+    typeof value.card_position ===
+      "number" &&
+    Number.isInteger(
+      value.card_position,
+    ) &&
+    value.card_position >= 0 &&
+    (
+      value.outcome === "known" ||
+      value.outcome === "review_again"
+    ) &&
+    isNonEmptyString(
+      value.reviewed_at,
+    )
+  );
+}
+
 async function performJsonRequest(
   url: string,
   requestInit: RequestInit,
@@ -645,6 +688,78 @@ export async function getFlashcardDeck(
       "The Flashcard service returned an invalid response.",
       502,
       "INVALID_FLASHCARD_RESPONSE",
+    );
+  }
+
+  return payload;
+}
+
+export async function recordFlashcardReview(
+  deckId: string,
+  request: FlashcardReviewCreateRequest,
+  options: FlashcardRequestOptions = {},
+): Promise<FlashcardReviewResponse> {
+  const normalizedDeckId =
+    deckId.trim();
+
+  if (!normalizedDeckId) {
+    throw new FlashcardApiError(
+      "A Flashcard deck must be selected.",
+      400,
+      "FLASHCARD_DECK_ID_REQUIRED",
+    );
+  }
+
+  if (
+    !Number.isInteger(
+      request.card_position,
+    ) ||
+    request.card_position < 0
+  ) {
+    throw new FlashcardApiError(
+      "The Flashcard position is invalid.",
+      400,
+      "FLASHCARD_REVIEW_POSITION_INVALID",
+    );
+  }
+
+  const accessToken =
+    await getAccessToken();
+
+  const payload =
+    await performJsonRequest(
+      buildFlashcardReviewUrl(
+        normalizedDeckId,
+      ),
+      {
+        method: "POST",
+
+        headers: {
+          "Content-Type":
+            "application/json",
+
+          Authorization:
+            `Bearer ${accessToken}`,
+        },
+
+        body: JSON.stringify(
+          request,
+        ),
+
+        cache: "no-store",
+        signal: options.signal,
+      },
+    );
+
+  if (
+    !isFlashcardReviewResponse(
+      payload,
+    )
+  ) {
+    throw new FlashcardApiError(
+      "The Flashcard service returned an invalid review response.",
+      502,
+      "INVALID_FLASHCARD_REVIEW_RESPONSE",
     );
   }
 

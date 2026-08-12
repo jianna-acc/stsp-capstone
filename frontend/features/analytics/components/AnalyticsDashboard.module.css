@@ -1,0 +1,58 @@
+/* File: /frontend/features/analytics/components/AnalyticsDashboard.module.css */
+/* Purpose: Styles the student-facing Analytics dashboard. */
+
+.dashboard {
+  min-height: 100%;
+}
+
+.header {
+  padding-bottom: 4px;
+}
+
+.periodContainer {
+  width: min(100%, 430px);
+}
+
+.metricCard {
+  height: 100%;
+  background:
+    linear-gradient(
+      180deg,
+      rgba(124, 58, 237, 0.018),
+      transparent
+    ),
+    var(--mantine-color-body);
+}
+
+.metricValue {
+  margin-top: 4px;
+  font-size: clamp(1.75rem, 3vw, 2.25rem);
+  line-height: 1.1;
+}
+
+.chartCard {
+  overflow: hidden;
+}
+
+.topicPanel {
+  height: 100%;
+}
+
+.topicRow + .topicRow {
+  padding-top: var(--mantine-spacing-sm);
+  border-top: 1px solid var(--mantine-color-gray-2);
+}
+
+.emptyState {
+  background: var(--mantine-color-gray-0);
+}
+
+@media (max-width: 48em) {
+  .header {
+    align-items: stretch;
+  }
+
+  .periodContainer {
+    width: 100%;
+  }
+}
