@@ -1,5 +1,4 @@
 # File: /backend/app/api/quiz_orchestration_dependency.py
-
 # Purpose: Assembles Quiz source loading, AI generation,
 # and atomic persistence into one FastAPI dependency.
 
@@ -10,8 +9,8 @@ from typing import Annotated
 
 from fastapi import Depends
 
-from app.ai.providers import (
-    GeminiProvider,
+from app.ai.provider_factory import (
+    create_generation_provider,
 )
 from app.api.quiz_dependency import (
     get_quiz_service,
@@ -55,7 +54,7 @@ async def get_quiz_orchestration_service(
 ]:
     """Build the complete Quiz-generation workflow."""
 
-    provider = GeminiProvider(
+    provider = create_generation_provider(
         settings=settings,
     )
 
