@@ -511,11 +511,13 @@ describe(
           ),
         ).toBeInTheDocument();
 
-        expect(
-          screen.getByText(
-            "History",
-          ),
-        ).toBeInTheDocument();
+          expect(
+            screen.getAllByText(
+              "History",
+            ).length,
+          ).toBeGreaterThan(
+            0,
+          );
 
         await waitFor(
           () => {
@@ -936,10 +938,14 @@ it(
     ).toBeInTheDocument();
 
     expect(
-      await screen.findByText(
-        "Study for Biology exam",
-      ),
-    ).toBeInTheDocument();
+      (
+        await screen.findAllByText(
+          "Study for Biology exam",
+        )
+      ).length,
+    ).toBeGreaterThan(
+      0,
+    );
 
     expect(
       screen.queryByText(
@@ -948,5 +954,129 @@ it(
     ).not.toBeInTheDocument();
   },
 );
+
+it(
+  "shows academic task deadlines and opens task details",
+  async () => {
+    const user =
+      userEvent.setup();
+
+    academicTaskApiMocks
+      .listPrioritizedAcademicTasks
+      .mockResolvedValueOnce([
+        {
+          ...PRIORITIZED_TASKS[0],
+          task: {
+            ...PRIORITIZED_TASKS[0]
+              .task,
+            deadline:
+              "2026-08-14T18:00:00+08:00",
+            description:
+              "Review Chapters 4 and 5.",
+          },
+        },
+      ]);
+
+    renderWorkspace();
+
+    expect(
+      await screen.findByRole(
+        "heading",
+        {
+          name:
+            "Finals Plan",
+          level: 2,
+        },
+      ),
+    ).toBeInTheDocument();
+
+    const deadlineCard =
+      await screen.findByRole(
+        "button",
+        {
+          name:
+            "View academic task details: Study for Biology exam",
+        },
+      );
+
+    expect(
+      within(
+        deadlineCard,
+      ).getByText(
+        "Deadline",
+      ),
+    ).toBeInTheDocument();
+
+    expect(
+      within(
+        deadlineCard,
+      ).getByText(
+        "Study for Biology exam",
+      ),
+    ).toBeInTheDocument();
+
+    await user.click(
+      deadlineCard,
+    );
+
+    const dialog =
+      await screen.findByRole(
+        "dialog",
+        {
+          name:
+            "Academic task details",
+        },
+      );
+
+    expect(
+      within(
+        dialog,
+      ).getByText(
+        "Study for Biology exam",
+      ),
+    ).toBeInTheDocument();
+
+    expect(
+      within(
+        dialog,
+      ).getByText(
+        "Biology",
+      ),
+    ).toBeInTheDocument();
+
+    expect(
+      within(
+        dialog,
+      ).getByText(
+        "Review Chapters 4 and 5.",
+      ),
+    ).toBeInTheDocument();
+
+    expect(
+      within(
+        dialog,
+      ).getByText(
+        "Hard",
+      ),
+    ).toBeInTheDocument();
+
+    expect(
+      within(
+        dialog,
+      ).getByRole(
+        "link",
+        {
+          name:
+            "Open Academic Tasks",
+        },
+      ),
+    ).toHaveAttribute(
+      "href",
+      "/academic-tasks",
+    );
+  },
+);
+
+
   },
 );

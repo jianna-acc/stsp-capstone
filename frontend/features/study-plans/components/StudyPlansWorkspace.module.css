@@ -112,6 +112,45 @@ weekly session calendar. */
     );
 }
 
+.deadlineButton {
+  display: block;
+  width: 100%;
+  text-align: left;
+}
+
+.deadlineCard {
+  border-color: var(--mantine-color-red-4);
+  background:
+    light-dark(
+      var(--mantine-color-red-0),
+      var(--mantine-color-dark-6)
+    );
+  transition:
+    transform 120ms ease,
+    border-color 120ms ease,
+    box-shadow 120ms ease;
+}
+
+.deadlineButton:hover .deadlineCard {
+  transform: translateY(-1px);
+  border-color: var(--mantine-color-red-6);
+  box-shadow: var(--mantine-shadow-xs);
+}
+
+.deadlineCardCompleted {
+  border-color: var(--mantine-color-green-4);
+  background:
+    light-dark(
+      var(--mantine-color-green-0),
+      var(--mantine-color-dark-6)
+    );
+}
+
+.deadlineButton:hover
+  .deadlineCardCompleted {
+  border-color: var(--mantine-color-green-6);
+}
+
 @media (max-width: 62em) {
   .workspace {
     grid-template-columns: 1fr;

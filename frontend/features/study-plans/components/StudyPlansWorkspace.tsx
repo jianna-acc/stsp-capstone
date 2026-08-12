@@ -10,6 +10,7 @@ import {
   Badge,
   Button,
   Card,
+  Divider,
   Group,
   Loader,
   Modal,
@@ -43,6 +44,10 @@ import {
 import {
   listPrioritizedAcademicTasks,
 } from "@/features/academic-tasks/api";
+
+import type {
+  AcademicTaskPriorityResponse,
+} from "@/features/academic-tasks/types";
 
 import type {
   SubjectSummary,
@@ -246,6 +251,62 @@ function formatTime(
 }
 
 
+function formatDateTime(
+  isoValue: string,
+): string {
+  return new Intl.DateTimeFormat(
+    undefined,
+    {
+      dateStyle: "medium",
+      timeStyle: "short",
+    },
+  ).format(
+    new Date(
+      isoValue,
+    ),
+  );
+}
+
+
+function formatLabel(
+  value: string,
+): string {
+  return value
+    .split("_")
+    .map(
+      (part) =>
+        part.charAt(0).toUpperCase() +
+        part.slice(1),
+    )
+    .join(" ");
+}
+
+
+function formatDuration(
+  minutes: number,
+): string {
+  if (minutes < 60) {
+    return `${minutes} min`;
+  }
+
+  const hours =
+    Math.floor(
+      minutes / 60,
+    );
+
+  const remainingMinutes =
+    minutes % 60;
+
+  if (
+    remainingMinutes === 0
+  ) {
+    return `${hours} hr`;
+  }
+
+  return `${hours} hr ${remainingMinutes} min`;
+}
+
+
 export function StudyPlansWorkspace({
   initialSubjects,
 }: StudyPlansWorkspaceProps) {
@@ -296,6 +357,27 @@ export function StudyPlansWorkspace({
     setSessionsError,
   ] = useState<
     string | null
+  >(null);
+
+  const [
+    academicTasks,
+    setAcademicTasks,
+  ] = useState<
+    AcademicTaskPriorityResponse[]
+  >([]);
+
+  const [
+    academicTasksError,
+    setAcademicTasksError,
+  ] = useState<
+    string | null
+  >(null);
+
+  const [
+    selectedAcademicTask,
+    setSelectedAcademicTask,
+  ] = useState<
+    AcademicTaskPriorityResponse | null
   >(null);
 
   const [
@@ -497,6 +579,103 @@ const [
       },
       [
         sessions,
+      ],
+    );
+
+  const planAcademicTasks =
+    useMemo(
+    () => {
+      if (!selectedPlan) {
+        return [];
+      }
+
+      return academicTasks.filter(
+        (item) => {
+          if (
+            item.task.status ===
+            "cancelled"
+          ) {
+            return false;
+          }
+
+          const deadlineKey =
+            localDateKey(
+              new Date(
+                item.task.deadline,
+              ),
+            );
+
+          return (
+            deadlineKey >=
+              selectedPlan.starts_on &&
+            deadlineKey <=
+              selectedPlan.ends_on
+          );
+        },
+      );
+    },
+    [
+      academicTasks,
+      selectedPlan,
+    ],
+  );
+
+
+  const deadlinesByDay =
+    useMemo(
+      () => {
+        const result =
+          new Map<
+            string,
+            AcademicTaskPriorityResponse[]
+          >();
+
+        planAcademicTasks.forEach(
+          (item) => {
+            const key =
+              localDateKey(
+                new Date(
+                  item.task.deadline,
+                ),
+              );
+
+            const current =
+              result.get(
+                key,
+              ) ?? [];
+
+            current.push(
+              item,
+            );
+
+            result.set(
+              key,
+              current,
+            );
+          },
+        );
+
+        result.forEach(
+          (items) => {
+            items.sort(
+              (
+                first,
+                second,
+              ) =>
+                new Date(
+                  first.task.deadline,
+                ).getTime() -
+                new Date(
+                  second.task.deadline,
+                ).getTime(),
+            );
+          },
+        );
+
+        return result;
+      },
+      [
+        planAcademicTasks,
       ],
     );
 
@@ -1023,6 +1202,58 @@ async function handleDeleteSession() {
   }
 }
 
+  useEffect(
+    () => {
+      const controller =
+        new AbortController();
+
+      async function loadAcademicTaskDeadlines() {
+        try {
+          const loadedTasks =
+            await listPrioritizedAcademicTasks(
+              {
+                limit: 100,
+                signal:
+                  controller.signal,
+              },
+            );
+
+          setAcademicTasks(
+            loadedTasks,
+          );
+
+          setAcademicTasksError(
+            null,
+          );
+        } catch (
+          error
+        ) {
+          if (
+            isAbortError(
+              error,
+            )
+          ) {
+            return;
+          }
+
+          setAcademicTasksError(
+            getErrorMessage(
+              error,
+              "Academic task deadlines could not be loaded.",
+            ),
+          );
+        }
+      }
+
+      void loadAcademicTaskDeadlines();
+
+      return () => {
+        controller.abort();
+      };
+    },
+    [],
+  );
+
 async function handleOpenGeneratePlan() {
   setGenerationTasksLoading(
     true,
@@ -1038,6 +1269,14 @@ async function handleOpenGeneratePlan() {
         limit:
           100,
       });
+
+      setAcademicTasks(
+        prioritizedTasks,
+      );
+
+      setAcademicTasksError(
+        null,
+      );
 
     const schedulableTasks =
       academicTasksToSchedulableTasks(
@@ -1093,6 +1332,14 @@ async function handleOpenRegeneratePlan():
       await listPrioritizedAcademicTasks({
         limit: 100,
       });
+
+      setAcademicTasks(
+        prioritizedTasks,
+      );
+
+      setAcademicTasksError(
+        null,
+      );
 
     const schedulableTasks =
       academicTasksToSchedulableTasks(
@@ -1291,8 +1538,9 @@ function handleCloseRegeneratePlan():
             mt="xs"
           >
             Review your saved study
-            plans and see scheduled
-            sessions across the week.
+            plans, scheduled sessions,
+            and academic task deadlines
+            across the week.
           </Text>
         </div>
 
@@ -1791,6 +2039,27 @@ function handleCloseRegeneratePlan():
                         {actionError}
                     </Alert>
                     ) : null}
+
+              {academicTasksError ? (
+                <Alert
+                  color="yellow"
+                  title="Academic task deadlines unavailable"
+                  icon={
+                    <IconAlertCircle
+                      size={18}
+                    />
+                  }
+                  withCloseButton
+                  onClose={() =>
+                    setAcademicTasksError(
+                      null,
+                    )
+                  }
+                >
+                  {academicTasksError}
+                </Alert>
+              ) : null}
+
               {sessionsStatus ===
               "loading" ? (
                 <Group
@@ -1878,6 +2147,11 @@ function handleCloseRegeneratePlan():
                           key,
                         ) ?? [];
 
+                      const dayDeadlines =
+                        deadlinesByDay.get(
+                          key,
+                        ) ?? [];
+
                       return (
                         <Paper
                           key={key}
@@ -1922,8 +2196,122 @@ function handleCloseRegeneratePlan():
                             gap="sm"
                             mt="sm"
                           >
+                            {dayDeadlines.map(
+                              (item) => {
+                                const completed =
+                                  item.task.status ===
+                                  "completed";
+
+                                return (
+                                  <UnstyledButton
+                                    key={
+                                      `deadline-${item.task.id}`
+                                    }
+                                    style={{
+                                      display:
+                                        "block",
+                                      width:
+                                        "100%",
+                                      textAlign:
+                                        "left",
+                                    }}
+                                    aria-label={
+                                      `View academic task details: ${item.task.title}`
+                                    }
+                                    onClick={() =>
+                                      setSelectedAcademicTask(
+                                        item,
+                                      )
+                                    }
+                                  >
+                                    <Card
+                                      withBorder
+                                      radius="md"
+                                      padding="sm"
+                                      style={{
+                                        borderColor:
+                                          completed
+                                            ? "var(--mantine-color-green-4)"
+                                            : "var(--mantine-color-red-4)",
+                                        background:
+                                          completed
+                                            ? "var(--mantine-color-green-light)"
+                                            : "var(--mantine-color-red-light)",
+                                      }}
+                                    >
+                                      <Group
+                                        justify="space-between"
+                                        gap="xs"
+                                        wrap="nowrap"
+                                      >
+                                        <Badge
+                                          size="xs"
+                                          color={
+                                            completed
+                                              ? "green"
+                                              : "red"
+                                          }
+                                          variant="light"
+                                        >
+                                          Deadline
+                                        </Badge>
+
+                                        <Text
+                                          size="xs"
+                                          fw={700}
+                                          c={
+                                            completed
+                                              ? "green"
+                                              : "red"
+                                          }
+                                        >
+                                          {formatTime(
+                                            item.task.deadline,
+                                          )}
+                                        </Text>
+                                      </Group>
+
+                                      <Text
+                                        fw={700}
+                                        size="sm"
+                                        mt="xs"
+                                      >
+                                        {
+                                          item.task.title
+                                        }
+                                      </Text>
+
+                                      <Text
+                                        size="xs"
+                                        c="dimmed"
+                                        mt={3}
+                                      >
+                                        {subjectNames.get(
+                                          item.task.subject_id,
+                                        ) ??
+                                          "Subject"}
+                                      </Text>
+
+                                      {completed ? (
+                                        <Text
+                                          size="xs"
+                                          c="green"
+                                          fw={600}
+                                          mt="xs"
+                                        >
+                                          Completed
+                                        </Text>
+                                      ) : null}
+                                    </Card>
+                                  </UnstyledButton>
+                                );
+                              },
+                            )}
+
                             {daySessions.length ===
-                            0 ? (
+                              0 &&
+                            dayDeadlines.length ===
+                              0 ? (
                               <Text
                                 size="xs"
                                 c="dimmed"
@@ -1931,107 +2319,107 @@ function handleCloseRegeneratePlan():
                                   classes.noSessions
                                 }
                               >
-                                No sessions
+                                No sessions or deadlines
                               </Text>
-                            ) : (
-                              daySessions.map(
-                                (
-                                  session,
-                                ) => (
-                                  <Card
-                                    key={
-                                      session.id
-                                    }
-                                    withBorder
-                                    radius="md"
-                                    padding="sm"
-                                    className={
-                                      classes.sessionCard
-                                    }
+                            ) : null}
+
+                            {daySessions.map(
+                              (
+                                session,
+                              ) => (
+                                <Card
+                                  key={
+                                    session.id
+                                  }
+                                  withBorder
+                                  radius="md"
+                                  padding="sm"
+                                  className={
+                                    classes.sessionCard
+                                  }
+                                >
+                                  <Text
+                                    fw={700}
+                                    size="sm"
                                   >
-                                    <Text
-                                      fw={700}
-                                      size="sm"
-                                    >
-                                      {
-                                        session.title
-                                      }
-                                    </Text>
+                                    {
+                                      session.title
+                                    }
+                                  </Text>
+
+                                  <Text
+                                    size="xs"
+                                    c="dimmed"
+                                    mt={3}
+                                  >
+                                    {subjectNames.get(
+                                      session.subject_id,
+                                    ) ??
+                                      "Subject"}
+                                  </Text>
+
+                                  <Group
+                                    gap={5}
+                                    mt="sm"
+                                    wrap="nowrap"
+                                  >
+                                    <IconClock
+                                      size={13}
+                                    />
 
                                     <Text
                                       size="xs"
-                                      c="dimmed"
-                                      mt={3}
                                     >
-                                      {subjectNames.get(
-                                        session.subject_id,
-                                      ) ??
-                                        "Subject"}
+                                      {formatTime(
+                                        session.starts_at,
+                                      )}
+                                      {" – "}
+                                      {formatTime(
+                                        session.ends_at,
+                                      )}
                                     </Text>
+                                  </Group>
 
-                                    <Group
-                                      gap={5}
-                                      mt="sm"
-                                      wrap="nowrap"
+                                  <Group
+                                    justify="space-between"
+                                    align="center"
+                                    mt="sm"
+                                  >
+                                    <Badge
+                                      size="xs"
+                                      variant="light"
+                                      color={
+                                        session.origin ===
+                                        "generated"
+                                          ? "violet"
+                                          : "blue"
+                                      }
                                     >
-                                      <IconClock
-                                        size={13}
+                                      {
+                                        session.origin
+                                      }
+                                    </Badge>
+
+                                    <ActionIcon
+                                      size="sm"
+                                      variant="subtle"
+                                      color="red"
+                                      aria-label={
+                                        `Delete ${session.title}`
+                                      }
+                                      onClick={() =>
+                                        setSessionToDelete(
+                                          session,
+                                        )
+                                      }
+                                    >
+                                      <IconTrash
+                                        size={14}
                                       />
-
-                                      <Text
-                                        size="xs"
-                                      >
-                                        {formatTime(
-                                          session.starts_at,
-                                        )}
-                                        {" – "}
-                                        {formatTime(
-                                          session.ends_at,
-                                        )}
-                                      </Text>
-                                    </Group>
-
-                                    <Group
-                                        justify="space-between"
-                                        align="center"
-                                        mt="sm"
-                                        >
-                                        <Badge
-                                            size="xs"
-                                            variant="light"
-                                            color={
-                                            session.origin ===
-                                            "generated"
-                                                ? "violet"
-                                                : "blue"
-                                            }
-                                        >
-                                            {
-                                            session.origin
-                                            }
-                                        </Badge>
-
-                                        <ActionIcon
-                                            size="sm"
-                                            variant="subtle"
-                                            color="red"
-                                            aria-label={
-                                            `Delete ${session.title}`
-                                            }
-                                            onClick={() =>
-                                            setSessionToDelete(
-                                                session,
-                                            )
-                                            }
-                                        >
-                                            <IconTrash
-                                            size={14}
-                                            />
-                                        </ActionIcon>
-                                        </Group>
-                                  </Card>
-                                ),
-                              )
+                                    </ActionIcon>
+                                  </Group>
+                                </Card>
+                              ),
                             )}
                           </Stack>
                         </Paper>
@@ -2112,6 +2500,284 @@ function handleCloseRegeneratePlan():
           }
         />
       ) : null}
+
+
+      <Modal
+        opened={
+          selectedAcademicTask !==
+          null
+        }
+        onClose={() =>
+          setSelectedAcademicTask(
+            null,
+          )
+        }
+        title="Academic task details"
+        size="lg"
+        centered
+      >
+        {selectedAcademicTask ? (
+          <Stack gap="md">
+            <Group
+              justify="space-between"
+              align="flex-start"
+              wrap="nowrap"
+            >
+              <div>
+                <Text
+                  size="xs"
+                  c="dimmed"
+                  tt="uppercase"
+                  fw={700}
+                >
+                  Academic task
+                </Text>
+
+                <Text
+                  fw={700}
+                  size="lg"
+                  mt={3}
+                >
+                  {
+                    selectedAcademicTask
+                      .task
+                      .title
+                  }
+                </Text>
+              </div>
+
+              <Badge
+                variant="light"
+              >
+                Priority{" "}
+                {Math.round(
+                  selectedAcademicTask
+                    .priority
+                    .total_score,
+                )}
+              </Badge>
+            </Group>
+
+            <Divider />
+
+            <Stack gap="xs">
+              <Group
+                justify="space-between"
+                wrap="nowrap"
+              >
+                <Text
+                  size="sm"
+                  c="dimmed"
+                >
+                  Subject
+                </Text>
+
+                <Text
+                  size="sm"
+                  fw={600}
+                  ta="right"
+                >
+                  {subjectNames.get(
+                    selectedAcademicTask
+                      .task
+                      .subject_id,
+                  ) ?? "Subject"}
+                </Text>
+              </Group>
+
+              <Group
+                justify="space-between"
+                wrap="nowrap"
+              >
+                <Text
+                  size="sm"
+                  c="dimmed"
+                >
+                  Deadline
+                </Text>
+
+                <Text
+                  size="sm"
+                  fw={600}
+                  ta="right"
+                >
+                  {formatDateTime(
+                    selectedAcademicTask
+                      .task
+                      .deadline,
+                  )}
+                </Text>
+              </Group>
+
+              <Group
+                justify="space-between"
+                wrap="nowrap"
+              >
+                <Text
+                  size="sm"
+                  c="dimmed"
+                >
+                  Status
+                </Text>
+
+                <Text
+                  size="sm"
+                  fw={600}
+                >
+                  {formatLabel(
+                    selectedAcademicTask
+                      .task
+                      .status,
+                  )}
+                </Text>
+              </Group>
+
+              <Group
+                justify="space-between"
+                wrap="nowrap"
+              >
+                <Text
+                  size="sm"
+                  c="dimmed"
+                >
+                  Estimated time
+                </Text>
+
+                <Text
+                  size="sm"
+                  fw={600}
+                >
+                  {formatDuration(
+                    selectedAcademicTask
+                      .task
+                      .estimated_minutes,
+                  )}
+                </Text>
+              </Group>
+
+              <Group
+                justify="space-between"
+                wrap="nowrap"
+              >
+                <Text
+                  size="sm"
+                  c="dimmed"
+                >
+                  Difficulty
+                </Text>
+
+                <Text
+                  size="sm"
+                  fw={600}
+                >
+                  {formatLabel(
+                    selectedAcademicTask
+                      .task
+                      .difficulty,
+                  )}
+                </Text>
+              </Group>
+
+              <Group
+                justify="space-between"
+                wrap="nowrap"
+              >
+                <Text
+                  size="sm"
+                  c="dimmed"
+                >
+                  Task type
+                </Text>
+
+                <Text
+                  size="sm"
+                  fw={600}
+                >
+                  {formatLabel(
+                    selectedAcademicTask
+                      .task
+                      .task_type,
+                  )}
+                </Text>
+              </Group>
+
+              <Group
+                justify="space-between"
+                wrap="nowrap"
+              >
+                <Text
+                  size="sm"
+                  c="dimmed"
+                >
+                  Output type
+                </Text>
+
+                <Text
+                  size="sm"
+                  fw={600}
+                >
+                  {formatLabel(
+                    selectedAcademicTask
+                      .task
+                      .output_type,
+                  )}
+                </Text>
+              </Group>
+            </Stack>
+
+            <Divider />
+
+            <div>
+              <Text
+                size="sm"
+                fw={700}
+              >
+                Description
+              </Text>
+
+              <Text
+                size="sm"
+                c={
+                  selectedAcademicTask
+                    .task
+                    .description
+                    ? undefined
+                    : "dimmed"
+                }
+                mt={4}
+              >
+                {selectedAcademicTask
+                  .task
+                  .description ??
+                  "No description provided."}
+              </Text>
+            </div>
+
+            <Group
+              justify="flex-end"
+              mt="xs"
+            >
+              <Button
+                variant="default"
+                onClick={() =>
+                  setSelectedAcademicTask(
+                    null,
+                  )
+                }
+              >
+                Close
+              </Button>
+
+              <Button
+                component="a"
+                href="/academic-tasks"
+              >
+                Open Academic Tasks
+              </Button>
+            </Group>
+          </Stack>
+        ) : null}
+      </Modal>
 
 
       <Modal
