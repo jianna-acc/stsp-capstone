@@ -1,17 +1,17 @@
 <!-- File: /docs/api-contracts.md -->
 <!-- Purpose: Documents implemented communication contracts between the frontend, FastAPI backend, worker, AI services, and Supabase. -->
 
-# API Contracts
+**# API Contracts**
 
 This document records the implemented application API and important database RPC contracts.
 
 ---
 
-# General API Information
+**# General API Information**
 
 | Item | Value |
 |---|---|
-| Development backend | `http://127.0.0.1:8000` |
+| Development backend | `http\://127.0.0.1:8000` |
 | API prefix | `/api` |
 | Format | JSON |
 | Backend | FastAPI |
@@ -29,9 +29,9 @@ Clients must not submit a trusted `user_id`.
 
 ---
 
-# Public Endpoint
+**# Public Endpoint**
 
-## Health Check
+**## Health Check**
 
 ```http
 GET /api/health
@@ -43,16 +43,16 @@ Representative response:
 
 ```json
 {
-  "status": "healthy",
-  "service": "STS Capstone API",
-  "version": "0.1.0",
-  "environment": "development"
+  "status": "healthy",
+  "service": "STS Capstone API",
+  "version": "0.1.0",
+  "environment": "development"
 }
 ```
 
 ---
 
-# Internal File Processing Security
+**# Internal File Processing Security**
 
 Internal processing routes require:
 
@@ -70,7 +70,7 @@ The processor key must never be sent to browser code.
 
 ---
 
-# Validate Study File Source
+**# Validate Study File Source**
 
 ```http
 POST /api/internal/file-processing/{file_id}/validate-source
@@ -94,7 +94,7 @@ The backend verifies:
 
 ---
 
-# Process Study File
+**# Process Study File**
 
 ```http
 POST /api/internal/file-processing/{file_id}/process
@@ -120,7 +120,7 @@ The workflow performs:
 
 ---
 
-# Study Assistant RAG Endpoint
+**# Study Assistant RAG Endpoint**
 
 ```http
 POST /api/rag/answer
@@ -132,12 +132,12 @@ Representative request:
 
 ```json
 {
-  "question": "What are the main ideas in my uploaded notes?",
-  "conversation_id": "optional-conversation-uuid",
-  "subject_id": "optional-subject-uuid",
-  "study_file_id": "optional-study-file-uuid",
-  "match_count": 5,
-  "similarity_threshold": 0.5
+  "question": "What are the main ideas in my uploaded notes?",
+  "conversation_id": "optional-conversation-uuid",
+  "subject_id": "optional-subject-uuid",
+  "study_file_id": "optional-study-file-uuid",
+  "match_count": 5,
+  "similarity_threshold": 0.5
 }
 ```
 
@@ -149,7 +149,7 @@ A no-context result is a normal successful result.
 
 ---
 
-# Saved Conversation API
+**# Saved Conversation API**
 
 Base path:
 
@@ -159,7 +159,7 @@ Base path:
 
 All routes require bearer authentication.
 
-## Create Conversation
+**## Create Conversation**
 
 ```http
 POST /api/study-conversations
@@ -171,7 +171,7 @@ Successful status:
 201 Created
 ```
 
-## List Conversations
+**## List Conversations**
 
 ```http
 GET /api/study-conversations
@@ -189,7 +189,7 @@ Allowed range:
 1 to 50
 ```
 
-## Get Conversation
+**## Get Conversation**
 
 ```http
 GET /api/study-conversations/{conversation_id}
@@ -207,13 +207,13 @@ Allowed range:
 1 to 500
 ```
 
-## Rename Conversation
+**## Rename Conversation**
 
 ```http
 PATCH /api/study-conversations/{conversation_id}
 ```
 
-## Delete Conversation
+**## Delete Conversation**
 
 ```http
 DELETE /api/study-conversations/{conversation_id}
@@ -229,9 +229,9 @@ The client must not parse JSON from the successful 204 response.
 
 ---
 
-# Important Database RPC Contracts
+**# Important Database RPC Contracts**
 
-## File Processing
+**## File Processing**
 
 ```text
 public.queue_study_file_processing(uuid)
@@ -244,7 +244,7 @@ public.recover_stale_file_processing_jobs(integer, integer)
 public.replace_study_file_ai_chunks(...)
 ```
 
-## Learning Profile
+**## Learning Profile**
 
 ```text
 public.complete_learning_profile_onboarding()
@@ -253,7 +253,7 @@ public.replace_learning_output_confidences(...)
 
 `replace_learning_output_confidences` persists the authenticated student's academic output-confidence values.
 
-## Flashcards
+**## Flashcards**
 
 ```text
 public.create_flashcard_deck_with_cards(...)
@@ -261,7 +261,7 @@ public.create_flashcard_deck_with_cards(...)
 
 The trusted backend uses this RPC to atomically create the deck and ordered cards.
 
-## Quizzes
+**## Quizzes**
 
 ```text
 public.create_quiz_with_questions(...)
@@ -273,7 +273,7 @@ Quiz persistence and grading are trusted backend operations.
 
 ---
 
-# Reviewer API
+**# Reviewer API**
 
 Reviewer endpoints require authenticated Supabase bearer authentication.
 
@@ -281,7 +281,7 @@ The backend derives the trusted student identity from the token.
 
 Requests cannot provide or override a trusted `user_id`.
 
-## Generate Reviewer
+**## Generate Reviewer**
 
 ```http
 POST /api/reviewers/generate
@@ -306,19 +306,19 @@ Reviewer generation uses processed owned study material.
 
 It does not use similarity-based RAG retrieval.
 
-## List Reviewers
+**## List Reviewers**
 
 ```http
 GET /api/reviewers
 ```
 
-## Get Reviewer
+**## Get Reviewer**
 
 ```http
 GET /api/reviewers/{reviewer_id}
 ```
 
-## Delete Reviewer
+**## Delete Reviewer**
 
 ```http
 DELETE /api/reviewers/{reviewer_id}
@@ -330,7 +330,7 @@ Successful status:
 204 No Content
 ```
 
-## Regenerate Reviewer
+**## Regenerate Reviewer**
 
 ```http
 POST /api/reviewers/{reviewer_id}/regenerate
@@ -338,7 +338,7 @@ POST /api/reviewers/{reviewer_id}/regenerate
 
 Regeneration is owner-scoped and reuses the reviewer's saved scope.
 
-## Reviewer Security
+**## Reviewer Security**
 
 1. Bearer authentication determines the trusted student.
 2. Requests cannot choose `user_id`.
@@ -349,13 +349,13 @@ Regeneration is owner-scoped and reuses the reviewer's saved scope.
 
 ---
 
-# Flashcard API
+**# Flashcard API**
 
 Flashcard endpoints require authenticated Supabase bearer authentication.
 
 Requests cannot provide or override a trusted `user_id`.
 
-## Generate Flashcards
+**## Generate Flashcards**
 
 ```http
 POST /api/flashcards/generate
@@ -380,10 +380,10 @@ Representative file-scope request:
 
 ```json
 {
-  "scope_type": "file",
-  "subject_id": "subject-uuid",
-  "study_file_id": "study-file-uuid",
-  "card_count": 20
+  "scope_type": "file",
+  "subject_id": "subject-uuid",
+  "study_file_id": "study-file-uuid",
+  "card_count": 20
 }
 ```
 
@@ -403,7 +403,7 @@ For subject scope:
 
 Large-material generation uses deterministic ordered source batches and final synthesis.
 
-## List Flashcard Decks
+**## List Flashcard Decks**
 
 ```http
 GET /api/flashcards
@@ -415,13 +415,13 @@ Optional query:
 subject_id
 ```
 
-## Get Flashcard Deck
+**## Get Flashcard Deck**
 
 ```http
 GET /api/flashcards/{deck_id}
 ```
 
-## Delete Flashcard Deck
+**## Delete Flashcard Deck**
 
 ```http
 DELETE /api/flashcards/{deck_id}
@@ -435,25 +435,124 @@ Successful status:
 
 Deleting the deck cascades to its child Flashcards.
 
-## Flashcard Security
-
-1. Bearer authentication determines trusted student identity.
-2. Requests cannot choose `user_id`.
-3. Source loading is ownership scoped.
-4. Only ready material may be used.
-5. Browser clients cannot call the trusted persistence RPC.
-6. Generated output must pass validation before persistence.
-7. Saved reads and deletes are owner-scoped.
+**## Flashcard Security**
 
 ---
 
-# Quiz API
+**## Record Flashcard Review**
+
+```http
+POST /api/flashcards/{deck_id}/reviews
+```
+
+Persists one authenticated student self-assessment for a Flashcard after its answer is revealed.
+
+Representative request:
+
+```json
+{
+  "card_position": 0,
+  "outcome": "known"
+}
+```
+
+Supported outcomes:
+
+```text
+known
+review_again
+```
+
+Representative response:
+
+```json
+{
+  "id": "review-uuid",
+  "deck_id": "deck-uuid",
+  "card_position": 0,
+  "outcome": "known",
+  "reviewed_at": "2026-08-11T08:00:00Z"
+}
+```
+
+The authenticated student's UUID is derived from the bearer token and cannot be supplied by the request body.
+
+The backend verifies that:
+
+- the deck belongs to the authenticated student;
+- the requested card position exists in that deck;
+- the outcome is one of the supported self-assessment values.
+
+Successful status:
+
+```text
+201 Created
+```
+
+---
+
+**# Flashcard API Errors**
+
+Controlled Flashcard errors use:
+
+```json
+{
+  "error_code": "FLASHCARD_NOT_FOUND",
+  "message": "The requested Flashcard deck was not found."
+}
+```
+
+Current controlled mappings include:
+
+| HTTP | Error Code | Meaning |
+|---|---|---|
+| `400` | `FLASHCARD_VALIDATION_FAILED` | Flashcard operation is invalid |
+| `404` | `FLASHCARD_NOT_FOUND` | Deck or owned source material was not found |
+| `409` | `FLASHCARD_SOURCE_UNAVAILABLE` | Selected study material is not ready |
+| `500` | `FLASHCARD_GENERATION_RESPONSE_FAILED` | Generated Flashcard output could not be processed |
+| `500` | `FLASHCARD_RESPONSE_FAILED` | Flashcard response could not be completed |
+| `502` | `FLASHCARD_GENERATION_FAILED` | AI generation provider failed |
+| `503` | `FLASHCARD_PERSISTENCE_FAILED` | Flashcard storage is temporarily unavailable |
+| `503` | `FLASHCARD_SOURCE_STORAGE_FAILED` | Study-material source loading is temporarily unavailable |
+| `400` | Flashcard review validation failure | Review request is invalid |
+| `404` | Flashcard review target not found | Deck/card review target is missing or not owned |
+| `500` | Flashcard review response failure | Persisted review response could not be processed |
+| `503` | Flashcard review persistence failure | Review storage is temporarily unavailable |
+
+Authentication failures continue to use the existing protected-API authentication behavior.
+
+---
+
+**# Flashcard Security Contract**
+
+Flashcard API security requirements:
+
+1. The authenticated bearer token determines the trusted student identity.
+2. The request body cannot choose `user_id`.
+3. File-scope generation must use a study file owned by the authenticated student.
+4. Subject-scope generation loads only ready files owned by the authenticated student.
+5. Source chunks are loaded through trusted backend operations.
+6. Browser clients cannot directly create generated Flashcard decks or cards.
+7. The trusted persistence RPC is executable only by the backend `service_role`.
+8. Saved-deck reads and deletes remain ownership scoped.
+9. Generated Flashcard content must be grounded in selected processed study material.
+10. Study-material content is treated as untrusted prompt content.
+11. Generated output must pass schema, exact-card-count, and duplicate validation before persistence.
+12. Raw backend secrets, provider errors, and database details must not appear in public API errors.
+13. Flashcard review requests cannot provide a trusted `user_id`.
+14. Flashcard reviews are accepted only for owned decks and valid card positions.
+15. Browser clients cannot directly insert `flashcard_review_events`; writes pass through the trusted backend.
+16. Authenticated browser reads of Flashcard review events are owner-scoped through RLS.
+
+---
+
+**# Quiz API**
 
 Quiz endpoints require authenticated Supabase bearer authentication.
 
 Requests cannot provide or override a trusted `user_id`.
 
-## Generate Quiz
+**## Generate Quiz**
 
 ```http
 POST /api/quizzes/generate
@@ -463,12 +562,12 @@ Representative request:
 
 ```json
 {
-  "scope_type": "subject",
-  "subject_id": "subject-uuid",
-  "study_file_id": null,
-  "quiz_type": "mixed",
-  "difficulty": "medium",
-  "question_count": 10
+  "scope_type": "subject",
+  "subject_id": "subject-uuid",
+  "study_file_id": null,
+  "quiz_type": "mixed",
+  "difficulty": "medium",
+  "question_count": 10
 }
 ```
 
@@ -503,19 +602,19 @@ accepted_answers
 explanation
 ```
 
-## List Saved Quizzes
+**## List Saved Quizzes**
 
 ```http
 GET /api/quizzes
 ```
 
-## Get Saved Quiz
+**## Get Saved Quiz**
 
 ```http
 GET /api/quizzes/{quiz_id}
 ```
 
-## Delete Saved Quiz
+**## Delete Saved Quiz**
 
 ```http
 DELETE /api/quizzes/{quiz_id}
@@ -529,9 +628,9 @@ Successful status:
 
 ---
 
-# Quiz Attempt API
+**# Quiz Attempt API**
 
-## Start Attempt
+**## Start Attempt**
 
 ```http
 POST /api/quizzes/{quiz_id}/attempts
@@ -543,19 +642,19 @@ Successful status:
 201 Created
 ```
 
-## List Attempts
+**## List Attempts**
 
 ```http
 GET /api/quizzes/{quiz_id}/attempts
 ```
 
-## Get Attempt
+**## Get Attempt**
 
 ```http
 GET /api/quiz-attempts/{attempt_id}
 ```
 
-## Submit Answer
+**## Submit Answer**
 
 ```http
 POST /api/quiz-attempts/{attempt_id}/questions/{position}/answer
@@ -565,7 +664,7 @@ Representative request:
 
 ```json
 {
-  "answer": "Nucleus"
+  "answer": "Nucleus"
 }
 ```
 
@@ -577,7 +676,7 @@ The backend atomically:
 4. updates the score;
 5. advances or completes the attempt.
 
-## Get Final Result
+**## Get Final Result**
 
 ```http
 GET /api/quiz-attempts/{attempt_id}/result
@@ -589,10 +688,10 @@ Topic classification:
 
 ```text
 Strong: accuracy >= 70%
-Weak:   accuracy < 70%
+Weak:   accuracy < 70%
 ```
 
-## Review Completed Attempt
+**## Review Completed Attempt**
 
 ```http
 GET /api/quiz-attempts/{attempt_id}/review
@@ -600,7 +699,7 @@ GET /api/quiz-attempts/{attempt_id}/review
 
 Review is only available after the owned attempt has completed.
 
-## Quiz Security
+**## Quiz Security**
 
 1. Bearer authentication determines trusted student identity.
 2. Requests cannot choose `user_id`.
@@ -613,7 +712,7 @@ Review is only available after the owned attempt has completed.
 
 ---
 
-# Academic Tasks API
+**# Academic Tasks API**
 
 Base path:
 
@@ -677,7 +776,7 @@ cancelled
 
 ---
 
-## Create Academic Task
+**## Create Academic Task**
 
 ```http
 POST /api/academic-tasks
@@ -693,14 +792,14 @@ Representative request:
 
 ```json
 {
-  "subject_id": "subject-uuid",
-  "title": "Final research paper",
-  "description": "Complete the final draft.",
-  "deadline": "2026-08-20T12:00:00Z",
-  "estimated_minutes": 180,
-  "difficulty": "hard",
-  "task_type": "assignment",
-  "output_type": "writing"
+  "subject_id": "subject-uuid",
+  "title": "Final research paper",
+  "description": "Complete the final draft.",
+  "deadline": "2026-08-20T12:00:00Z",
+  "estimated_minutes": 180,
+  "difficulty": "hard",
+  "task_type": "assignment",
+  "output_type": "writing"
 }
 ```
 
@@ -714,18 +813,18 @@ Representative response:
 
 ```json
 {
-  "id": "task-uuid",
-  "subject_id": "subject-uuid",
-  "title": "Final research paper",
-  "description": "Complete the final draft.",
-  "deadline": "2026-08-20T12:00:00Z",
-  "estimated_minutes": 180,
-  "difficulty": "hard",
-  "task_type": "assignment",
-  "output_type": "writing",
-  "status": "pending",
-  "created_at": "2026-08-09T12:00:00Z",
-  "updated_at": "2026-08-09T12:00:00Z"
+  "id": "task-uuid",
+  "subject_id": "subject-uuid",
+  "title": "Final research paper",
+  "description": "Complete the final draft.",
+  "deadline": "2026-08-20T12:00:00Z",
+  "estimated_minutes": 180,
+  "difficulty": "hard",
+  "task_type": "assignment",
+  "output_type": "writing",
+  "status": "pending",
+  "created_at": "2026-08-09T12:00:00Z",
+  "updated_at": "2026-08-09T12:00:00Z"
 }
 ```
 
@@ -733,7 +832,7 @@ The selected subject must belong to the authenticated student.
 
 ---
 
-## List Academic Tasks
+**## List Academic Tasks**
 
 ```http
 GET /api/academic-tasks
@@ -749,7 +848,7 @@ Only tasks owned by the authenticated student are returned.
 
 ---
 
-## List Prioritized Academic Tasks
+**## List Prioritized Academic Tasks**
 
 ```http
 GET /api/academic-tasks/prioritized
@@ -765,34 +864,34 @@ Representative response:
 
 ```json
 {
-  "items": [
-    {
-      "task": {
-        "id": "task-uuid",
-        "subject_id": "subject-uuid",
-        "title": "Final research paper",
-        "description": null,
-        "deadline": "2026-08-20T12:00:00Z",
-        "estimated_minutes": 180,
-        "difficulty": "hard",
-        "task_type": "assignment",
-        "output_type": "writing",
-        "status": "pending",
-        "created_at": "2026-08-09T12:00:00Z",
-        "updated_at": "2026-08-09T12:00:00Z"
-      },
-      "priority": {
-        "total_score": 72.5,
-        "deadline_score": 85.0,
-        "difficulty_score": 100.0,
-        "estimated_time_score": 60.0,
-        "output_confidence_score": 75.0,
-        "previous_performance_score": 50.0,
-        "available_study_time_score": 80.0,
-        "status_score": 50.0
-      }
-    }
-  ]
+  "items": [
+    {
+      "task": {
+        "id": "task-uuid",
+        "subject_id": "subject-uuid",
+        "title": "Final research paper",
+        "description": null,
+        "deadline": "2026-08-20T12:00:00Z",
+        "estimated_minutes": 180,
+        "difficulty": "hard",
+        "task_type": "assignment",
+        "output_type": "writing",
+        "status": "pending",
+        "created_at": "2026-08-09T12:00:00Z",
+        "updated_at": "2026-08-09T12:00:00Z"
+      },
+      "priority": {
+        "total_score": 72.5,
+        "deadline_score": 85.0,
+        "difficulty_score": 100.0,
+        "estimated_time_score": 60.0,
+        "output_confidence_score": 75.0,
+        "previous_performance_score": 50.0,
+        "available_study_time_score": 80.0,
+        "status_score": 50.0
+      }
+    }
+  ]
 }
 ```
 
@@ -809,7 +908,7 @@ The browser does not calculate or override the priority score.
 
 ---
 
-## Get Academic Task
+**## Get Academic Task**
 
 ```http
 GET /api/academic-tasks/{task_id}
@@ -821,7 +920,7 @@ Missing and unowned tasks receive safe not-found behavior.
 
 ---
 
-## Update Academic Task
+**## Update Academic Task**
 
 ```http
 PATCH /api/academic-tasks/{task_id}
@@ -844,7 +943,7 @@ Task status is changed through the dedicated status endpoint.
 
 ---
 
-## Change Academic Task Status
+**## Change Academic Task Status**
 
 ```http
 PATCH /api/academic-tasks/{task_id}/status
@@ -854,7 +953,7 @@ Representative request:
 
 ```json
 {
-  "status": "in_progress"
+  "status": "in_progress"
 }
 ```
 
@@ -868,7 +967,7 @@ total priority = 0
 
 ---
 
-## Delete Academic Task
+**## Delete Academic Task**
 
 ```http
 DELETE /api/academic-tasks/{task_id}
@@ -884,7 +983,7 @@ The client must not parse JSON from the successful 204 response.
 
 ---
 
-# Academic Task Priority Contract
+**# Academic Task Priority Contract**
 
 The deterministic backend priority engine uses:
 
@@ -906,7 +1005,7 @@ Previous performance currently uses a neutral fallback until a production perfor
 
 ---
 
-# Academic Task Error Contract
+**# Academic Task Error Contract**
 
 Controlled Academic Task errors include:
 
@@ -922,7 +1021,7 @@ Authentication failures use the existing protected-API authentication behavior.
 
 ---
 
-# Academic Task Security Contract
+**# Academic Task Security Contract**
 
 1. Bearer authentication determines trusted student identity.
 2. Requests cannot choose or override `user_id`.
@@ -937,7 +1036,7 @@ Authentication failures use the existing protected-API authentication behavior.
 
 ---
 
-# HTTP Security Rules
+**# HTTP Security Rules**
 
 Public responses must never expose:
 
@@ -954,13 +1053,13 @@ Public responses must never expose:
 - Trusted Academic Task priority context
 
 ---
-# Study Plan API
+**# Study Plan API**
 
 All Study Plan endpoints require authenticated bearer access.
 
 The authenticated student identity is derived from the bearer token and cannot be supplied through request bodies.
 
-## Create Manual Study Plan
+**## Create Manual Study Plan**
 
 ```http
 POST /api/study-plans
@@ -970,9 +1069,9 @@ Representative request:
 
 ```json
 {
-  "title": "Finals Study Plan",
-  "starts_on": "2026-08-11",
-  "ends_on": "2026-08-17"
+  "title": "Finals Study Plan",
+  "starts_on": "2026-08-11",
+  "ends_on": "2026-08-17"
 }
 ```
 
@@ -984,7 +1083,7 @@ Successful response:
 
 ---
 
-## List Study Plans
+**## List Study Plans**
 
 ```http
 GET /api/study-plans?limit=50
@@ -994,7 +1093,7 @@ Returns the authenticated student's saved study plans.
 
 ---
 
-## Get Study Plan
+**## Get Study Plan**
 
 ```http
 GET /api/study-plans/{study_plan_id}
@@ -1004,7 +1103,7 @@ The plan must belong to the authenticated student.
 
 ---
 
-## Delete Study Plan
+**## Delete Study Plan**
 
 ```http
 DELETE /api/study-plans/{study_plan_id}
@@ -1018,7 +1117,7 @@ Successful response:
 
 ---
 
-## Create Manual Study Session
+**## Create Manual Study Session**
 
 ```http
 POST /api/study-plans/{study_plan_id}/sessions
@@ -1028,11 +1127,11 @@ Representative request:
 
 ```json
 {
-  "subject_id": "subject-uuid",
-  "title": "Review Chapter 4",
-  "starts_at": "2026-08-12T18:00:00+08:00",
-  "ends_at": "2026-08-12T19:00:00+08:00",
-  "notes": "Focus on cell division"
+  "subject_id": "subject-uuid",
+  "title": "Review Chapter 4",
+  "starts_at": "2026-08-12T18:00:00+08:00",
+  "ends_at": "2026-08-12T19:00:00+08:00",
+  "notes": "Focus on cell division"
 }
 ```
 
@@ -1045,7 +1144,7 @@ status = planned
 
 ---
 
-## List Study Sessions
+**## List Study Sessions**
 
 ```http
 GET /api/study-plans/{study_plan_id}/sessions?limit=200
@@ -1055,7 +1154,7 @@ Returns sessions belonging to one owned study plan.
 
 ---
 
-## Delete Study Session
+**## Delete Study Session**
 
 ```http
 DELETE /api/study-plans/{study_plan_id}/sessions/{study_session_id}
@@ -1069,9 +1168,9 @@ Successful response:
 
 ---
 
-# Study Plan Generation API
+**# Study Plan Generation API**
 
-## Generate Study Plan
+**## Generate Study Plan**
 
 ```http
 POST /api/study-plan-generation
@@ -1081,19 +1180,19 @@ Representative request:
 
 ```json
 {
-  "title": "Generated Finals Plan",
-  "starts_on": "2026-08-11",
-  "ends_on": "2026-08-20",
-  "tasks": [
-    {
-      "task_id": "task-uuid",
-      "subject_id": "subject-uuid",
-      "title": "Study for Biology exam",
-      "deadline": "2026-08-20T18:00:00+08:00",
-      "estimated_minutes": 180,
-      "priority_weight": 5
-    }
-  ]
+  "title": "Generated Finals Plan",
+  "starts_on": "2026-08-11",
+  "ends_on": "2026-08-20",
+  "tasks": [
+    {
+      "task_id": "task-uuid",
+      "subject_id": "subject-uuid",
+      "title": "Study for Biology exam",
+      "deadline": "2026-08-20T18:00:00+08:00",
+      "estimated_minutes": 180,
+      "priority_weight": 5
+    }
+  ]
 }
 ```
 
@@ -1117,7 +1216,7 @@ Scheduling preferences are loaded by the backend from authenticated student data
 
 ---
 
-## Regenerate Generated Study Plan
+**## Regenerate Generated Study Plan**
 
 ```http
 POST /api/study-plan-generation/{study_plan_id}/regenerate
@@ -1127,16 +1226,16 @@ Representative request:
 
 ```json
 {
-  "tasks": [
-    {
-      "task_id": "task-uuid",
-      "subject_id": "subject-uuid",
-      "title": "Study for Biology exam",
-      "deadline": "2026-08-20T18:00:00+08:00",
-      "estimated_minutes": 180,
-      "priority_weight": 5
-    }
-  ]
+  "tasks": [
+    {
+      "task_id": "task-uuid",
+      "subject_id": "subject-uuid",
+      "title": "Study for Biology exam",
+      "deadline": "2026-08-20T18:00:00+08:00",
+      "estimated_minutes": 180,
+      "priority_weight": 5
+    }
+  ]
 }
 ```
 
@@ -1159,7 +1258,7 @@ Regeneration:
 
 ---
 
-# Study Plan Error Contract
+**# Study Plan Error Contract**
 
 | HTTP | Error Code | Meaning |
 |---:|---|---|
@@ -1170,7 +1269,7 @@ Regeneration:
 
 ---
 
-# Study Plan Security Contract
+**# Study Plan Security Contract**
 
 1. Bearer authentication determines the trusted student identity.
 2. Requests cannot provide or override `user_id`.
@@ -1185,64 +1284,205 @@ Regeneration:
 
 ---
 
-# OpenAPI Verification
+**# Analytics API**
+
+Analytics endpoints require authenticated Supabase bearer authentication.
+
+The backend derives the trusted student UUID from the validated bearer token.
+
+Analytics requests cannot provide or override `user_id`.
+
+**## Get Analytics Overview**
+
+```http
+GET /api/analytics/overview
+```
+
+Optional query parameter:
+
+```text
+period
+```
+
+Supported values:
+
+```text
+all_time
+last_7_days
+last_30_days
+```
+
+Default:
+
+```text
+all_time
+```
+
+Representative response:
+
+```json
+{
+  "period": "all_time",
+  "data_state": "partial",
+  "subject_count": {
+    "availability": "available",
+    "value": 3,
+    "scope": "current_inventory",
+    "message": null
+  },
+  "study_material_count": {
+    "availability": "available",
+    "value": 8,
+    "scope": "current_inventory",
+    "message": null
+  },
+  "ready_study_material_count": {
+    "availability": "available",
+    "value": 6,
+    "scope": "current_inventory",
+    "message": null
+  },
+  "quiz_accuracy_percent": {
+    "availability": "available",
+    "value": 80.0,
+    "sample_size": 10,
+    "message": null
+  },
+  "flashcard_performance_percent": {
+    "availability": "available",
+    "value": 75.0,
+    "sample_size": 8,
+    "message": null
+  },
+  "study_minutes": {
+    "availability": "unavailable",
+    "value": null,
+    "sample_size": 0,
+    "message": "General study duration is unavailable because no canonical study-activity duration source exists yet."
+  },
+  "strong_topics": [
+    {
+      "topic": "Algebra",
+      "score_percent": 75.0,
+      "sample_size": 4
+    }
+  ],
+  "weak_topics": [
+    {
+      "topic": "Biology",
+      "score_percent": 50.0,
+      "sample_size": 4
+    }
+  ]
+}
+```
+
+Current canonical data sources are:
+
+```text
+subjects
+study_files
+quiz_attempts
+quiz_attempt_answers
+flashcard_review_events
+```
+
+Inventory counts represent current stored resources and are not period-filtered.
+
+Quiz accuracy uses completed attempts and is weighted by total completed question count.
+
+Strong and weak Quiz topics follow Track B's 70% classification threshold.
+
+Flashcard performance is a self-assessment metric calculated from persisted `known` and `review_again` review events.
+
+General study minutes remain explicitly unavailable until a canonical duration source exists.
+
+If the selected period has no completed Quiz attempts or no Flashcard review events, the corresponding source remains available while the metric value is `null` with `sample_size = 0`.
+
+**## Analytics Errors**
+
+| HTTP | Meaning |
+|---|---|
+| `401` | Authentication is missing, invalid, or expired |
+| `422` | Reporting period is unsupported |
+| `503` | Canonical Analytics data is temporarily unavailable |
+
+**## Analytics Security Contract**
+
+1. Bearer authentication determines the trusted student identity.
+2. Analytics requests cannot choose `user_id`.
+3. Subject and study-material queries are owner-scoped.
+4. Quiz attempts are filtered to the authenticated student.
+5. Topic evidence is read only for the selected owned completed attempts.
+6. Flashcard review evidence is filtered to the authenticated student.
+7. Analytics does not expose Quiz answer keys.
+8. Controlled failures do not expose database credentials, backend secrets, or provider traces.
+
+The Flashcard review persistence migration is applied to the shared remote database. Linked migration history was re-inspected after the C/D synchronization merge, and a subsequent linked dry run confirmed that the remote database is up to date.
+
+---
+
+**# OpenAPI Verification**
 
 Start FastAPI and open:
 
 ```text
-http://127.0.0.1:8000/docs
+http\://127.0.0.1:8000/docs
 ```
 
 Important implemented routes include:
 
 ```text
-GET    /api/health
+GET    /api/health
 
-POST   /api/internal/file-processing/{file_id}/validate-source
-POST   /api/internal/file-processing/{file_id}/process
+POST   /api/internal/file-processing/{file_id}/validate-source
+POST   /api/internal/file-processing/{file_id}/process
 
-POST   /api/rag/answer
+POST   /api/rag/answer
 
-POST   /api/study-conversations
-GET    /api/study-conversations
-GET    /api/study-conversations/{conversation_id}
-PATCH  /api/study-conversations/{conversation_id}
+POST   /api/study-conversations
+GET    /api/study-conversations
+GET    /api/study-conversations/{conversation_id}
+PATCH  /api/study-conversations/{conversation_id}
 DELETE /api/study-conversations/{conversation_id}
 
-POST   /api/reviewers/generate
-GET    /api/reviewers
-GET    /api/reviewers/{reviewer_id}
+POST   /api/reviewers/generate
+GET    /api/reviewers
+GET    /api/reviewers/{reviewer_id}
 DELETE /api/reviewers/{reviewer_id}
-POST   /api/reviewers/{reviewer_id}/regenerate
+POST   /api/reviewers/{reviewer_id}/regenerate
 
-POST   /api/flashcards/generate
-GET    /api/flashcards
-GET    /api/flashcards/{deck_id}
+POST   /api/flashcards/generate
+GET    /api/flashcards
+GET    /api/flashcards/{deck_id}
+POST   /api/flashcards/{deck_id}/reviews
 DELETE /api/flashcards/{deck_id}
 
-POST   /api/quizzes/generate
-GET    /api/quizzes
-GET    /api/quizzes/{quiz_id}
-DELETE /api/quizzes/{quiz_id}
-GET    /api/quizzes/{quiz_id}/attempts
-POST   /api/quizzes/{quiz_id}/attempts
-GET    /api/quiz-attempts/{attempt_id}
-POST   /api/quiz-attempts/{attempt_id}/questions/{position}/answer
-GET    /api/quiz-attempts/{attempt_id}/result
-GET    /api/quiz-attempts/{attempt_id}/review
+GET    /api/analytics/overview
 
-POST   /api/academic-tasks
-GET    /api/academic-tasks
-GET    /api/academic-tasks/prioritized
-GET    /api/academic-tasks/{task_id}
-PATCH  /api/academic-tasks/{task_id}
-PATCH  /api/academic-tasks/{task_id}/status
+POST   /api/quizzes/generate
+GET    /api/quizzes
+GET    /api/quizzes/{quiz_id}
+DELETE /api/quizzes/{quiz_id}
+GET    /api/quizzes/{quiz_id}/attempts
+POST   /api/quizzes/{quiz_id}/attempts
+GET    /api/quiz-attempts/{attempt_id}
+POST   /api/quiz-attempts/{attempt_id}/questions/{position}/answer
+GET    /api/quiz-attempts/{attempt_id}/result
+GET    /api/quiz-attempts/{attempt_id}/review
+
+POST   /api/academic-tasks
+GET    /api/academic-tasks
+GET    /api/academic-tasks/prioritized
+GET    /api/academic-tasks/{task_id}
+PATCH  /api/academic-tasks/{task_id}
+PATCH  /api/academic-tasks/{task_id}/status
 DELETE /api/academic-tasks/{task_id}
 ```
 
 ---
 
-# API Change Rules
+**# API Change Rules**
 
 When an API or RPC changes:
 

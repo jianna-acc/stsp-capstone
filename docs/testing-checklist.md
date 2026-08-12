@@ -1,13 +1,13 @@
 <!-- File: /docs/testing-checklist.md -->
 <!-- Purpose: Tracks required automated, manual, security, regression, and release checks. -->
 
-# Testing Checklist
+**# Testing Checklist**
 
 A feature is complete only when its functionality, errors, security boundaries, and regressions have been tested.
 
 ---
 
-# Phase 1 — Foundation
+**# Phase 1 — Foundation**
 
 - [x] Git repository configured
 - [x] Feature-branch workflow established
@@ -24,7 +24,7 @@ A feature is complete only when its functionality, errors, security boundaries, 
 
 ---
 
-# Authentication
+**# Authentication**
 
 - [x] Registration works
 - [x] Registration validation works
@@ -40,7 +40,7 @@ A feature is complete only when its functionality, errors, security boundaries, 
 
 ---
 
-# Phase 2 — Learning Profile
+**# Phase 2 — Learning Profile**
 
 - [x] Learning-profile tables exist
 - [x] RLS enabled
@@ -56,9 +56,9 @@ A feature is complete only when its functionality, errors, security boundaries, 
 
 ---
 
-# Phase 3 — Subjects and Files
+**# Phase 3 — Subjects and Files**
 
-## Subjects
+**## Subjects**
 
 - [x] Subject creation works
 - [x] Subject editing works
@@ -66,7 +66,7 @@ A feature is complete only when its functionality, errors, security boundaries, 
 - [x] Subject RLS works
 - [x] Missing/unowned subjects fail safely
 
-## Uploads
+**## Uploads**
 
 - [x] PDF accepted
 - [x] TXT accepted
@@ -82,7 +82,7 @@ A feature is complete only when its functionality, errors, security boundaries, 
 - [x] Upload progress displays
 - [x] Failed upload is recorded safely
 
-## Processing
+**## Processing**
 
 - [x] Queue RPC works
 - [x] Atomic job claim works
@@ -104,7 +104,7 @@ A feature is complete only when its functionality, errors, security boundaries, 
 
 ---
 
-# Phase 4 — AI Preparation and Vector Indexing
+**# Phase 4 — AI Preparation and Vector Indexing**
 
 - [x] AI configuration validation works
 - [x] Provider-independent generation contract works
@@ -127,7 +127,7 @@ A feature is complete only when its functionality, errors, security boundaries, 
 
 ---
 
-# Phase 5A–5C — Retrieval
+**# Phase 5A–5C — Retrieval**
 
 - [x] Query embedding uses retrieval-query task type
 - [x] Query vectors validated
@@ -143,7 +143,7 @@ A feature is complete only when its functionality, errors, security boundaries, 
 
 ---
 
-# Phase 5D — Grounded Answer Generation
+**# Phase 5D — Grounded Answer Generation**
 
 - [x] Grounded prompt created
 - [x] Retrieved sources become factual context
@@ -155,7 +155,7 @@ A feature is complete only when its functionality, errors, security boundaries, 
 
 ---
 
-# Phase 5E — Protected RAG API
+**# Phase 5E — Protected RAG API**
 
 - [x] `POST /api/rag/answer` registered
 - [x] Missing bearer token rejected
@@ -171,9 +171,9 @@ A feature is complete only when its functionality, errors, security boundaries, 
 
 ---
 
-# Phase 5F — Study Assistant Frontend
+**# Phase 5F — Study Assistant Frontend**
 
-## API Client
+**## API Client**
 
 - [x] Supabase session required
 - [x] Bearer token sent to FastAPI
@@ -185,7 +185,7 @@ A feature is complete only when its functionality, errors, security boundaries, 
 - [x] Backend errors displayed safely
 - [x] Network errors do not expose credentials
 
-## UI
+**## UI**
 
 - [x] `/study-assistant` protected
 - [x] Study Assistant navigation exists
@@ -203,7 +203,7 @@ A feature is complete only when its functionality, errors, security boundaries, 
 
 ---
 
-# Phase 5G — Conversation Database
+**# Phase 5G — Conversation Database**
 
 - [x] `study_conversations` exists
 - [x] `study_messages` exists
@@ -227,7 +227,7 @@ A feature is complete only when its functionality, errors, security boundaries, 
 
 ---
 
-# Phase 5G — Conversation API
+**# Phase 5G — Conversation API**
 
 - [x] Conversation create route registered
 - [x] Conversation list route registered
@@ -246,7 +246,7 @@ A feature is complete only when its functionality, errors, security boundaries, 
 
 ---
 
-# Phase 5G — RAG Persistence
+**# Phase 5G — RAG Persistence**
 
 - [x] RAG request accepts optional `conversation_id`
 - [x] RAG response requires `conversation_id`
@@ -260,7 +260,7 @@ A feature is complete only when its functionality, errors, security boundaries, 
 
 ---
 
-# Phase 5G — Bounded Memory
+**# Phase 5G — Bounded Memory**
 
 - [x] Memory supports only user/assistant roles
 - [x] Memory limited to 10 items
@@ -276,7 +276,7 @@ A feature is complete only when its functionality, errors, security boundaries, 
 
 ---
 
-# Phase 5G — Deterministic Summary
+**# Phase 5G — Deterministic Summary**
 
 - [x] Summary does not call Gemini
 - [x] Summary does not call another AI provider
@@ -296,7 +296,7 @@ A feature is complete only when its functionality, errors, security boundaries, 
 
 ---
 
-# Phase 5G — Frontend Conversation API
+**# Phase 5G — Frontend Conversation API**
 
 - [x] Typed conversation contracts exist
 - [x] List API works
@@ -310,7 +310,7 @@ A feature is complete only when its functionality, errors, security boundaries, 
 
 ---
 
-# Phase 5G — Conversation History UI
+**# Phase 5G — Conversation History UI**
 
 - [x] Loading state implemented
 - [x] Empty state implemented
@@ -331,7 +331,7 @@ A feature is complete only when its functionality, errors, security boundaries, 
 
 ---
 
-# Phase 5G — Backend Regression
+**# Phase 5G — Backend Regression**
 
 - [x] Full pytest suite passes
 - [x] Full Ruff validation passes
@@ -343,7 +343,7 @@ A feature is complete only when its functionality, errors, security boundaries, 
 
 ---
 
-# Phase 5G — Frontend Regression
+**# Phase 5G — Frontend Regression**
 
 The full frontend regression passed before the final conversation-history layout spacing adjustment.
 
@@ -362,7 +362,7 @@ Because the Study Assistant CSS layout was adjusted afterward, perform the final
 
 ---
 
-# Phase 5G — Security
+**# Phase 5G — Security**
 
 - [x] Conversation ownership comes from bearer authentication
 - [x] Request cannot override user ID
@@ -379,9 +379,9 @@ Because the Study Assistant CSS layout was adjusted afterward, perform the final
 
 ---
 
-# Phase 6A — Reviewer Backend Foundation
+**# Phase 6A — Reviewer Backend Foundation**
 
-## Database and Security
+**## Database and Security**
 
 - [x] Effective `reviewers` foundation migration created and applied
 - [x] `public.reviewers` verified remotely with 14 columns
@@ -393,7 +393,7 @@ Because the Study Assistant CSS layout was adjusted afterward, perform the final
 - [x] Reviewer RLS policies are defined
 - [x] Browser clients cannot directly insert or update reviewer records
 
-## Reviewer Source Loading
+**## Reviewer Source Loading**
 
 - [x] File-scope reviewer loads one owned ready study file
 - [x] Subject-scope reviewer loads owned ready files for the subject
@@ -402,7 +402,7 @@ Because the Study Assistant CSS layout was adjusted afterward, perform the final
 - [x] Missing or incomplete chunk sequences fail safely
 - [x] Reviewer sources preserve file/chunk locator metadata
 
-## Reviewer Generation
+**## Reviewer Generation**
 
 - [x] Reviewer supports `short`, `medium`, and `long`
 - [x] Generated content includes overview, topics, key points, and definitions
@@ -412,7 +412,7 @@ Because the Study Assistant CSS layout was adjusted afterward, perform the final
 - [x] Reviewer generation uses reviewer-specific output-token budgets
 - [x] Oversized source collections fail safely instead of silently dropping content
 
-## Reviewer Persistence
+**## Reviewer Persistence**
 
 - [x] Generated reviewers can be saved
 - [x] Saved reviewers can be listed
@@ -420,7 +420,7 @@ Because the Study Assistant CSS layout was adjusted afterward, perform the final
 - [x] One owned reviewer can be deleted
 - [x] Reviewer operations remain scoped to the authenticated user
 
-## Reviewer API
+**## Reviewer API**
 
 - [x] `POST /api/reviewers/generate` registered
 - [x] `GET /api/reviewers` registered
@@ -430,7 +430,7 @@ Because the Study Assistant CSS layout was adjusted afterward, perform the final
 - [x] Controlled reviewer errors use safe public responses
 - [x] Successful delete returns `204 No Content`
 
-## Reviewer Automated Validation
+**## Reviewer Automated Validation**
 
 - [x] Reviewer migration tests pass
 - [x] Reviewer schema tests pass
@@ -447,7 +447,7 @@ Because the Study Assistant CSS layout was adjusted afterward, perform the final
 - [x] Reviewer application modules compile successfully
 - [x] `git diff --check` passes
 
-## Deferred Beyond Phase 6A
+**## Deferred Beyond Phase 6A**
 
 - [x] Reviewer frontend UI — implemented in Phase 6B
 - [ ] Reviewer saved-history and reopening UI
@@ -457,9 +457,9 @@ Because the Study Assistant CSS layout was adjusted afterward, perform the final
 
 ---
 
-# Phase 6B — Reviewer Frontend
+**# Phase 6B — Reviewer Frontend**
 
-## Reviewer API Client
+**## Reviewer API Client**
 
 - [x] Authenticated Supabase session required
 - [x] Bearer token sent to Reviewer FastAPI endpoint
@@ -472,7 +472,7 @@ Because the Study Assistant CSS layout was adjusted afterward, perform the final
 - [x] Controlled backend errors displayed safely
 - [x] Network errors do not expose access tokens
 
-## Reviewer Filter Options
+**## Reviewer Filter Options**
 
 - [x] Authenticated subjects load
 - [x] Ready study files load
@@ -480,7 +480,7 @@ Because the Study Assistant CSS layout was adjusted afterward, perform the final
 - [x] Only `processing_status = ready` files are selectable
 - [x] Filter-loading failures disable generation safely
 
-## Reviewer Generation UI
+**## Reviewer Generation UI**
 
 - [x] `/reviewers` protected route exists
 - [x] Reviewer navigation entry exists
@@ -497,7 +497,7 @@ Because the Study Assistant CSS layout was adjusted afterward, perform the final
 - [x] Safe API error state displayed
 - [x] Successful generation state displayed
 
-## Reviewer Result UI
+**## Reviewer Result UI**
 
 - [x] Reviewer title renders
 - [x] Scope badge renders
@@ -510,7 +510,7 @@ Because the Study Assistant CSS layout was adjusted afterward, perform the final
 - [x] Source locator labels render
 - [x] Missing locator label uses safe section fallback
 
-## Live Integration
+**## Live Integration**
 
 - [x] Single study material + Medium generation succeeded
 - [x] Whole subject + Medium generation succeeded
@@ -521,7 +521,7 @@ Because the Study Assistant CSS layout was adjusted afterward, perform the final
 - [x] Final Short whole-subject request returned `201 Created`
 - [x] Final Short whole-subject request produced valid JSON on first generation attempt
 
-## Reviewer Generation Robustness
+**## Reviewer Generation Robustness**
 
 - [x] Malformed AI JSON detected
 - [x] One bounded repair attempt retained
@@ -530,7 +530,7 @@ Because the Study Assistant CSS layout was adjusted afterward, perform the final
 - [x] Medium output budget remains 4,096 tokens
 - [x] Long output budget remains 6,144 tokens
 
-## Phase 6B Automated Validation
+**## Phase 6B Automated Validation**
 
 - [x] Reviewer API tests: 7 passed
 - [x] Reviewer option-loader tests: 3 passed
@@ -547,7 +547,7 @@ Because the Study Assistant CSS layout was adjusted afterward, perform the final
 - [x] Existing unrelated subject-page ESLint warning remains documented
 - [x] `git diff --check` passes
 
-## Deferred Beyond Phase 6B
+**## Deferred Beyond Phase 6B**
 
 - [ ] Saved reviewer history UI
 - [ ] Open previously saved reviewer
@@ -556,9 +556,9 @@ Because the Study Assistant CSS layout was adjusted afterward, perform the final
 - [ ] Multi-pass generation for source collections above the single-pass limit
 - [ ] Quiz generation
 
-# Track D — Study Plans and Scheduling
+**# Track D — Study Plans and Scheduling**
 
-## Persistence and Security
+**## Persistence and Security**
 
 - [x] Study-plan foundation migration exists
 - [x] Study plans are owner scoped
@@ -569,7 +569,7 @@ Because the Study Assistant CSS layout was adjusted afterward, perform the final
 - [x] Regeneration replaces only generated sessions
 - [x] Manual sessions are preserved during regeneration
 
-## Deterministic Scheduling
+**## Deterministic Scheduling**
 
 - [x] Scheduling uses authenticated weekly availability
 - [x] Scheduling uses preferred study duration
@@ -581,7 +581,7 @@ Because the Study Assistant CSS layout was adjusted afterward, perform the final
 - [x] Blocked manual-session windows are respected
 - [x] Regeneration does not create new generated sessions in the past
 
-## Study Plan API
+**## Study Plan API**
 
 - [x] Manual study-plan creation is protected
 - [x] Study-plan listing and retrieval are ownership scoped
@@ -593,7 +593,7 @@ Because the Study Assistant CSS layout was adjusted afterward, perform the final
 - [x] Study Plan routers are registered in the shared FastAPI router
 - [x] OpenAPI exposes Study Plan CRUD, generation, and regeneration routes
 
-## Study Plan Frontend
+**## Study Plan Frontend**
 
 - [x] Protected `/study-plan` page exists
 - [x] Study Plan is available in authenticated navigation
@@ -609,7 +609,7 @@ Because the Study Assistant CSS layout was adjusted afterward, perform the final
 - [x] Regeneration updates the existing plan instead of creating a duplicate
 - [x] Unscheduled work is shown to the student
 
-## Track D Automated Validation
+**## Track D Automated Validation**
 
 - [x] Focused Study Plan API tests: 17 passed
 - [x] Track D backend selection: 70 passed
@@ -621,7 +621,7 @@ Because the Study Assistant CSS layout was adjusted afterward, perform the final
 - [x] Track D and navigation ESLint validation passes
 - [x] `git diff --check` passes before documentation edits
 
-## Final Track D Regression Before Commit
+**## Final Track D Regression Before Commit**
 
 - [x] Full backend pytest suite passes
 - [x] Full backend Ruff validation passes
@@ -636,9 +636,9 @@ Because the Study Assistant CSS layout was adjusted afterward, perform the final
 
 ---
 
-# Track A — Flashcard Backend
+**# Track A — Flashcard Backend**
 
-## Database and Security
+**## Database and Security**
 
 - [x] `flashcard_decks` foundation migration created
 - [x] `flashcards` child table created
@@ -654,7 +654,7 @@ Because the Study Assistant CSS layout was adjusted afterward, perform the final
 - [x] Trusted Flashcard creation RPC is restricted to `service_role`
 - [x] Deck deletion cascades to child Flashcards
 
-## Flashcard Source Loading
+**## Flashcard Source Loading**
 
 - [x] File scope loads one owned ready study file
 - [x] Subject scope loads owned ready study files within one subject
@@ -665,7 +665,7 @@ Because the Study Assistant CSS layout was adjusted afterward, perform the final
 - [x] Source/file ownership mismatches fail safely
 - [x] Flashcard sources preserve safe file/chunk locator metadata
 
-## Flashcard AI Generation
+**## Flashcard AI Generation**
 
 - [x] Flashcard requests support 5 to 50 cards
 - [x] Default Flashcard count is 20
@@ -681,7 +681,7 @@ Because the Study Assistant CSS layout was adjusted afterward, perform the final
 - [x] Source material above the current 80,000-character single-pass limit fails safely
 - [x] Source material is never silently truncated
 
-## Flashcard Persistence
+**## Flashcard Persistence**
 
 - [x] Deck and child cards are created atomically
 - [x] Generated Flashcards can be saved
@@ -692,7 +692,7 @@ Because the Study Assistant CSS layout was adjusted afterward, perform the final
 - [x] Persistence operations remain scoped to the authenticated student
 - [x] Public deck responses do not expose `user_id`
 
-## Flashcard API
+**## Flashcard API**
 
 - [x] `POST /api/flashcards/generate` registered
 - [x] `GET /api/flashcards` registered
@@ -706,7 +706,7 @@ Because the Study Assistant CSS layout was adjusted afterward, perform the final
 - [x] Successful deletion returns `204 No Content`
 - [x] Existing Reviewer API regression remains green
 
-## Flashcard Automated Validation
+**## Flashcard Automated Validation**
 
 - [x] Flashcard schema tests pass
 - [x] Flashcard migration tests pass
@@ -723,7 +723,7 @@ Because the Study Assistant CSS layout was adjusted afterward, perform the final
 - [x] Flashcard Ruff validation passes
 - [x] `git diff --check` passes
 
-## Deferred Beyond Current Track A Backend
+**## Deferred Beyond Current Track A Backend**
 
 - [ ] Student-facing Flashcard page
 - [ ] Authenticated frontend Flashcard API client
@@ -732,9 +732,9 @@ Because the Study Assistant CSS layout was adjusted afterward, perform the final
 - [ ] Saved-deck management UI
 - [ ] Multi-pass generation for materials above the current single-pass source limit
 
-# Track B — Quizzes
+**# Track B — Quizzes**
 
-## Quiz Database and Security
+**## Quiz Database and Security**
 
 - [x] `quizzes` foundation migration created and applied
 - [x] `quiz_questions` private answer-key storage implemented
@@ -751,7 +751,7 @@ Because the Study Assistant CSS layout was adjusted afterward, perform the final
 - [x] Completed review requires an owned completed attempt
 - [x] Quiz deletion removes related Quiz data through configured cascades
 
-## Quiz Source Loading and Generation
+**## Quiz Source Loading and Generation**
 
 - [x] Whole-subject Quiz source supported
 - [x] Single-study-material Quiz source supported
@@ -770,7 +770,7 @@ Because the Study Assistant CSS layout was adjusted afterward, perform the final
 - [x] Quiz output is strictly validated before persistence
 - [x] Generated Quiz and questions persist atomically
 
-## Quiz API
+**## Quiz API**
 
 - [x] `POST /api/quizzes/generate` registered
 - [x] `GET /api/quizzes` registered
@@ -787,7 +787,7 @@ Because the Study Assistant CSS layout was adjusted afterward, perform the final
 - [x] Controlled Quiz errors return safe responses
 - [x] Successful Quiz deletion returns `204 No Content`
 
-## Quiz Attempts and Scoring
+**## Quiz Attempts and Scoring**
 
 - [x] Fresh Quiz attempt starts at question 1
 - [x] One expected question position is enforced at a time
@@ -808,7 +808,7 @@ Because the Study Assistant CSS layout was adjusted afterward, perform the final
 - [x] Result is unavailable before attempt completion
 - [x] Full review is unavailable before attempt completion
 
-## Quiz Frontend
+**## Quiz Frontend**
 
 - [x] `/quizzes` protected route exists
 - [x] Quizzes navigation entry exists
@@ -834,7 +834,7 @@ Because the Study Assistant CSS layout was adjusted afterward, perform the final
 - [x] Strong/weak topics render
 - [x] Retake starts a fresh attempt
 
-## Saved Quiz History and Review
+**## Saved Quiz History and Review**
 
 - [x] Saved Quiz list loads
 - [x] Empty history state implemented
@@ -852,7 +852,7 @@ Because the Study Assistant CSS layout was adjusted afterward, perform the final
 - [x] Cancel preserves the Quiz
 - [x] Confirmed delete removes the Quiz
 
-## Track B Automated Validation
+**## Track B Automated Validation**
 
 - [x] Targeted backend history/review regression: 64 passed
 - [x] Quiz frontend regression: 21 passed across 5 test files
@@ -863,7 +863,7 @@ Because the Study Assistant CSS layout was adjusted afterward, perform the final
 - [x] Existing unrelated subject-page ESLint warning remains documented
 - [x] Quiz OpenAPI routes verified
 
-## Track B Live Integration
+**## Track B Live Integration**
 
 - [x] Quiz page opens from protected navigation
 - [x] Quiz generation works with processed study material
@@ -875,7 +875,7 @@ Because the Study Assistant CSS layout was adjusted afterward, perform the final
 - [x] Retake works
 - [x] Delete confirmation and deletion work
 
-## Final Track B Regression Before Commit
+**## Final Track B Regression Before Commit**
 
 Run after documentation edits:
 
@@ -888,7 +888,128 @@ Run after documentation edits:
 - [ ] `git diff --check` passes
 - [ ] Track B staging excludes other members' synchronization-only migrations
 
-# Final Documentation Checks
+
+**# Phase 6 Track E — Analytics Final Validation**
+
+**## Analytics Backend**
+
+- [x] Analytics repository tests pass
+- [x] Analytics service tests pass
+- [x] Analytics API endpoint tests pass
+- [x] Analytics router-registration tests pass
+- [x] Weighted Quiz accuracy is covered
+- [x] All-time, 7-day, and 30-day periods are covered
+- [x] Strong/weak Quiz topic classification is covered
+- [x] Empty Quiz evidence returns an available metric with no value
+- [x] Owner-scoped Analytics reads are covered
+- [x] General study minutes remain explicitly unavailable without a canonical duration source
+
+**## Track E Live Integration**
+
+- [x] `/analytics` loads successfully against the shared database
+- [x] All-time reporting works
+- [x] Last-30-days reporting works
+- [x] Last-7-days reporting works
+- [x] Quiz performance displays persisted evidence
+- [x] Flashcard self-assessment persists successfully
+- [x] Analytics reflects persisted Flashcard review evidence
+- [x] General study time remains explicitly unavailable without canonical actual-duration evidence
+
+**## Flashcard Review Evidence**
+
+- [x] Flashcard review migration contract tests pass
+- [x] Flashcard review repository tests pass
+- [x] Flashcard review service tests pass
+- [x] Flashcard review API tests pass
+- [x] Flashcard review router-registration tests pass
+- [x] `known` review evidence is supported
+- [x] `review_again` review evidence is supported
+- [x] Review target validation covers owned decks and valid card positions
+- [x] Flashcard review writes use authenticated backend identity
+- [x] Browser review persistence is covered by the frontend API tests
+- [x] Flashcard viewer exposes self-assessment only after the answer is revealed
+- [x] Successful review persistence advances normally
+- [x] Final-card review remains visible and confirms save state
+- [x] Review persistence failure shows a safe frontend message
+- [x] Analytics consumes durable Flashcard review evidence rather than inferring performance from navigation
+
+**## Track E Targeted Validation**
+
+- [x] Backend Ruff validation passes
+- [x] Analytics targeted suite: 20 passed
+- [x] Flashcard-review targeted suite: 10 passed
+- [x] Frontend Flashcard API/viewer suite: 28 passed across 2 test files
+- [x] TypeScript validation passes
+- [x] Frontend ESLint has 0 errors
+- [x] Existing unrelated subject-page ESLint warning remains documented
+- [x] `git diff --check` passes
+
+**## Final Regression**
+
+- [x] Full backend regression after C/D synchronization: 1296 passed
+- [x] Full frontend regression after C/D synchronization: 25 test files passed
+- [x] Full frontend regression after C/D synchronization: 153 tests passed
+- [x] Focused C/D/E frontend regression: 6 test files, 58 tests passed
+- [x] Post-migration Track E backend regression: 29 passed
+- [x] Production frontend build passes
+- [x] Production build completes TypeScript successfully
+
+Known backend warnings:
+
+```text
+Google GenAI deprecation warning
+Starlette HTTP 422 deprecation warning
+```
+
+These warnings do not represent Track E failures.
+
+**## Database Coordination**
+
+Track E migration:
+
+```text
+20260811162000_create_flashcard_review_events.sql
+```
+
+Current shared-database status:
+
+- [x] Migration file created
+- [x] Migration security foundation tested
+- [x] Linked migration history inspected
+- [x] Remote-only migration owners identified
+- [x] `20260809054523` belongs to Track C Academic Tasks
+- [x] `20260809153000` belongs to Track C Academic Tasks
+- [x] `20260810002500` belongs to Track D Study Plans
+- [x] `20260811002500` belongs to Track D Study Plans
+- [x] Track E migration applied to the shared remote database
+- [x] Linked migration history re-inspected after merging Track C/Track D into Track E
+- [x] Local and remote histories match through `20260811162000`
+- [x] Post-application linked dry run reports the remote database is up to date
+
+The Track E migration has been applied successfully. Linked migration history now matches locally and remotely through `20260811162000`, and the post-application dry run reports the remote database is up to date.
+
+Do not use migration repair to force migration-history alignment; inspect the linked migration state first.
+
+**## Track E Completion State**
+
+Track E application code and automated validation are complete for:
+
+```text
+current subject inventory
+current study-material inventory
+weighted Quiz accuracy
+strong Quiz topics
+weak Quiz topics
+self-assessed Flashcard performance
+```
+
+General study minutes remain intentionally unavailable until a canonical study-duration source exists.
+
+Shared remote migration application and migration-history verification are complete.
+
+---
+
+**# Final Documentation Checks**
 
 After replacing the documentation files:
 
@@ -929,9 +1050,16 @@ After replacing the documentation files:
 - [x] `PROJECT_FILE_MAP.md` includes Track B backend/frontend/tests/migrations
 - [x] `testing-checklist.md` includes Track B validation
 - [x] `AI_QUIZ_GENERATION.md` documents Quiz generation and security boundaries
+- [x] `ANALYTICS_DESIGN.md` documents implemented Track E metrics and canonical sources
+- [x] `ARCHITECTURE.md` reflects Track E Analytics and Flashcard self-assessment evidence
+- [x] `PROJECT_FILE_MAP.md` includes Track E backend, frontend integration, tests, and migration
+- [x] `api-contracts.md` includes Flashcard review and Analytics endpoints
+- [x] `database.md` documents `flashcard_review_events` and its migration state
+- [x] `testing-checklist.md` records Track E targeted and full regression results
+
 ---
 
-# Final Database Checks
+**# Final Database Checks**
 
 ```powershell
 npx supabase migration list --linked
@@ -941,13 +1069,13 @@ npx supabase db push --linked --dry-run
 
 Confirm:
 
-- [ ] Local and remote migration histories match
-- [ ] Remote database is up to date
-- [ ] Generated database types match hosted schema
+- [x] Local and remote migration histories match
+- [x] Remote database is up to date
+- [x] Generated database types match hosted schema
 
 ---
 
-# Final Backend Checks
+**# Final Backend Checks**
 
 ```powershell
 Set-Location ".\backend"
@@ -955,15 +1083,15 @@ Set-Location ".\backend"
 python -m pytest -q
 
 python -m ruff check `
-    app `
-    tests `
-    scripts
+    app `
+    tests `
+    scripts
 
 python -m compileall `
-    -q `
-    app `
-    tests `
-    scripts
+    -q `
+    app `
+    tests `
+    scripts
 
 python -m pip check
 ```
@@ -974,7 +1102,7 @@ Confirm:
 
 ---
 
-# Final Frontend Checks
+**# Final Frontend Checks**
 
 ```powershell
 Set-Location ".\frontend"
@@ -997,7 +1125,7 @@ Confirm:
 
 ---
 
-# Final Git Safety
+**# Final Git Safety**
 
 From repository root:
 
@@ -1028,7 +1156,7 @@ Confirm:
 
 ---
 
-# Phase 5G Completion Record
+**# Phase 5G Completion Record**
 
 ```text
 Phase: Phase 5G — Conversation Persistence, Memory, Summary, and History UI
@@ -1063,7 +1191,7 @@ Reviewed by:
 
 ---
 
-# Bug Report Template
+**# Bug Report Template**
 
 ```text
 Title:

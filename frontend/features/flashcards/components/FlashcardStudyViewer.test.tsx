@@ -1,6 +1,6 @@
 // File: /frontend/features/flashcards/components/FlashcardStudyViewer.test.tsx
-// Purpose: Tests Flashcard question/answer flipping and
-// previous/next study navigation.
+// Purpose: Tests Flashcard flipping, navigation, and durable
+// student self-assessment review behavior.
 
 import {
   MantineProvider,
@@ -8,16 +8,47 @@ import {
 import {
   render,
   screen,
+  waitFor,
 } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import type {
   ComponentProps,
 } from "react";
 import {
+  beforeEach,
   describe,
   expect,
   it,
+  vi,
 } from "vitest";
+
+const mocks = vi.hoisted(
+  () => ({
+    recordFlashcardReview:
+      vi.fn(),
+  }),
+);
+
+vi.mock(
+  "@/features/flashcards/api",
+  async (
+    importOriginal,
+  ) => {
+    const actual =
+      await importOriginal<
+        typeof import(
+          "@/features/flashcards/api"
+        )
+      >();
+
+    return {
+      ...actual,
+
+      recordFlashcardReview:
+        mocks.recordFlashcardReview,
+    };
+  },
+);
 
 import type {
   FlashcardDeckResponse,
@@ -101,6 +132,29 @@ const DECK:
       "2026-08-09T15:00:00Z",
   };
 
+function createReviewResponse(
+  cardPosition: number,
+  outcome:
+    | "known"
+    | "review_again",
+) {
+  return {
+    id:
+      `review-${cardPosition}`,
+
+    deck_id:
+      DECK.id,
+
+    card_position:
+      cardPosition,
+
+    outcome,
+
+    reviewed_at:
+      "2026-08-11T08:00:00Z",
+  };
+}
+
 function renderViewer(
   props?: Partial<
     ComponentProps<
@@ -121,6 +175,28 @@ function renderViewer(
 describe(
   "FlashcardStudyViewer",
   () => {
+    beforeEach(() => {
+      vi.clearAllMocks();
+
+      mocks.recordFlashcardReview
+        .mockImplementation(
+          (
+            _deckId: string,
+            request: {
+              card_position: number;
+              outcome:
+                | "known"
+                | "review_again";
+            },
+          ) => Promise.resolve(
+            createReviewResponse(
+              request.card_position,
+              request.outcome,
+            ),
+          ),
+        );
+    });
+
     it(
       "starts on the first card showing only its question",
       () => {
@@ -163,6 +239,26 @@ describe(
             },
           ),
         ).toBeEnabled();
+
+        expect(
+          screen.queryByRole(
+            "button",
+            {
+              name:
+                "Review Again",
+            },
+          ),
+        ).not.toBeInTheDocument();
+
+        expect(
+          screen.queryByRole(
+            "button",
+            {
+              name:
+                "I Know This",
+            },
+          ),
+        ).not.toBeInTheDocument();
       },
     );
 
@@ -196,6 +292,26 @@ describe(
           ),
         ).not.toBeInTheDocument();
 
+        expect(
+          screen.getByRole(
+            "button",
+            {
+              name:
+                "Review Again",
+            },
+          ),
+        ).toBeInTheDocument();
+
+        expect(
+          screen.getByRole(
+            "button",
+            {
+              name:
+                "I Know This",
+            },
+          ),
+        ).toBeInTheDocument();
+
         await user.click(
           screen.getByRole(
             "button",
@@ -211,6 +327,16 @@ describe(
             "What is the basic unit of life?",
           ),
         ).toBeInTheDocument();
+
+        expect(
+          screen.queryByRole(
+            "button",
+            {
+              name:
+                "I Know This",
+            },
+          ),
+        ).not.toBeInTheDocument();
       },
     );
 
@@ -352,6 +478,323 @@ describe(
     );
 
     it(
+      "records known evidence and advances to the next card",
+      async () => {
+        const user =
+          userEvent.setup();
+
+        renderViewer();
+
+        await user.click(
+          screen.getByRole(
+            "button",
+            {
+              name:
+                "Show answer",
+            },
+          ),
+        );
+
+        await user.click(
+          screen.getByRole(
+            "button",
+            {
+              name:
+                "I Know This",
+            },
+          ),
+        );
+
+        await waitFor(
+          () => {
+            expect(
+              mocks.recordFlashcardReview,
+            ).toHaveBeenCalledWith(
+              "deck-1",
+              {
+                card_position: 0,
+                outcome: "known",
+              },
+            );
+          },
+        );
+
+        await waitFor(
+          () => {
+            expect(
+              screen.getByText(
+                "Card 2 of 3",
+              ),
+            ).toBeInTheDocument();
+          },
+        );
+
+        expect(
+          screen.getByText(
+            "What organelle produces most cellular ATP?",
+          ),
+        ).toBeInTheDocument();
+
+        expect(
+          screen.queryByText(
+            "The mitochondrion.",
+          ),
+        ).not.toBeInTheDocument();
+      },
+    );
+
+    it(
+      "records review-again evidence and advances to the next card",
+      async () => {
+        const user =
+          userEvent.setup();
+
+        renderViewer();
+
+        await user.click(
+          screen.getByRole(
+            "button",
+            {
+              name:
+                "Show answer",
+            },
+          ),
+        );
+
+        await user.click(
+          screen.getByRole(
+            "button",
+            {
+              name:
+                "Review Again",
+            },
+          ),
+        );
+
+        await waitFor(
+          () => {
+            expect(
+              mocks.recordFlashcardReview,
+            ).toHaveBeenCalledWith(
+              "deck-1",
+              {
+                card_position: 0,
+                outcome:
+                  "review_again",
+              },
+            );
+          },
+        );
+
+        await waitFor(
+          () => {
+            expect(
+              screen.getByText(
+                "Card 2 of 3",
+              ),
+            ).toBeInTheDocument();
+          },
+        );
+      },
+    );
+
+    it(
+      "keeps the final card visible after saving its review",
+      async () => {
+        const user =
+          userEvent.setup();
+
+        renderViewer();
+
+        await user.click(
+          screen.getByRole(
+            "button",
+            {
+              name:
+                "Next card",
+            },
+          ),
+        );
+
+        await user.click(
+          screen.getByRole(
+            "button",
+            {
+              name:
+                "Next card",
+            },
+          ),
+        );
+
+        expect(
+          screen.getByText(
+            "Card 3 of 3",
+          ),
+        ).toBeInTheDocument();
+
+        await user.click(
+          screen.getByRole(
+            "button",
+            {
+              name:
+                "Show answer",
+            },
+          ),
+        );
+
+        await user.click(
+          screen.getByRole(
+            "button",
+            {
+              name:
+                "I Know This",
+            },
+          ),
+        );
+
+        await waitFor(
+          () => {
+            expect(
+              mocks.recordFlashcardReview,
+            ).toHaveBeenCalledWith(
+              "deck-1",
+              {
+                card_position: 2,
+                outcome: "known",
+              },
+            );
+          },
+        );
+
+        expect(
+          screen.getByText(
+            "Card 3 of 3",
+          ),
+        ).toBeInTheDocument();
+
+        expect(
+          await screen.findByText(
+            "Review saved.",
+          ),
+        ).toBeInTheDocument();
+
+        expect(
+          screen.getByRole(
+            "button",
+            {
+              name:
+                "I Know This",
+            },
+          ),
+        ).toBeDisabled();
+
+        expect(
+          screen.getByRole(
+            "button",
+            {
+              name:
+                "Review Again",
+            },
+          ),
+        ).toBeDisabled();
+      },
+    );
+
+    it(
+      "shows a safe message when saving a review fails",
+      async () => {
+        const user =
+          userEvent.setup();
+
+        mocks.recordFlashcardReview
+          .mockRejectedValueOnce(
+            new Error(
+              "Database details must not be shown.",
+            ),
+          );
+
+        renderViewer();
+
+        await user.click(
+          screen.getByRole(
+            "button",
+            {
+              name:
+                "Show answer",
+            },
+          ),
+        );
+
+        await user.click(
+          screen.getByRole(
+            "button",
+            {
+              name:
+                "I Know This",
+            },
+          ),
+        );
+
+        expect(
+          await screen.findByRole(
+            "alert",
+          ),
+        ).toHaveTextContent(
+          "Your Flashcard review could not be saved.",
+        );
+
+        expect(
+          screen.getByText(
+            "Card 1 of 3",
+          ),
+        ).toBeInTheDocument();
+
+        expect(
+          screen.getByText(
+            "The cell.",
+          ),
+        ).toBeInTheDocument();
+
+        expect(
+          screen.queryByText(
+            "Database details must not be shown.",
+          ),
+        ).not.toBeInTheDocument();
+      },
+    );
+
+    it(
+      "does not save a review until the answer has been revealed",
+      () => {
+        renderViewer();
+
+        expect(
+          mocks.recordFlashcardReview,
+        ).not.toHaveBeenCalled();
+
+        expect(
+          screen.queryByRole(
+            "button",
+            {
+              name:
+                "I Know This",
+            },
+          ),
+        ).not.toBeInTheDocument();
+
+        expect(
+          screen.queryByRole(
+            "button",
+            {
+              name:
+                "Review Again",
+            },
+          ),
+        ).not.toBeInTheDocument();
+      },
+    );
+
+    it(
       "resets to the first question when a different deck is loaded",
       async () => {
         const user =
@@ -439,6 +882,16 @@ describe(
         expect(
           screen.queryByText(
             "The smallest unit of an element that retains its chemical properties.",
+          ),
+        ).not.toBeInTheDocument();
+
+        expect(
+          screen.queryByRole(
+            "button",
+            {
+              name:
+                "I Know This",
+            },
           ),
         ).not.toBeInTheDocument();
       },

@@ -1,8 +1,10 @@
 // File: /frontend/app/layout.tsx
 // Purpose: Defines the root HTML structure, metadata, font,
-// Mantine styles, color-scheme script, and application providers.
+// Mantine styles, chart styles, color-scheme script,
+// and application providers.
 
 import "@mantine/core/styles.layer.css";
+import "@mantine/charts/styles.css";
 import "@mantine/notifications/styles.layer.css";
 import "./globals.css";
 import "@mantine/dropzone/styles.css";
@@ -42,11 +44,15 @@ export default function RootLayout({
       {...mantineHtmlProps}
     >
       <head>
-        <ColorSchemeScript defaultColorScheme="light" />
+        <ColorSchemeScript
+          defaultColorScheme="light"
+        />
       </head>
 
       <body>
-        <Providers>{children}</Providers>
+        <Providers>
+          {children}
+        </Providers>
       </body>
     </html>
   );

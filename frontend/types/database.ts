@@ -1,6 +1,3 @@
-﻿// File: /frontend/types/database.ts
-// Purpose: Contains TypeScript types generated from the linked hosted Supabase public schema.
-
 export type Json =
   | string
   | number
@@ -182,6 +179,44 @@ export type Database = {
             columns: ["subject_id"]
             isOneToOne: false
             referencedRelation: "subjects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      flashcard_review_events: {
+        Row: {
+          card_position: number
+          created_at: string
+          deck_id: string
+          id: string
+          outcome: string
+          reviewed_at: string
+          user_id: string
+        }
+        Insert: {
+          card_position: number
+          created_at?: string
+          deck_id: string
+          id?: string
+          outcome: string
+          reviewed_at?: string
+          user_id: string
+        }
+        Update: {
+          card_position?: number
+          created_at?: string
+          deck_id?: string
+          id?: string
+          outcome?: string
+          reviewed_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "flashcard_review_events_deck_id_fkey"
+            columns: ["deck_id"]
+            isOneToOne: false
+            referencedRelation: "flashcard_decks"
             referencedColumns: ["id"]
           },
         ]
@@ -379,6 +414,232 @@ export type Database = {
           year_level?: string | null
         }
         Relationships: []
+      }
+      quiz_attempt_answers: {
+        Row: {
+          answered_at: string
+          attempt_id: string
+          created_at: string
+          id: string
+          is_correct: boolean
+          position: number
+          question_type: string
+          quiz_question_id: string
+          submitted_answer: string
+          topic: string
+        }
+        Insert: {
+          answered_at?: string
+          attempt_id: string
+          created_at?: string
+          id?: string
+          is_correct: boolean
+          position: number
+          question_type: string
+          quiz_question_id: string
+          submitted_answer: string
+          topic: string
+        }
+        Update: {
+          answered_at?: string
+          attempt_id?: string
+          created_at?: string
+          id?: string
+          is_correct?: boolean
+          position?: number
+          question_type?: string
+          quiz_question_id?: string
+          submitted_answer?: string
+          topic?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "quiz_attempt_answers_attempt_id_fkey"
+            columns: ["attempt_id"]
+            isOneToOne: false
+            referencedRelation: "quiz_attempts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "quiz_attempt_answers_quiz_question_id_fkey"
+            columns: ["quiz_question_id"]
+            isOneToOne: false
+            referencedRelation: "quiz_questions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      quiz_attempts: {
+        Row: {
+          completed_at: string | null
+          correct_count: number
+          created_at: string
+          current_position: number
+          id: string
+          question_count: number
+          quiz_id: string
+          score_percentage: number
+          started_at: string
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          completed_at?: string | null
+          correct_count?: number
+          created_at?: string
+          current_position?: number
+          id?: string
+          question_count: number
+          quiz_id: string
+          score_percentage?: number
+          started_at?: string
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          completed_at?: string | null
+          correct_count?: number
+          created_at?: string
+          current_position?: number
+          id?: string
+          question_count?: number
+          quiz_id?: string
+          score_percentage?: number
+          started_at?: string
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "quiz_attempts_quiz_id_fkey"
+            columns: ["quiz_id"]
+            isOneToOne: false
+            referencedRelation: "quizzes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      quiz_questions: {
+        Row: {
+          accepted_answers: Json
+          choices: Json
+          correct_answer: string
+          created_at: string
+          explanation: string
+          id: string
+          position: number
+          question: string
+          question_type: string
+          quiz_id: string
+          topic: string
+          updated_at: string
+        }
+        Insert: {
+          accepted_answers?: Json
+          choices?: Json
+          correct_answer: string
+          created_at?: string
+          explanation: string
+          id?: string
+          position: number
+          question: string
+          question_type: string
+          quiz_id: string
+          topic: string
+          updated_at?: string
+        }
+        Update: {
+          accepted_answers?: Json
+          choices?: Json
+          correct_answer?: string
+          created_at?: string
+          explanation?: string
+          id?: string
+          position?: number
+          question?: string
+          question_type?: string
+          quiz_id?: string
+          topic?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "quiz_questions_quiz_id_fkey"
+            columns: ["quiz_id"]
+            isOneToOne: false
+            referencedRelation: "quizzes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      quizzes: {
+        Row: {
+          created_at: string
+          difficulty: string
+          generated_at: string
+          generation_count: number
+          generation_model: string
+          id: string
+          question_count: number
+          quiz_type: string
+          scope_type: string
+          study_file_id: string | null
+          subject_id: string
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          difficulty: string
+          generated_at?: string
+          generation_count?: number
+          generation_model: string
+          id?: string
+          question_count: number
+          quiz_type: string
+          scope_type: string
+          study_file_id?: string | null
+          subject_id: string
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          difficulty?: string
+          generated_at?: string
+          generation_count?: number
+          generation_model?: string
+          id?: string
+          question_count?: number
+          quiz_type?: string
+          scope_type?: string
+          study_file_id?: string | null
+          subject_id?: string
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "quizzes_study_file_id_fkey"
+            columns: ["study_file_id"]
+            isOneToOne: false
+            referencedRelation: "study_files"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "quizzes_subject_id_fkey"
+            columns: ["subject_id"]
+            isOneToOne: false
+            referencedRelation: "subjects"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       reviewers: {
         Row: {
@@ -800,6 +1061,105 @@ export type Database = {
           },
         ]
       }
+      study_plans: {
+        Row: {
+          created_at: string
+          ends_on: string
+          generated_at: string | null
+          generation_mode: string
+          id: string
+          starts_on: string
+          status: string
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          ends_on: string
+          generated_at?: string | null
+          generation_mode?: string
+          id?: string
+          starts_on: string
+          status?: string
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          ends_on?: string
+          generated_at?: string | null
+          generation_mode?: string
+          id?: string
+          starts_on?: string
+          status?: string
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      study_sessions: {
+        Row: {
+          created_at: string
+          ends_at: string
+          id: string
+          notes: string | null
+          origin: string
+          starts_at: string
+          status: string
+          study_plan_id: string
+          subject_id: string
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          ends_at: string
+          id?: string
+          notes?: string | null
+          origin?: string
+          starts_at: string
+          status?: string
+          study_plan_id: string
+          subject_id: string
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          ends_at?: string
+          id?: string
+          notes?: string | null
+          origin?: string
+          starts_at?: string
+          status?: string
+          study_plan_id?: string
+          subject_id?: string
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "study_sessions_plan_owner_fk"
+            columns: ["study_plan_id", "user_id"]
+            isOneToOne: false
+            referencedRelation: "study_plans"
+            referencedColumns: ["id", "user_id"]
+          },
+          {
+            foreignKeyName: "study_sessions_subject_owner_fk"
+            columns: ["subject_id", "user_id"]
+            isOneToOne: false
+            referencedRelation: "subjects"
+            referencedColumns: ["id", "user_id"]
+          },
+        ]
+      }
       subjects: {
         Row: {
           color: string
@@ -867,6 +1227,21 @@ export type Database = {
         }
         Returns: string
       }
+      create_quiz_with_questions: {
+        Args: {
+          p_difficulty: string
+          p_generation_model: string
+          p_question_count: number
+          p_questions: Json
+          p_quiz_type: string
+          p_scope_type: string
+          p_study_file_id: string
+          p_subject_id: string
+          p_title: string
+          p_user_id: string
+        }
+        Returns: string
+      }
       fail_study_file_processing: {
         Args: {
           p_error_code: string
@@ -909,6 +1284,18 @@ export type Database = {
         Returns: {
           failed_count: number
           requeued_count: number
+        }[]
+      }
+      replace_generated_study_plan_sessions: {
+        Args: {
+          p_generated_at: string
+          p_sessions: Json
+          p_study_plan_id: string
+          p_user_id: string
+        }
+        Returns: {
+          plan: Json
+          sessions: Json
         }[]
       }
       replace_learning_output_confidences: {
@@ -956,9 +1343,53 @@ export type Database = {
           subject_id: string
         }[]
       }
+      start_quiz_attempt: {
+        Args: { p_quiz_id: string; p_user_id: string }
+        Returns: {
+          completed_at: string
+          correct_count: number
+          created_at: string
+          current_position: number
+          id: string
+          question_count: number
+          quiz_id: string
+          score_percentage: number
+          started_at: string
+          status: string
+          updated_at: string
+        }[]
+      }
       start_study_file_processing: {
         Args: { p_study_file_id: string }
         Returns: undefined
+      }
+      submit_quiz_attempt_answer: {
+        Args: {
+          p_attempt_id: string
+          p_position: number
+          p_submitted_answer: string
+          p_user_id: string
+        }
+        Returns: {
+          answered_position: number
+          attempt_completed: boolean
+          attempt_id: string
+          completed_at: string
+          correct_answer: string
+          correct_count: number
+          created_at: string
+          current_position: number
+          explanation: string
+          is_correct: boolean
+          next_position: number
+          question_count: number
+          quiz_id: string
+          quiz_question_id: string
+          score_percentage: number
+          started_at: string
+          status: string
+          updated_at: string
+        }[]
       }
     }
     Enums: {
