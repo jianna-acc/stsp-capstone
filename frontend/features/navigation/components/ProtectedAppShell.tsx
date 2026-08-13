@@ -204,7 +204,7 @@ export function ProtectedAppShell({
             </ThemeIcon>
 
             <Text fw={750}>
-              Intelleap
+              INTELLEAP
             </Text>
           </Group>
 
@@ -258,15 +258,10 @@ export function ProtectedAppShell({
               <Title
                 order={4}
               >
-                Intelleap
+                INTELLEAP
               </Title>
 
-              <Text
-                size="xs"
-                c="dimmed"
-              >
-                Student workspace
-              </Text>
+
             </div>
           </Group>
         </Box>
@@ -348,14 +343,7 @@ export function ProtectedAppShell({
         >
           <Divider mb="md" />
 
-          <Text
-            size="xs"
-            c="dimmed"
-            mb="sm"
-          >
-            Your authenticated student
-            session is active.
-          </Text>
+
 
           <form
             action={

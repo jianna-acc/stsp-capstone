@@ -922,16 +922,7 @@ export function DashboardWorkspace({
                 {displayName}
             </Title>
 
-            <Text
-                c="dimmed"
-                maw={680}
-                size="sm"
-            >
-                Here&apos;s what
-                needs your attention
-                and what to study
-                next.
-            </Text>
+           
             </Stack>
 
             <Button
@@ -2020,12 +2011,7 @@ export function DashboardWorkspace({
                             }
                           </Text>
 
-                          <Text
-                            c="dimmed"
-                            size="xs"
-                          >
-                            Open
-                          </Text>
+
                         </Stack>
                       </div>
                     </Link>
